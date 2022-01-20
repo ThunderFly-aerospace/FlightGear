@@ -211,10 +211,7 @@ void Gear::calcForce(Ground *g_cb, RigidBody* body, State *s, float* v, float* r
     float b = ground[3] - Math::dot3(tmp, ground)+BumpAltitude;
 
     // Calculate the point of ground _contact.
-    if(b < 0)
-        _frac = 1;
-    else
-        _frac = a/(a-b);
+    _frac = a/(a-b);
     for(i=0; i<3; i++)
         _contact[i] = _pos[i] + _frac*_cmpr[i];
 
@@ -230,9 +227,7 @@ void Gear::calcForce(Ground *g_cb, RigidBody* body, State *s, float* v, float* r
     Math::sub3(cv, glvel, cv);
 
     // Finally, we can start adding up the forces.  First the spring
-    // compression.   (note the clamping of _frac to 1):
-    _frac = (_frac > 1) ? 1 : _frac;
-
+    // compression.
     // Add the initial load to frac, but with continous transistion around 0
     float frac_with_initial_load;
     if (_frac>0.2 || _initialLoad==0.0)
@@ -241,7 +236,13 @@ void Gear::calcForce(Ground *g_cb, RigidBody* body, State *s, float* v, float* r
         frac_with_initial_load = (_frac+_initialLoad)
             *_frac*_frac*3*25-_frac*_frac*_frac*2*125;
 
+    // in case of _frac >= 1 spring at bump stop has rapidly increasing rebound force
     float fmag = frac_with_initial_load*clen*_spring;
+    if (_frac > 1 ) {
+      fmag = frac_with_initial_load * frac_with_initial_load * frac_with_initial_load
+                  * frac_with_initial_load * clen * _spring;
+    }
+    // counter for debug << "b: " << b << " frac: " << _frac << " fmag: " << fmag << std::endl;
     if (_speed_planing>0)
     {
         float v = Math::mag3(cv);
@@ -658,4 +659,3 @@ void Gear::updateStuckPoint(State* s)
 
 
 }; // namespace yasim
-
