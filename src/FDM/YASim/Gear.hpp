@@ -134,55 +134,55 @@ private:
     void calcFriction(float *gpos, float *cv, float *steer, float *skid, float wgt, float *force);
     void calcFrictionFluid(float *cv, float *steer, float *skid, float wgt, float *force);
 
-    float _fric_spring;
-    bool _castering;
-    bool _rolling;
-    bool _slipping;
-    float _pos[3];
-    double _stuck[3];
+    float _fric_spring = 0;
+    bool _castering = false;
+    bool _rolling = false;
+    bool _slipping = false;
+    float _pos[3] = {0};
+    double _stuck[3] = {0};
     GearVector _cmpr;
-    float _spring;
-    float _damp;
-    float _sfric;
-    float _dfric;
-    float _brake;
-    float _rot;
-    float _extension;
-    float _force[3];
-    float _contact[3];
-    float _wow;
-    float _frac;    /* Compression as fraction of maximum. */
-    float _initialLoad;
-    float _compressDist;    /* Vertical compression distance. */
-    double _global_ground[4];
-    float _global_vel[3];
-    float _casterAngle;
-    float _rollSpeed;
-    bool _isContactPoint;
-    bool _onWater;
-    bool _onSolid;
-    float _spring_factor_not_planing;
-    float _speed_planing;
-    float _reduceFrictionByExtension;
-    bool _ignoreWhileSolving;
-    bool _stiction;
-    bool _stiction_abs;
+    float _spring = 0;
+    float _damp = 0;
+    float _sfric = 0;
+    float _dfric = 0;
+    float _brake = 0;
+    float _rot = 0;
+    float _extension = 0;
+    float _force[3] = {0};
+    float _contact[3] = {0};
+    float _wow = 0;
+    float _frac = 0;    /* Compression as fraction of maximum. */
+    float _initialLoad = 0;
+    float _compressDist = 0;    /* Vertical compression distance. */
+    double _global_ground[4] = {0};
+    float _global_vel[3] = {0};
+    float _casterAngle = 0;
+    float _rollSpeed = 0;
+    bool _isContactPoint = false;
+    bool _onWater = false;
+    bool _onSolid = false;
+    float _spring_factor_not_planing = 0;
+    float _speed_planing = 0;
+    float _reduceFrictionByExtension = 0;
+    bool _ignoreWhileSolving = false;
+    bool _stiction = false;
+    bool _stiction_abs = false;
 
-    double _ground_frictionFactor;
-    double _ground_rollingFriction;
-    double _ground_loadCapacity;
-    double _ground_loadResistance;
-    double _ground_bumpiness;
-    bool _ground_isSolid;
-    double _global_x;
-    double _global_y;
-    unsigned int _body_id;
-    double _ground_rot[9];
-    double _ground_trans[3];
+    double _ground_frictionFactor = 0;
+    double _ground_rollingFriction = 0;
+    double _ground_loadCapacity = 0;
+    double _ground_loadResistance = 0;
+    double _ground_bumpiness = 0;
+    bool _ground_isSolid = false;
+    double _global_x = 0;
+    double _global_y = 0;
+    unsigned int _body_id = 0;
+    double _ground_rot[9] = {0};
+    double _ground_trans[3] = {0};
 
     GearVector _wheelAxle;
-    float _wheelRadius;
-    float _tyreRadius;
+    float _wheelRadius = 0;
+    float _tyreRadius = 0;
 };
 
 
