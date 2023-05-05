@@ -57,7 +57,7 @@ void GSDI::init()
 	// input
 	_ubodyN = fgGetNode("/velocities/uBody-fps", true);
 	_vbodyN = fgGetNode("/velocities/vBody-fps", true);
-	
+
 	// output
 	_drift_uN = n->getNode("drift-u-kt", true);
 	_drift_vN = n->getNode("drift-v-kt", true);
