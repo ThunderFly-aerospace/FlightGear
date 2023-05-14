@@ -55,9 +55,6 @@ public:
     static const char* staticSubsystemClassId() { return "attitude-indicator-electric"; }
 
 private:
-    std::string _name;
-    int _num = 0;
-
     Gyro _gyro;
 
     SGPropertyNode_ptr _tumble_flag_node;
@@ -70,6 +67,7 @@ private:
     SGPropertyNode_ptr _pitch_out_node;
     SGPropertyNode_ptr _roll_out_node;
     SGPropertyNode_ptr _off_node;
+    SGPropertyNode_ptr _spin_node;
     
     double spin_thresh;
     double max_roll_error;

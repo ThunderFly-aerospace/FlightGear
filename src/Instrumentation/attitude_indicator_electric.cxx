@@ -41,10 +41,9 @@ AttitudeIndicatorElectric::~AttitudeIndicatorElectric ()
 void
 AttitudeIndicatorElectric::init ()
 {
-	string branch;
-	branch = "/instrumentation/" + _name;
+	string branch = nodePath();
 
-	SGPropertyNode *node = fgGetNode(branch, _num, true );
+	SGPropertyNode *node    = fgGetNode(branch, true );
 	SGPropertyNode *n;
 
 	_pitch_in_node = fgGetNode("/orientation/pitch-deg", true);
@@ -64,6 +63,7 @@ AttitudeIndicatorElectric::init ()
 	_pitch_out_node = node->getChild("indicated-pitch-deg", 0, true);
 	_roll_out_node = node->getChild("indicated-roll-deg", 0, true);
 	_off_node         = node->getChild("off-flag", 0, true);
+	_spin_node = node->getChild("spin", 0, true);
 
 	initServicePowerProperties(node);
 
@@ -92,8 +92,9 @@ AttitudeIndicatorElectric::update (double dt)
 	_gyro.set_power_norm(isServiceableAndPowered());
 	_gyro.update(dt);
 	double spin = _gyro.get_spin_norm();
-
-	_off_node->setBoolValue( ( isServiceableAndPowered() && spin >= 0.25) );
+	_spin_node->setDoubleValue( spin );
+	
+	_off_node->setBoolValue( !( isServiceableAndPowered() && spin >= 0.25 ) );
 
 	// Calculate the responsiveness
 	double responsiveness = spin * spin * spin * spin * spin * spin;
