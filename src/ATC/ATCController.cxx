@@ -453,15 +453,15 @@ bool FGATCController::hasInstruction(int id)
 
 FGATCInstruction FGATCController::getInstruction(int id)
 {
-    // Search activeTraffic for a record matching our id
-    TrafficVectorIterator i = searchActiveTraffic(id);
+    if (activeTraffic.size() != 0) {
+        // Search activeTraffic for a record matching our id
+        TrafficVectorIterator i = searchActiveTraffic(id);
 
-    if (i == activeTraffic.end() || (activeTraffic.size() == 0)) {
-        SG_LOG(SG_ATC, SG_ALERT,
-               "AI error: requesting ATC instruction for aircraft without traffic record at " << SG_ORIGIN);
-    } else {
-        return i->getInstruction();
+        if (i != activeTraffic.end())
+            return i->getInstruction();
     }
+
+    SG_LOG(SG_ATC, SG_ALERT, "AI error: requesting ATC instruction for aircraft without traffic record at " << SG_ORIGIN);
     return FGATCInstruction();
 }
 

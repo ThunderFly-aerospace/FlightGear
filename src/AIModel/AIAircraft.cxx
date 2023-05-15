@@ -1425,8 +1425,7 @@ const string& FGAIAircraft::atGate()
 int FGAIAircraft::determineNextLeg(int leg) {
     if (leg==AILeg::APPROACH) {
         time_t now = globals->get_time_params()->get_cur_time();
-        if (controller->getInstruction(getID()).getRunwaySlot()
-           > now) {
+        if (controller == nullptr || controller->getInstruction(getID()).getRunwaySlot() > now) {
             return AILeg::HOLD;
         } else {
             return AILeg::LANDING;
