@@ -1,22 +1,9 @@
-//  panel_io.cxx - I/O for 2D panel.
-//
-//  Written by David Megginson, started January 2000.
-//
-//  This program is free software; you can redistribute it and/or
-//  modify it under the terms of the GNU General Public License as
-//  published by the Free Software Foundation; either version 2 of the
-//  License, or (at your option) any later version.
-// 
-//  This program is distributed in the hope that it will be useful, but
-//  WITHOUT ANY WARRANTY; without even the implied warranty of
-//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-//  General Public License for more details.
-//
-//  You should have received a copy of the GNU General Public License
-//  along with this program; if not, write to the Free Software
-//  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-//
-//  $Id$
+/*
+ * SPDX-FileName: panel_io.cxx
+ * SPDX-FileComment: I/O for 2D panel
+ * SPDX-FileCopyrightText: Written by David Megginson, started January 2000
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
 
 #include <config.h>
 
@@ -160,7 +147,7 @@ readConditions (SGConditional *component, const SGPropertyNode *node)
  * For the adjust action, it is possible to specify an increment
  * (use a negative number for a decrement), a minimum allowed value,
  * a maximum allowed value, and a flag to indicate whether the value
- * should freeze or wrap-around when it reachs the minimum or maximum.
+ * should freeze or wrap-around when it reaches the minimum or maximum.
  *
  * The action will be scaled automatically if the instrument is not
  * being drawn at its regular size.
@@ -170,7 +157,7 @@ readAction (const SGPropertyNode * node, float w_scale, float h_scale)
 {
   unsigned int i, j;
   SGPropertyNode *binding;
-  vector<SGPropertyNode_ptr>bindings = node->getChildren("binding");
+  std::vector<SGPropertyNode_ptr>bindings = node->getChildren("binding");
 
   // button-less actions are fired initially
   if (!node->hasValue("w") || !node->hasValue("h")) {

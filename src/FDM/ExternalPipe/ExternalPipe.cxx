@@ -1,24 +1,9 @@
-// ExternalPipe.cxx -- a "pipe" interface to an external flight dynamics model
-//
-// Written by Curtis Olson, started March 2003.
-//
-// Copyright (C) 2003  Curtis L. Olson  - http://www.flightgear.org/~curt
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-//
-// $Id$
+/*
+ * SPDX-FileName: ExternalPipe.cxx
+ * SPDX-FileComment: a "pipe" interface to an external flight dynamics model
+ * SPDX-FileCopyrightText: Copyright (C) 2003  Curtis L. Olson  - http://www.flightgear.org/~curt
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
 
 #ifdef HAVE_CONFIG_H
 #  include <config.h>
@@ -52,7 +37,7 @@ using std::endl;
 
 static const int MAX_BUF = 32768;
 
-FGExternalPipe::FGExternalPipe( double dt, string name, string protocol ) {
+FGExternalPipe::FGExternalPipe( double dt, std::string name, std::string protocol ) {
     valid = true;
     last_weight = 0.0;
     last_cg_offset = -9999.9;

@@ -1,24 +1,10 @@
-// realwx_ctrl.cxx -- Process real weather data
-//
-// Written by David Megginson, started February 2002.
-// Rewritten by Torsten Dreyer, August 2010, August 2011
-//
-// Copyright (C) 2002  David Megginson - david@megginson.com
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-//
+/*
+ * SPDX-FileName: realwx_ctrl.cxx
+ * SPDX-FileComment: Process real weather data
+ * SPDX-FileCopyrightText: Copyright (C) 2002  David Megginson - david@megginson.com
+ * SPDX-FileContributor: Rewritten by Torsten Dreyer, August 2010, August 2011
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
 
 #ifdef HAVE_CONFIG_H
 #  include "config.h"
@@ -178,12 +164,12 @@ public:
      * empty). If the property path is already mapped, the station ID
      * will be updated.
      */
-    void addMetarAtPath(const string& propPath, const string& icao);
+    void addMetarAtPath(const std::string& propPath, const std::string& icao);
   
-    void removeMetarAtPath(const string& propPath);
+    void removeMetarAtPath(const std::string& propPath);
 
     typedef std::vector<LiveMetarProperties_ptr> MetarPropertiesList;
-    MetarPropertiesList::iterator findMetarAtPath(const string &propPath);
+    MetarPropertiesList::iterator findMetarAtPath(const std::string &propPath);
 
 protected:
     void checkNearbyMetar();
@@ -213,10 +199,10 @@ static bool commandRequestMetar(const SGPropertyNode * arg, SGPropertyNode * roo
     return false;
   }
   
-  string icao(arg->getStringValue("station"));
+  std::string icao(arg->getStringValue("station"));
   std::transform(icao.begin(), icao.end(), icao.begin(), static_cast<int(*)(int)>(std::toupper));
 
-  string path = arg->getStringValue("path");
+  std::string path = arg->getStringValue("path");
   self->addMetarAtPath(path, icao);
   return true;
 }
@@ -233,7 +219,7 @@ static bool commandClearMetar(const SGPropertyNode * arg, SGPropertyNode * root)
     return false;
   }
   
-  string path = arg->getStringValue("path");
+  std::string path = arg->getStringValue("path");
   self->removeMetarAtPath(path);
   return true;
 }
@@ -326,7 +312,7 @@ void BasicRealWxController::update( double dt )
   }
 }
 
-void BasicRealWxController::addMetarAtPath(const string& propPath, const string& icao)
+void BasicRealWxController::addMetarAtPath(const std::string& propPath, const std::string& icao)
 {
   // check for duplicate entries
   MetarPropertiesList::iterator it = findMetarAtPath(propPath);
@@ -347,7 +333,7 @@ void BasicRealWxController::addMetarAtPath(const string& propPath, const string&
   p->setStationId(icao);
 }
 
-void BasicRealWxController::removeMetarAtPath(const string &propPath)
+void BasicRealWxController::removeMetarAtPath(const std::string &propPath)
 {
   MetarPropertiesList::iterator it = findMetarAtPath( propPath );
   if( it != _metarProperties.end() ) {
@@ -358,7 +344,7 @@ void BasicRealWxController::removeMetarAtPath(const string &propPath)
   }
 }
 
-BasicRealWxController::MetarPropertiesList::iterator BasicRealWxController::findMetarAtPath(const string &propPath)
+BasicRealWxController::MetarPropertiesList::iterator BasicRealWxController::findMetarAtPath(const std::string &propPath)
 {
   // don not compare unprocessed property path
   // /foo/bar[0]/baz equals /foo/bar/baz
@@ -490,7 +476,7 @@ void NoaaMetarRealWxController::requestMetar
       LiveMetarProperties_ptr _metarDataHandler;
   };
 
-  string upperId = id;
+  std::string upperId = id;
   std::transform(upperId.begin(), upperId.end(), upperId.begin(), static_cast<int(*)(int)>(std::toupper));
 
   SG_LOG

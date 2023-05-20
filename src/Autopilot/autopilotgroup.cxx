@@ -1,25 +1,10 @@
-// autopilotgroup.cxx - an even more flexible, generic way to build autopilots
-//
-// Written by Torsten Dreyer
-// Based heavily on work created by Curtis Olson, started January 2004.
-//
-// Copyright (C) 2004  Curtis L. Olson  - http://www.flightgear.org/~curt
-// Copyright (C) 2010  Torsten Dreyer - Torsten (at) t3r (dot) de
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-//
+/*
+ * SPDX-FileName: autopilotgroup.cxx
+ * SPDX-FileComment: an even more flexible, generic way to build autopilots
+ * SPDX-FileCopyrightText: Copyright (C) 2010  Torsten Dreyer - Torsten (at) t3r (dot) de
+ * SPDX-FileContributor: Copyright (C) 2004  Curtis L. Olson  - http://www.flightgear.org/~curt
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
 
 #ifdef HAVE_CONFIG_H
 #  include <config.h>
@@ -193,7 +178,7 @@ void FGXMLAutopilotGroup::addAutopilotFromFile( const std::string& name,
   if( config.isNull() )
   {
       simgear::reportFailure(simgear::LoadFailure::NotFound, simgear::ErrorCode::AircraftSystems,
-                             string{"Autopilot XML not found:"} + path, sg_location{path});
+                             std::string{"Autopilot XML not found:"} + path, sg_location{path});
       SG_LOG(
           SG_AUTOPILOT,
           SG_ALERT,
@@ -225,7 +210,7 @@ void FGXMLAutopilotGroup::addAutopilotFromFile( const std::string& name,
                                              << ": " << e.getMessage()
     );
     simgear::reportFailure(simgear::LoadFailure::BadData, simgear::ErrorCode::AircraftSystems,
-                           string{"Autopilot XML faield to load:"} + e.getFormattedMessage(), e.getLocation());
+                           std::string{"Autopilot XML faield to load:"} + e.getFormattedMessage(), e.getLocation());
     return;
   }
 }
