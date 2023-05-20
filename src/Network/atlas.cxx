@@ -1,24 +1,9 @@
-// atlas.cxx -- Atlas protocal class
-//
-// Written by Curtis Olson, started November 1999.
-//
-// Copyright (C) 1999  Curtis L. Olson - http://www.flightgear.org/~curt
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-//
-// $Id$
+/*
+ * SPDX-FileName: atlas.cxx
+ * SPDX-FileComment: Atlas protocol class
+ * SPDX-FileCopyrightText: Copyright (C) 1999  Curtis L. Olson - http://www.flightgear.org/~curt
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
 
 #ifdef HAVE_CONFIG_H
 #  include "config.h"
@@ -155,7 +140,7 @@ bool FGAtlas::gen_message() {
     SG_LOG( SG_IO, SG_DEBUG, gga );
     SG_LOG( SG_IO, SG_DEBUG, patla );
 
-    string atlas_sentence;
+    std::string atlas_sentence;
 
     // RMC sentence
     atlas_sentence = "$";
@@ -196,32 +181,32 @@ bool FGAtlas::gen_message() {
 bool FGAtlas::parse_message() {
     SG_LOG( SG_IO, SG_INFO, "parse atlas message" );
 
-    string msg = buf;
+    std::string msg = buf;
     msg = msg.substr( 0, length );
     SG_LOG( SG_IO, SG_INFO, "entire message = " << msg );
 
-    string::size_type begin_line, end_line, begin, end;
+    std::string::size_type begin_line, end_line, begin, end;
     begin_line = begin = 0;
 
     // extract out each line
     end_line = msg.find("\n", begin_line);
-    while ( end_line != string::npos ) {
-	string line = msg.substr(begin_line, end_line - begin_line);
+    while ( end_line != std::string::npos ) {
+	std::string line = msg.substr(begin_line, end_line - begin_line);
 	begin_line = end_line + 1;
 	SG_LOG( SG_IO, SG_INFO, "  input line = " << line );
 
 	// leading character
-	string start = msg.substr(begin, 1);
+	std::string start = msg.substr(begin, 1);
 	++begin;
 	SG_LOG( SG_IO, SG_INFO, "  start = " << start );
 
 	// sentence
 	end = msg.find(",", begin);
-	if ( end == string::npos ) {
+	if ( end == std::string::npos ) {
 	    return false;
 	}
     
-	string sentence = msg.substr(begin, end - begin);
+	std::string sentence = msg.substr(begin, end - begin);
 	begin = end + 1;
 	SG_LOG( SG_IO, SG_INFO, "  sentence = " << sentence );
 
@@ -231,31 +216,31 @@ bool FGAtlas::parse_message() {
 	if ( sentence == "GPRMC" ) {
 	    // time
 	    end = msg.find(",", begin);
-	    if ( end == string::npos ) {
+	    if ( end == std::string::npos ) {
 		return false;
 	    }
     
-	    string utc = msg.substr(begin, end - begin);
+	    std::string utc = msg.substr(begin, end - begin);
 	    begin = end + 1;
 	    SG_LOG( SG_IO, SG_INFO, "  utc = " << utc );
 
 	    // junk
 	    end = msg.find(",", begin);
-	    if ( end == string::npos ) {
+	    if ( end == std::string::npos ) {
 		return false;
 	    }
     
-	    string junk = msg.substr(begin, end - begin);
+	    std::string junk = msg.substr(begin, end - begin);
 	    begin = end + 1;
 	    SG_LOG( SG_IO, SG_INFO, "  junk = " << junk );
 
 	    // lat val
 	    end = msg.find(",", begin);
-	    if ( end == string::npos ) {
+	    if ( end == std::string::npos ) {
 		return false;
 	    }
     
-	    string lat_str = msg.substr(begin, end - begin);
+	    std::string lat_str = msg.substr(begin, end - begin);
 	    begin = end + 1;
 
 	    lat_deg = atof( lat_str.substr(0, 2).c_str() );
@@ -263,11 +248,11 @@ bool FGAtlas::parse_message() {
 
 	    // lat dir
 	    end = msg.find(",", begin);
-	    if ( end == string::npos ) {
+	    if ( end == std::string::npos ) {
 		return false;
 	    }
     
-	    string lat_dir = msg.substr(begin, end - begin);
+	    std::string lat_dir = msg.substr(begin, end - begin);
 	    begin = end + 1;
 
 	    lat = lat_deg + ( lat_min / 60.0 );
@@ -280,11 +265,11 @@ bool FGAtlas::parse_message() {
 
 	    // lon val
 	    end = msg.find(",", begin);
-	    if ( end == string::npos ) {
+	    if ( end == std::string::npos ) {
 		return false;
 	    }
     
-	    string lon_str = msg.substr(begin, end - begin);
+	    std::string lon_str = msg.substr(begin, end - begin);
 	    begin = end + 1;
 
 	    lon_deg = atof( lon_str.substr(0, 3).c_str() );
@@ -292,11 +277,11 @@ bool FGAtlas::parse_message() {
 
 	    // lon dir
 	    end = msg.find(",", begin);
-	    if ( end == string::npos ) {
+	    if ( end == std::string::npos ) {
 		return false;
 	    }
     
-	    string lon_dir = msg.substr(begin, end - begin);
+	    std::string lon_dir = msg.substr(begin, end - begin);
 	    begin = end + 1;
 
 	    lon = lon_deg + ( lon_min / 60.0 );
@@ -319,11 +304,11 @@ bool FGAtlas::parse_message() {
 
 	    // speed
 	    end = msg.find(",", begin);
-	    if ( end == string::npos ) {
+	    if ( end == std::string::npos ) {
 		return false;
 	    }
     
-	    string speed_str = msg.substr(begin, end - begin);
+	    std::string speed_str = msg.substr(begin, end - begin);
 	    begin = end + 1;
 	    speed = atof( speed_str.c_str() );
 	    fdm->set_V_calibrated_kts( speed );
@@ -332,11 +317,11 @@ bool FGAtlas::parse_message() {
 
 	    // heading
 	    end = msg.find(",", begin);
-	    if ( end == string::npos ) {
+	    if ( end == std::string::npos ) {
 		return false;
 	    }
     
-	    string hdg_str = msg.substr(begin, end - begin);
+	    std::string hdg_str = msg.substr(begin, end - begin);
 	    begin = end + 1;
 	    heading = atof( hdg_str.c_str() );
 	    fdm->set_Euler_Angles( fdm->get_Phi(), 
@@ -346,21 +331,21 @@ bool FGAtlas::parse_message() {
 	} else if ( sentence == "GPGGA" ) {
 	    // time
 	    end = msg.find(",", begin);
-	    if ( end == string::npos ) {
+	    if ( end == std::string::npos ) {
 		return false;
 	    }
     
-	    string utc = msg.substr(begin, end - begin);
+	    std::string utc = msg.substr(begin, end - begin);
 	    begin = end + 1;
 	    SG_LOG( SG_IO, SG_INFO, "  utc = " << utc );
 
 	    // lat val
 	    end = msg.find(",", begin);
-	    if ( end == string::npos ) {
+	    if ( end == std::string::npos ) {
 		return false;
 	    }
     
-	    string lat_str = msg.substr(begin, end - begin);
+	    std::string lat_str = msg.substr(begin, end - begin);
 	    begin = end + 1;
 
 	    lat_deg = atof( lat_str.substr(0, 2).c_str() );
@@ -368,11 +353,11 @@ bool FGAtlas::parse_message() {
 
 	    // lat dir
 	    end = msg.find(",", begin);
-	    if ( end == string::npos ) {
+	    if ( end == std::string::npos ) {
 		return false;
 	    }
     
-	    string lat_dir = msg.substr(begin, end - begin);
+	    std::string lat_dir = msg.substr(begin, end - begin);
 	    begin = end + 1;
 
 	    lat = lat_deg + ( lat_min / 60.0 );
@@ -385,11 +370,11 @@ bool FGAtlas::parse_message() {
 
 	    // lon val
 	    end = msg.find(",", begin);
-	    if ( end == string::npos ) {
+	    if ( end == std::string::npos ) {
 		return false;
 	    }
     
-	    string lon_str = msg.substr(begin, end - begin);
+	    std::string lon_str = msg.substr(begin, end - begin);
 	    begin = end + 1;
 
 	    lon_deg = atof( lon_str.substr(0, 3).c_str() );
@@ -397,11 +382,11 @@ bool FGAtlas::parse_message() {
 
 	    // lon dir
 	    end = msg.find(",", begin);
-	    if ( end == string::npos ) {
+	    if ( end == std::string::npos ) {
 		return false;
 	    }
     
-	    string lon_dir = msg.substr(begin, end - begin);
+	    std::string lon_dir = msg.substr(begin, end - begin);
 	    begin = end + 1;
 
 	    lon = lon_deg + ( lon_min / 60.0 );
@@ -414,17 +399,17 @@ bool FGAtlas::parse_message() {
 
 	    // junk
 	    end = msg.find(",", begin);
-	    if ( end == string::npos ) {
+	    if ( end == std::string::npos ) {
 		return false;
 	    }
     
-	    string junk = msg.substr(begin, end - begin);
+	    std::string junk = msg.substr(begin, end - begin);
 	    begin = end + 1;
 	    SG_LOG( SG_IO, SG_INFO, "  junk = " << junk );
 
 	    // junk
 	    end = msg.find(",", begin);
-	    if ( end == string::npos ) {
+	    if ( end == std::string::npos ) {
 		return false;
 	    }
     
@@ -434,7 +419,7 @@ bool FGAtlas::parse_message() {
 
 	    // junk
 	    end = msg.find(",", begin);
-	    if ( end == string::npos ) {
+	    if ( end == std::string::npos ) {
 		return false;
 	    }
     
@@ -444,21 +429,21 @@ bool FGAtlas::parse_message() {
 
 	    // altitude
 	    end = msg.find(",", begin);
-	    if ( end == string::npos ) {
+	    if ( end == std::string::npos ) {
 		return false;
 	    }
     
-	    string alt_str = msg.substr(begin, end - begin);
+	    std::string alt_str = msg.substr(begin, end - begin);
 	    altitude = atof( alt_str.c_str() );
 	    begin = end + 1;
 
 	    // altitude units
 	    end = msg.find(",", begin);
-	    if ( end == string::npos ) {
+	    if ( end == std::string::npos ) {
 		return false;
 	    }
     
-	    string alt_units = msg.substr(begin, end - begin);
+	    std::string alt_units = msg.substr(begin, end - begin);
 	    begin = end + 1;
 
 	    if ( alt_units != "F" ) {
@@ -472,51 +457,51 @@ bool FGAtlas::parse_message() {
 	} else if ( sentence == "PATLA" ) {
 	    // nav1 freq
 	    end = msg.find(",", begin);
-	    if ( end == string::npos ) {
+	    if ( end == std::string::npos ) {
 		return false;
 	    }
     
-	    string nav1_freq = msg.substr(begin, end - begin);
+	    std::string nav1_freq = msg.substr(begin, end - begin);
 	    begin = end + 1;
 	    SG_LOG( SG_IO, SG_INFO, "  nav1_freq = " << nav1_freq );
 
 	    // nav1 selected radial
 	    end = msg.find(",", begin);
-	    if ( end == string::npos ) {
+	    if ( end == std::string::npos ) {
 		return false;
 	    }
     
-	    string nav1_rad = msg.substr(begin, end - begin);
+	    std::string nav1_rad = msg.substr(begin, end - begin);
 	    begin = end + 1;
 	    SG_LOG( SG_IO, SG_INFO, "  nav1_rad = " << nav1_rad );
 
 	    // nav2 freq
 	    end = msg.find(",", begin);
-	    if ( end == string::npos ) {
+	    if ( end == std::string::npos ) {
 		return false;
 	    }
     
-	    string nav2_freq = msg.substr(begin, end - begin);
+	    std::string nav2_freq = msg.substr(begin, end - begin);
 	    begin = end + 1;
 	    SG_LOG( SG_IO, SG_INFO, "  nav2_freq = " << nav2_freq );
 
 	    // nav2 selected radial
 	    end = msg.find(",", begin);
-	    if ( end == string::npos ) {
+	    if ( end == std::string::npos ) {
 		return false;
 	    }
     
-	    string nav2_rad = msg.substr(begin, end - begin);
+	    std::string nav2_rad = msg.substr(begin, end - begin);
 	    begin = end + 1;
 	    SG_LOG( SG_IO, SG_INFO, "  nav2_rad = " << nav2_rad );
 
 	    // adf freq
 	    end = msg.find("*", begin);
-	    if ( end == string::npos ) {
+	    if ( end == std::string::npos ) {
 		return false;
 	    }
     
-	    string adf_freq = msg.substr(begin, end - begin);
+	    std::string adf_freq = msg.substr(begin, end - begin);
 	    begin = end + 1;
 	    SG_LOG( SG_IO, SG_INFO, "  adf_freq = " << adf_freq );
 	}

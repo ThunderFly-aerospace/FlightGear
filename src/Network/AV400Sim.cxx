@@ -1,29 +1,13 @@
-// AV400Sim.cxx -- Garmin 400 series protocal class.  This AV400Sim
-// protocol generates the set of "simulator" commands a garmin 400
-// series gps would expect as input in simulator mode.  The AV400
-// protocol generates the set of commands that a garmin 400 series gps
-// would emit.
-//
-// Written by Curtis Olson, started Janauary 2009.
-//
-// Copyright (C) 2009  Curtis L. Olson - http://www.flightgear.org/~curt
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-//
-// $Id$
-
+/*
+ * SPDX-FileName: AV400Sim.cxx
+ * SPDX-FileComment: <text>Garmin 400 series protocal class.  This AV400Sim
+ * protocol generates the set of "simulator" commands a garmin 400
+ * series gps would expect as input in simulator mode.  The AV400
+ * protocol generates the set of commands that a garmin 400 series gps
+ * would emit.</text>
+ * SPDX-FileCopyrightText: Copyright (C) 2009  Curtis L. Olson - http://www.flightgear.org/~curt
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
 
 #ifdef HAVE_CONFIG_H
 #  include "config.h"
@@ -165,7 +149,7 @@ bool FGAV400Sim::gen_message() {
     sprintf( msg_type2, "w01%c\r\n", (char)65 );
 
     // assemble message
-    string sentence;
+    std::string sentence;
     sentence += '\002';         // STX
     sentence += msg_a;          // latitude
     sentence += msg_b;          // longitude
@@ -195,14 +179,14 @@ bool FGAV400Sim::gen_message() {
 bool FGAV400Sim::parse_message() {
     SG_LOG( SG_IO, SG_INFO, "parse AV400Sim message" );
 
-    string msg = buf;
+    std::string msg = buf;
     msg = msg.substr( 0, length );
     SG_LOG( SG_IO, SG_INFO, "entire message = " << msg );
 
-    string ident = msg.substr(0, 1);
+    std::string ident = msg.substr(0, 1);
     if ( ident == "i" ) {
-	string side = msg.substr(1,1);
-	string num = msg.substr(2,3);
+	std::string side = msg.substr(1,1);
+	std::string num = msg.substr(2,3);
 	if ( side == "-" ) {
 	    fgSetDouble("/instrumentation/gps/cdi-deflection", 0.0);
 	} else {
@@ -215,7 +199,7 @@ bool FGAV400Sim::parse_message() {
 	    fgSetBool("/instrumentation/gps/has-gs", false);
 	}
     } else if ( ident == "k" ) {
-	string ind = msg.substr(1,1);
+	std::string ind = msg.substr(1,1);
 	if ( ind == "T" ) {
 	    fgSetBool("/instrumentation/gps/to-flag", true);
 	    fgSetBool("/instrumentation/gps/from-flag", false);

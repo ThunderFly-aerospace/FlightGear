@@ -1,28 +1,10 @@
-// \file props.cxx
-// Property server class. Used for telnet server.
-//
-// Written by Curtis Olson, started September 2000.
-// Modified by Bernie Bright, May 2002.
-// Modified by Jean-Paul Anceaux, Dec 2015.
-//
-// Copyright (C) 2000  Curtis L. Olson - http://www.flightgear.org/~curt
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-//
-// $Id$
-
+/*
+ * SPDX-FileName: props.cxx
+ * SPDX-FileComment: Property server class. Used for telnet server.
+ * SPDX-FileCopyrightText: Copyright (C) 2000  Curtis L. Olson - http://www.flightgear.org/~curt
+ * SPDX-FileContributor: Modified by Bernie Bright, May 2002, Modified by Jean-Paul Anceaux, Dec 2015.
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
 
 #ifdef HAVE_CONFIG_H
 #  include <config.h>
@@ -75,7 +57,7 @@ class FGProps::PropsChannel : public simgear::NetChat, public SGPropertyChangeLi
     /**
      * Current property node name.
      */
-    string path= "/";
+    std::string path= "/";
 
     enum Mode {
         PROMPT,
@@ -113,7 +95,7 @@ private:
 
     SGPropertyNode* getLsDir(SGPropertyNode* node, const ParameterList &tokens);
 
-    inline void node_not_found_error( const string& s ) const {
+    inline void node_not_found_error( const std::string& s ) const {
         throw "node '" + s + "' not found";
     }
 
@@ -125,7 +107,7 @@ private:
 
     bool check_args(const ParameterList &tok, const unsigned int num, const char* func) {
 	    if (tok.size()-1 < num) {
-		    error(string("Error:Wrong argument count for:")+string(func) );
+		    error(std::string("Error:Wrong argument count for:")+std::string(func) );
 		    return false;
 	    }
 	    return true;
@@ -252,12 +234,12 @@ FGProps::PropsChannel::collectIncomingData( const char* s, int n )
 }
 
 // return a human readable form of the value "type"
-static string
+static std::string
 getValueTypeString( const SGPropertyNode *node )
 {
     using namespace simgear;
 
-    string result;
+    std::string result;
 
     if ( node == NULL )
     {
@@ -329,14 +311,14 @@ FGProps::PropsChannel::foundTerminator()
 
     try {
         if (!tokens.empty()) {
-            string command = tokens[0];
+            std::string command = tokens[0];
 
             if (command == "ls") {
                 SGPropertyNode* dir = getLsDir(node, tokens);
 
                 for (int i = 0; i < dir->nChildren(); i++) {
                     SGPropertyNode * child = dir->getChild(i);
-                    string line = child->getDisplayName(true);
+                    std::string line = child->getDisplayName(true);
 
                     if ( child->nChildren() > 0 ) {
                         line += "/";
@@ -409,7 +391,7 @@ FGProps::PropsChannel::foundTerminator()
                     }
                 }
             } else if ( command == "pwd" ) {
-                string pwd = node->getPath();
+                std::string pwd = node->getPath();
                 if (pwd.empty()) {
                     pwd = "/";
                 }
@@ -429,7 +411,7 @@ FGProps::PropsChannel::foundTerminator()
                     else {
                         value = node->getStringValue ( tokens[1].c_str(), "" );
                     }
-                    string tmp;
+                    std::string tmp;
                     if ( mode == PROMPT ) {
                         tmp = tokens[1];
                         tmp += " = '";
@@ -446,7 +428,7 @@ FGProps::PropsChannel::foundTerminator()
                 }
             } else if ( command == "set" ) {
                 if ( tokens.size() >= 2 ) {
-                    string value, tmp;
+                    std::string value, tmp;
                     for (unsigned int i = 2; i < tokens.size(); i++) {
                         if (i > 2)
                             value += " ";
@@ -468,7 +450,7 @@ FGProps::PropsChannel::foundTerminator()
                 }
             } else if ( command == "reinit" ) {
                 if ( tokens.size() == 2 ) {
-                    string tmp;
+                    std::string tmp;
                     SGPropertyNode args;
                     for ( unsigned int i = 1; i < tokens.size(); ++i ) {
                         cout << "props: adding subsystem = " << tokens[i] << endl;
@@ -494,7 +476,7 @@ FGProps::PropsChannel::foundTerminator()
                     }
                 }
             } else if ( command == "run" ) {
-                string tmp;
+                std::string tmp;
                 if ( tokens.size() >= 2 ) {
                     SGPropertyNode_ptr args(new SGPropertyNode);
                     if ( tokens[1] == "reinit" ) {
@@ -592,7 +574,7 @@ FGProps::PropsChannel::foundTerminator()
                     error("No matching callback found for command:"+command);
             }
       else if ( command == "seti" ) {
-        string value, tmp;
+        std::string value, tmp;
         if (tokens.size() == 3) {
               node->getNode( tokens[1].c_str(), true )
                 ->setIntValue(atoi(tokens[2].c_str()));
@@ -608,7 +590,7 @@ FGProps::PropsChannel::foundTerminator()
           }
       }
       else if ( command == "setd" || command == "setf") {
-          string value, tmp;
+          std::string value, tmp;
           if (tokens.size() == 3) {
             node->getNode( tokens[1].c_str(), true )
                 ->setDoubleValue(atof(tokens[2].c_str()));
@@ -625,7 +607,7 @@ FGProps::PropsChannel::foundTerminator()
           }
       }
       else if ( command == "setb" ) {
-          string tmp, value;
+          std::string tmp, value;
           if (tokens.size() == 3) {
             if (tokens[2] == "false" || tokens[2] == "0") {
               node->getNode( tokens[1].c_str(), true )
@@ -650,7 +632,7 @@ FGProps::PropsChannel::foundTerminator()
           }
      }
       else if ( command == "del" ) {
-          string tmp;
+          std::string tmp;
           if (tokens.size() == 3){
              node->getNode( tokens[1].c_str(), true )->removeChild(tokens[2].c_str(),0);
           }
@@ -691,14 +673,14 @@ nasal [EOF <marker>]  execute arbitrary Nasal code (simulator must be running wi
             }
         }
 
-    } catch ( const string& msg ) {
-        string error = "-ERR \"" + msg + "\"";
+    } catch ( const std::string& msg ) {
+        std::string error = "-ERR \"" + msg + "\"";
         push( error.c_str() );
         push( getTerminator() );
     }
 
     if ( (mode == PROMPT) && !_colletingNasal) {
-        string prompt = node->getPath();
+        std::string prompt = node->getPath();
         if (prompt.empty()) {
             prompt = "/";
         }
@@ -720,7 +702,7 @@ FGProps::PropsChannel::getLsDir(SGPropertyNode* node, const ParameterList &token
         if (tokens[1][0] == '/') {
             dir = globals->get_props()->getNode( tokens[1] );
         } else {
-            string s = path;
+            std::string s = path;
             s += "/";
             s += tokens[1];
             dir = globals->get_props()->getNode( s );
@@ -737,7 +719,7 @@ FGProps::PropsChannel::getLsDir(SGPropertyNode* node, const ParameterList &token
 /**
  *
  */
-FGProps::FGProps( const vector<string>& tokens )
+FGProps::FGProps( const std::vector<std::string>& tokens )
 {
     // tokens:
     //   props,port#

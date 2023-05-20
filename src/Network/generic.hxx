@@ -1,39 +1,23 @@
-// generic.hxx -- generic protocol class
-//
-// Written by Curtis Olson, started November 1999.
-//
-// Copyright (C) 1999  Curtis L. Olson - http://www.flightgear.org/~curt
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-//
-// $Id$
+/*
+ * SPDX-FileName: generic.hxx
+ * SPDX-FileComment: generic protocol class
+ * SPDX-FileCopyrightText: Copyright (C) 1999  Curtis L. Olson - http://www.flightgear.org/~curt
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
 
 #pragma once
 
-#include <simgear/compiler.h>
-
 #include <string>
+
+#include <simgear/compiler.h>
 
 #include "protocol.hxx"
 
 
-class FGGeneric : public FGProtocol {
-
+class FGGeneric : public FGProtocol
+{
 public:
-
-    FGGeneric(vector<std::string>);
+    FGGeneric(std::vector<std::string>);
     ~FGGeneric();
 
     bool gen_message();
@@ -53,12 +37,18 @@ public:
     void setExitOnError(bool val) { exitOnError = val; }
     bool getExitOnError() { return exitOnError; }
     bool getInitOk(void) { return initOk; }
-protected:
 
-    enum e_type { FG_BOOL=0, FG_INT, FG_FLOAT, FG_DOUBLE, FG_STRING, FG_FIXED, FG_BYTE, FG_WORD };
+protected:
+    enum e_type { FG_BOOL = 0,
+                  FG_INT,
+                  FG_FLOAT,
+                  FG_DOUBLE,
+                  FG_STRING,
+                  FG_FIXED,
+                  FG_BYTE,
+                  FG_WORD };
 
     typedef struct {
-     // std::string name;
         std::string format;
         e_type type;
         double offset;
@@ -70,11 +60,10 @@ protected:
     } _serial_prot;
 
 private:
-
     std::string file_name;
 
     int length;
-    char buf[ FG_MAX_MSG_SIZE ];
+    char buf[FG_MAX_MSG_SIZE];
 
     std::string preamble;
     std::string postamble;
@@ -82,43 +71,43 @@ private:
     std::string line_separator;
     std::string var_sep_string;
     std::string line_sep_string;
-    vector<_serial_prot> _out_message;
-    vector<_serial_prot> _in_message;
+    std::vector<_serial_prot> _out_message;
+    std::vector<_serial_prot> _in_message;
 
     bool binary_mode;
-    enum {FOOTER_NONE, FOOTER_LENGTH, FOOTER_MAGIC} binary_footer_type;
+    enum { FOOTER_NONE,
+           FOOTER_LENGTH,
+           FOOTER_MAGIC } binary_footer_type;
     int binary_footer_value;
     int binary_record_length;
-    enum {BYTE_ORDER_NEEDS_CONVERSION, BYTE_ORDER_MATCHES_NETWORK_ORDER} binary_byte_order;
+    enum { BYTE_ORDER_NEEDS_CONVERSION,
+           BYTE_ORDER_MATCHES_NETWORK_ORDER } binary_byte_order;
 
     bool gen_message_ascii();
     bool gen_message_binary();
     bool parse_message_ascii(int length);
     bool parse_message_binary(int length);
-    bool read_config(SGPropertyNode *root, vector<_serial_prot> &msg);
+    bool read_config(SGPropertyNode* root, std::vector<_serial_prot>& msg);
     bool exitOnError;
     bool initOk;
 
-    class FGProtocolWrapper * wrapper;
-    
-    template<class T>
+    class FGProtocolWrapper* wrapper;
+
+    template <class T>
     static void updateValue(_serial_prot& prot, const T& val)
     {
-      T new_val = (prot.rel ? getValue<T>(prot.prop) : 0)
-                + prot.offset
-                + prot.factor * val;
-                
-      if( prot.max > prot.min )
-      {
-        if( prot.wrap )
-          new_val = SGMisc<double>::normalizePeriodic(prot.min, prot.max, new_val);
-        else
-          new_val = SGMisc<T>::clip(new_val, prot.min, prot.max);
-      }
+        T new_val = (prot.rel ? getValue<T>(prot.prop) : 0) + prot.offset + prot.factor * val;
 
-      setValue(prot.prop, new_val);
+        if (prot.max > prot.min) {
+            if (prot.wrap)
+                new_val = SGMisc<double>::normalizePeriodic(prot.min, prot.max, new_val);
+            else
+                new_val = SGMisc<T>::clip(new_val, prot.min, prot.max);
+        }
+
+        setValue(prot.prop, new_val);
     }
-    
+
     // Special handling for bool (relative change = toggle, no min/max, no wrap)
     static void updateValue(_serial_prot& prot, bool val);
 };
