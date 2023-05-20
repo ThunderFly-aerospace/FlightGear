@@ -1,7 +1,9 @@
-// modelmgr.cxx - manage a collection of 3D models.
-// Written by David Megginson, started 2002.
-//
-// This file is in the Public Domain, and comes with no warranty.
+/*
+ * SPDX-FileName: modelmgr.cxx
+ * SPDX-FileComment: manage a collection of 3D models
+ * SPDX-FileCopyrightText: Written by David Megginson, started 2002.
+ * SPDX-License-Identifier: This file is in the Public Domain, and comes with no warranty.
+ */
 
 #ifdef _MSC_VER
 #  pragma warning( disable: 4355 )
@@ -284,7 +286,7 @@ void FGModelMgr::update(double dt)
             if (instance->heading_deg_node != 0)
                 heading = testNan(instance->heading_deg_node->getDoubleValue());
         } catch (const sg_range_exception&) {
-            string path = instance->node->getStringValue("path", "unknown");
+            std::string path = instance->node->getStringValue("path", "unknown");
             SG_LOG(SG_AIRCRAFT, SG_INFO, "Instance of model " << path
                    << " has invalid values");
             return;

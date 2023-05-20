@@ -1,4 +1,7 @@
-// fg_scene_commands.cxx - internal FGFS commands.
+/*
+ * SPDX-FileName: fg_scene_commands.cxx
+ * SPDX-FileComment: internal FGFS commands
+ */
 
 #include "config.h"
 
@@ -122,7 +125,7 @@ do_reposition (const SGPropertyNode * arg, SGPropertyNode * root)
 static bool
 do_panel_load (const SGPropertyNode * arg, SGPropertyNode * root)
 {
-  string panel_path = arg->getStringValue("path");
+  std::string panel_path = arg->getStringValue("path");
   if (!panel_path.empty()) {
     // write to the standard property, which will force a load
     fgSetString("/sim/panel/path", panel_path.c_str());
@@ -366,7 +369,7 @@ do_dialog_update (const SGPropertyNode * arg, SGPropertyNode * root)
 static bool
 do_open_browser (const SGPropertyNode * arg, SGPropertyNode * root)
 {
-    string path;
+    std::string path;
     if (arg->hasValue("path"))
         path = arg->getStringValue("path");
     else
@@ -472,12 +475,12 @@ do_presets_commit (const SGPropertyNode * arg, SGPropertyNode * root)
 static bool
 do_press_cockpit_button (const SGPropertyNode * arg, SGPropertyNode * root)
 {
-  const string prefix = arg->getStringValue("prefix");
+  const std::string prefix = arg->getStringValue("prefix");
 
   if (arg->getBoolValue("guarded") && fgGetDouble((prefix + "-guard").c_str()) < 1)
     return true;
 
-  string prop = prefix + "-button";
+  std::string prop = prefix + "-button";
   double value;
 
   if (arg->getBoolValue("latching"))
@@ -494,10 +497,10 @@ do_press_cockpit_button (const SGPropertyNode * arg, SGPropertyNode * root)
 static bool
 do_release_cockpit_button (const SGPropertyNode * arg, SGPropertyNode * root)
 {
-  const string prefix = arg->getStringValue("prefix");
+  const std::string prefix = arg->getStringValue("prefix");
 
   if (arg->getBoolValue("guarded")) {
-    string prop = prefix + "-guard";
+    std::string prop = prefix + "-guard";
     if (fgGetDouble(prop.c_str()) < 1) {
       fgSetDouble(prop.c_str(), 1);
       return true;
