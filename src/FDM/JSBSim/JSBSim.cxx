@@ -1,25 +1,9 @@
-// JSBsim.cxx -- interface to the JSBsim flight model
-//
-// Written by Curtis Olson, started February 1999.
-//
-// Copyright (C) 1999  Curtis L. Olson  - curt@flightgear.org
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// Lesser General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA.
-//
-// $Id: FlightGear.cxx,v 1.15 2014/01/28 09:42:20 ehofman Exp $
-
+/*
+ * SPDX-FileName: JSBsim.cxx
+ * SPDX-FileComment: interface to the JSBsim flight model
+ * SPDX-FileCopyrightText: Copyright (C) 1999  Curtis L. Olson  - curt@flightgear.org
+ * SPDX-License-Identifier: LGPL-2.0-or-later
+ */
 
 #ifdef HAVE_CONFIG_H
 #  include <config.h>
@@ -376,7 +360,7 @@ FGJSBsim::FGJSBsim( double dt )
     fgtrim->DoTrim();
     delete fgtrim;
 
-    string directive_file = fgGetString("/sim/jsbsim/output-directive-file");
+    std::string directive_file = fgGetString("/sim/jsbsim/output-directive-file");
     if (!directive_file.empty())
       fdmex->SetOutputDirectives(directive_file);
 }
