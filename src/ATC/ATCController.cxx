@@ -1,24 +1,9 @@
-// Extracted from trafficrecord.cxx - Implementation of AIModels ATC code.
-//
-// Written by Durk Talsma, started September 2006.
-//
-// Copyright (C) 2006 Durk Talsma.
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-//
-// $Id$
+/*
+ * SPDX-FileName: ATCController.cxx
+ * SPDX-FileComment: Extracted from trafficrecord.cxx - Implementation of AIModels ATC code.
+ * SPDX-FileCopyrightText: Copyright (C) 2006 Durk Talsma
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
 
 #include <config.h>
 
@@ -376,7 +361,7 @@ void FGATCController::transmit(FGTrafficRecord * rec, FGAirportDynamics *parent,
             fgGetDouble("/instrumentation/comm[1]/frequencies/selected-mhz");
         int onBoardRadioFreqI0 = (int) floor(onBoardRadioFreq0 * 100 + 0.5);
         int onBoardRadioFreqI1 = (int) floor(onBoardRadioFreq1 * 100 + 0.5);
-        SG_LOG(SG_ATC, SG_DEBUG, "Using " << onBoardRadioFreq0 << ", " << onBoardRadioFreq1 << " and " << stationFreq << " for " << text << endl);
+        SG_LOG(SG_ATC, SG_DEBUG, "Using " << onBoardRadioFreq0 << ", " << onBoardRadioFreq1 << " and " << stationFreq << " for " << text << std::endl);
         if( stationFreq == 0 ) {
            SG_LOG(SG_ATC, SG_DEBUG, getName() << " stationFreq not found");
         }
