@@ -42,7 +42,7 @@ HeadingIndicatorDG::~HeadingIndicatorDG ()
 void
 HeadingIndicatorDG::init ()
 {
-    string branch = nodePath();
+    std::string branch = nodePath();
 
     _heading_in_node = fgGetNode("/orientation/heading-deg", true);
     _yaw_rate_node   = fgGetNode("/orientation/yaw-rate-degps", true);

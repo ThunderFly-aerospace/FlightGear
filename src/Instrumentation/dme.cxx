@@ -146,7 +146,7 @@ DME::update (double delta_time_sec)
     char tmp[16];
     
     // Figure out the source
-    string source = _source_node->getStringValue();
+    std::string source = _source_node->getStringValue();
     if (source.empty()) {
         std::string branch;
         branch = "/instrumentation/" + name() + "/frequencies/selected-mhz";

@@ -1,23 +1,10 @@
-// HUD_label.cxx -- HUD Label
-//
-// Written by Michele America, started September 1997.
-//
-// Copyright (C) 1997  Michele F. America  [micheleamerica#geocities:com]
-// Copyright (C) 2006  Melchior FRANZ  [mfranz#aon:at]
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+/*
+ * SPDX-FileName: HUD_label.cxx
+ * SPDX-FileComment: HUD Label
+ * SPDX-FileCopyrightText: Copyright (C) 1997  Michele F. America  [micheleamerica#geocities:com]
+ * SPDX-FileContributor: Copyright (C) 2006  Melchior FRANZ  [mfranz#aon:at]
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
 
 #ifdef HAVE_CONFIG_H
 #  include <config.h>
@@ -43,7 +30,7 @@ HUD::Label::Label(HUD *hud, const SGPropertyNode *n, float x, float y) :
     if (node)
        _blink_condition = sgReadCondition(globals->get_props(), node);
 
-    string halign = n->getStringValue("halign", "center");
+    std::string halign = n->getStringValue("halign", "center");
     if (halign == "left")
         _halign = LEFT;
     else if (halign == "right")
@@ -53,9 +40,9 @@ HUD::Label::Label(HUD *hud, const SGPropertyNode *n, float x, float y) :
 
     _halign |= VCENTER;
 
-    string pre = n->getStringValue("prefix", "");
-    string post = n->getStringValue("postfix", "");
-    string fmt = n->getStringValue("format", "");
+    std::string pre = n->getStringValue("prefix", "");
+    std::string post = n->getStringValue("postfix", "");
+    std::string fmt = n->getStringValue("format", "");
 
     if (!pre.empty())
         _format = pre;

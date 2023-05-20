@@ -1,29 +1,14 @@
-// kln89_page.cxx - a class to manage the simulation of a KLN89
-//                  GPS unit.  Note that this is primarily the 
-//                  simulation of the user interface and display
-//                  - the core GPS calculations such as position
-//                  and waypoint sequencing are done (or should 
-//                  be done) by FG code. 
-//
-// Written by David Luff, started 2005.
-//
-// Copyright (C) 2005 - David C Luff - daveluff AT ntlworld.com
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-//
-// $Id$
+/*
+ * SPDX-FileName: kln89.cxx
+ * SPDX-FileComment: <text>a class to manage the simulation of a KLN89
+ *                  GPS unit.  Note that this is primarily the 
+ *                  simulation of the user interface and display
+ *                  - the core GPS calculations such as position
+ *                  and waypoint sequencing are done (or should 
+ *                  be done) by FG code.</text>
+ * SPDX-FileCopyrightText: Copyright (C) 2005 - David C Luff - daveluff AT ntlworld.com
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
 
 #include "kln89.hxx"
 #include "kln89_page.hxx"
@@ -380,8 +365,8 @@ void KLN89::update(double dt) {
 void KLN89::CreateDefaultFlightPlans() {
 	// TODO - read these in from preferences.xml or similar instead!!!!
 	// Create some hardwired default flightplans for testing.
-	vector<string> ids;
-	vector<GPSWpType> wps;
+	std::vector<std::string> ids;
+	std::vector<GPSWpType> wps;
 	
 	ids.clear();
 	wps.clear();
@@ -841,7 +826,7 @@ void KLN89::DrawMap(bool draw_avs) {
 	
 	// FlightTrack
 	if(_activeFP->waypoints.size() > 1) {
-		vector<int> xvec, yvec, qvec;	// qvec stores the quadrant that each waypoint label should
+		std::vector<int> xvec, yvec, qvec;	// qvec stores the quadrant that each waypoint label should
 										// be drawn in (relative to the waypoint). 
 										// 1 = NE, 2 = SE, 3 = SW, 4 = NW.
 		double save_h = 0.0; // Each pass, save a heading from the previous one for label quadrant determination.
