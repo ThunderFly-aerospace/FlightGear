@@ -26,7 +26,7 @@ int LayoutWidget::stringLength(const char* s)
 
 std::string LayoutWidget::type()
 {
-    string t = _prop->getNameString();
+    std::string t = _prop->getNameString();
     return t.empty() ? "dialog" : t;
 }
 
@@ -47,7 +47,7 @@ int LayoutWidget::nChildren()
     int n = 0;
     for(int i=0; i<_prop->nChildren(); i++) {
         SGPropertyNode* p = _prop->getChild(i);
-        string name = p->getNameString();
+        std::string name = p->getNameString();
         if (p->nChildren() != 0 || name == "hrule" || name == "vrule")
             n++;
     }
@@ -61,7 +61,7 @@ LayoutWidget LayoutWidget::getChild(int idx)
     int n = 0;
     for(int i=0; i<_prop->nChildren(); i++) {
         SGPropertyNode* p = _prop->getChild(i);
-        string name = p->getNameString();
+        std::string name = p->getNameString();
         if (p->nChildren() != 0 || name == "hrule" || name == "vrule") {
             if(idx == n) return LayoutWidget(p);
             n++;
