@@ -1,22 +1,9 @@
-// FGAIAircraft - FGAIBase-derived class creates an AI airplane
-//
-// Written by David Culp, started October 2003.
-//
-// Copyright (C) 2003  David P. Culp - davidculp2@comcast.net
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+/*
+ * SPDX-FileName: AIAircraft.cxx
+ * SPDX-FileComment: AIBase derived class creates an AI aircraft
+ * SPDX-FileCopyrightText: Copyright (C) 2003  David P. Culp - davidculp2@comcast.net
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
 
 #include <Main/fg_props.hxx>
 #include <Main/globals.hxx>
@@ -1485,7 +1472,7 @@ void FGAIAircraft::updateUserFlightPlan(double dt)
                     << "\t" << current->getPos().getLatitudeDeg()
                     << "\t" << current->getPos().getLongitudeDeg());
                 if ( currDist>legDistance ) {
-                    // We are definetly beyond the airport
+                    // We are definitely beyond the airport
                     fp->incrementLeg();
                 }
             }
@@ -1758,7 +1745,7 @@ void FGAIAircraft::dumpCSV(std::unique_ptr<sg_ofstream> &o, int lineIndex) {
     const double headingDiff = SGMiscd::normalizePeriodic(-180, 180, hdg-tgt_heading);
 
     (*o) <<  lineIndex << "\t";
-    (*o) <<  setprecision(12);
+    (*o) <<  std::setprecision(12);
     (*o) <<  this->getGeodPos().getLatitudeDeg() << "\t";
     (*o) <<  this->getGeodPos().getLongitudeDeg() << "\t";
     (*o) <<  this->getGeodPos().getElevationFt() << "\t";

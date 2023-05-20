@@ -1,20 +1,9 @@
-// // FGAIFlightPlan - class for loading and storing  AI flight plans
-// Written by David Culp, started May 2004
-// - davidculp2@comcast.net
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+/*
+ * SPDX-FileName: AIFlightPlan.cxx
+ * SPDX-FileComment: class for loading and storing  AI flight plans
+ * SPDX-FileCopyrightText: Written by David Culp, started May 2004 - davidculp2@comcast.net
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
 
 #ifdef HAVE_CONFIG_H
 #  include <config.h>
@@ -575,11 +564,11 @@ void FGAIFlightPlan::pushBackWaypoint(FGAIWaypoint *wpt)
         SG_LOG(SG_AI, SG_DEBUG, "Double WP : \t" << wpt->getName() << " not added ");
       } else {
         waypoints.push_back(wpt);
-        SG_LOG(SG_AI, SG_BULK, "Added WP : \t" << setprecision(12) << wpt->getName() << "\t" << wpt->getPos() << "\t" << wpt->getSpeed());
+        SG_LOG(SG_AI, SG_BULK, "Added WP : \t" << std::setprecision(12) << wpt->getName() << "\t" << wpt->getPos() << "\t" << wpt->getSpeed());
       }
   } else {
     waypoints.push_back(wpt);
-    SG_LOG(SG_AI, SG_BULK, "Added WP : \t" << setprecision(12) << wpt->getName() << "\t" << wpt->getPos() << "\t" << wpt->getSpeed());
+    SG_LOG(SG_AI, SG_BULK, "Added WP : \t" << std::setprecision(12) << wpt->getName() << "\t" << wpt->getPos() << "\t" << wpt->getSpeed());
   }
   // std::vector::push_back invalidates waypoints
   //  so we should restore wpt_iterator after push_back

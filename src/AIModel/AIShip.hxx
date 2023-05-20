@@ -1,23 +1,10 @@
-// FGAIShip - AIBase derived class creates an AI ship
-//
-// Written by David Culp, started November 2003.
-// with major amendments and additions by Vivian Meazza, 2004 - 2007 
-//
-// Copyright (C) 2003  David P. Culp - davidculp2@comcast.net
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+/*
+ * SPDX-FileName: AIShip.hxx
+ * SPDX-FileComment: AIBase derived class creates an AI ship
+ * SPDX-FileCopyrightText: Copyright (C) 2003  David P. Culp - davidculp2@comcast.net
+ * SPDX-FileContributor: with major amendments and additions by Vivian Meazza, 2004 - 2007
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
 
 #pragma once
 
@@ -28,15 +15,16 @@
 #include "AIBase.hxx"
 #include "AIFlightPlan.hxx"
 
+
 class FGAIManager;
 
-class FGAIShip : public FGAIBase {
-
+class FGAIShip : public FGAIBase
+{
 public:
     FGAIShip(object_type ot = object_type::otShip);
     virtual ~FGAIShip() = default;
 
-    string_view getTypeString(void) const override { return "ship"; }
+    std::string_view getTypeString(void) const override { return "ship"; }
     void readFromScenario(SGPropertyNode* scFileNode) override;
 
     bool init(ModelSearchOrder searchOrder) override;
@@ -47,7 +35,7 @@ public:
 
     void setRudder(float r);
     void setRoll(double rl);
-    void ProcessFlightPlan( double dt);
+    void ProcessFlightPlan(double dt);
     void AccelTo(double speed);
     void PitchTo(double angle);
     void RollTo(double angle);
@@ -91,7 +79,7 @@ public:
     double _missed_range = 0.0;
     double _tow_angle;
     double _wait_count = 0.0;
-    double _missed_count,_wp_range;
+    double _missed_count, _wp_range;
     double _dt_count, _next_run;
 
     FGAIWaypoint* prev = nullptr; // the one behind you
@@ -121,7 +109,7 @@ private:
     double processTimeString(const std::string& time);
 
     bool initFlightPlan();
-    bool advanceFlightPlan (double elapsed_sec, double day_sec);
+    bool advanceFlightPlan(double elapsed_sec, double day_sec);
 
     float _rudder = 0.0f;
     float _tgt_rudder = 0.0f;
@@ -149,4 +137,3 @@ private:
     bool _fp_init;
     bool _missed;
 };
-

@@ -1,30 +1,18 @@
-// FGAIAircraft - AIBase derived class creates an AI aircraft
-//
-// Written by David Culp, started October 2003.
-//
-// Copyright (C) 2003  David P. Culp - davidculp2@comcast.net
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+/*
+ * SPDX-FileName: AIAircraft.hxx
+ * SPDX-FileComment: AIBase derived class creates an AI aircraft
+ * SPDX-FileCopyrightText: Copyright (C) 2003  David P. Culp - davidculp2@comcast.net
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
 
 #pragma once
 
+#include <iostream>
 #include <string>
 #include <string_view>
-#include <iostream>
 
 #include "AIBaseAircraft.hxx"
+
 
 class PerformanceData;
 class FGAISchedule;
@@ -34,41 +22,37 @@ class FGATCInstruction;
 class FGAIWaypoint;
 class sg_ofstream;
 
-namespace AILeg
-{
-    enum Type
-    {
-      STARTUP_PUSHBACK = 1,
-      TAXI = 2,
-      TAKEOFF = 3,
-      CLIMB = 4,
-      CRUISE = 5,
-      APPROACH = 6,
-      HOLD = 7,
-      LANDING = 8,
-      PARKING_TAXI = 9,
-      PARKING = 10
-    };
+namespace AILeg {
+enum Type {
+    STARTUP_PUSHBACK = 1,
+    TAXI = 2,
+    TAKEOFF = 3,
+    CLIMB = 4,
+    CRUISE = 5,
+    APPROACH = 6,
+    HOLD = 7,
+    LANDING = 8,
+    PARKING_TAXI = 9,
+    PARKING = 10
+};
 }
 
 // 1 = joined departure queue; 2 = Passed DepartureHold waypoint; handover control to tower; 0 = any other state.
-namespace AITakeOffStatus
-{
-    enum Type
-    {
-      NONE = 0,
-      QUEUED = 1, // joined departure queue
-      CLEARED_FOR_TAKEOFF = 2 // Passed DepartureHold waypoint; handover control to tower;
-    };
+namespace AITakeOffStatus {
+enum Type {
+    NONE = 0,
+    QUEUED = 1,             // joined departure queue
+    CLEARED_FOR_TAKEOFF = 2 // Passed DepartureHold waypoint; handover control to tower;
+};
 }
 
-class FGAIAircraft : public FGAIBaseAircraft {
-
+class FGAIAircraft : public FGAIBaseAircraft
+{
 public:
-    FGAIAircraft(FGAISchedule *ref=0);
+    FGAIAircraft(FGAISchedule* ref = 0);
     virtual ~FGAIAircraft();
 
-    string_view getTypeString(void) const override { return "aircraft"; }
+    std::string_view getTypeString(void) const override { return "aircraft"; }
     void readFromScenario(SGPropertyNode* scFileNode) override;
 
     void bind() override;
@@ -83,8 +67,11 @@ public:
     void initializeFlightPlan();
 #endif
 
-    FGAIFlightPlan* GetFlightPlan() const { return fp.get(); };
-    void ProcessFlightPlan( double dt, time_t now );
+    FGAIFlightPlan* GetFlightPlan() const
+    {
+        return fp.get();
+    };
+    void ProcessFlightPlan(double dt, time_t now);
     time_t checkForArrivalTime(const std::string& wptName);
     time_t calcDeparture();
 
@@ -101,7 +88,7 @@ public:
 
     void getGroundElev(double dt); //TODO these 3 really need to be public?
     void doGroundAltitude();
-    bool loadNextLeg  (double dist=0);
+    bool loadNextLeg(double dist = 0);
     void resetPositionFromFlightPlan();
     double getBearing(double crse);
 
@@ -109,24 +96,24 @@ public:
     const std::string& getAcType() const { return acType; }
 
     const std::string& getCompany() const { return company; }
-    void setCompany(const std::string& comp) { company = comp;};
+    void setCompany(const std::string& comp) { company = comp; };
 
-//ATC
+    //ATC
     void announcePositionToController(); //TODO have to be public?
     void processATC(const FGATCInstruction& instruction);
     void setTaxiClearanceRequest(bool arg) { needsTaxiClearance = arg; };
     bool getTaxiClearanceRequest() { return needsTaxiClearance; };
-    FGAISchedule * getTrafficRef() { return trafficRef; };
-    void setTrafficRef(FGAISchedule *ref) { trafficRef = ref; };
-    void resetTakeOffStatus() { takeOffStatus = AITakeOffStatus::NONE;};
+    FGAISchedule* getTrafficRef() { return trafficRef; };
+    void setTrafficRef(FGAISchedule* ref) { trafficRef = ref; };
+    void resetTakeOffStatus() { takeOffStatus = AITakeOffStatus::NONE; };
     void setTakeOffStatus(int status) { takeOffStatus = status; };
     int getTakeOffStatus() { return takeOffStatus; };
-    void setTakeOffSlot(time_t timeSlot) { takeOffTimeSlot = timeSlot;};
-    time_t getTakeOffSlot(){return takeOffTimeSlot;};
+    void setTakeOffSlot(time_t timeSlot) { takeOffTimeSlot = timeSlot; };
+    time_t getTakeOffSlot() { return takeOffTimeSlot; };
     void scheduleForATCTowerDepartureControl();
 
     const std::string& GetTransponderCode() { return transponderCode; };
-    void SetTransponderCode(const std::string& tc) { transponderCode = tc;};
+    void SetTransponderCode(const std::string& tc) { transponderCode = tc; };
 
     // included as performance data needs them, who else?
     inline PerformanceData* getPerformance() { return _performance; };
@@ -136,25 +123,26 @@ public:
     inline double getPitch() const { return pitch; };
     inline double getAltitude() const { return altitude_ft; };
     inline double getVerticalSpeedFPM() const { return vs_fps * 60; };
-    inline double altitudeAGL() const { return props->getFloatValue("position/altitude-agl-ft");};
-    inline double airspeed() const { return props->getFloatValue("velocities/airspeed-kt");};
+    inline double altitudeAGL() const { return props->getFloatValue("position/altitude-agl-ft"); };
+    inline double airspeed() const { return props->getFloatValue("velocities/airspeed-kt"); };
     const std::string& atGate();
     std::string acwakecategory;
 
     void checkTcas();
     double calcVerticalSpeed(double vert_ft, double dist_m, double speed, double error);
 
-    FGATCController * getATCController() { return controller; };
+    FGATCController* getATCController() { return controller; };
 
     void clearATCController();
     bool isBlockedBy(FGAIAircraft* other);
-    void dumpCSVHeader(std::unique_ptr<sg_ofstream> &o);
-    void dumpCSV(std::unique_ptr<sg_ofstream> &o, int lineIndex);
+    void dumpCSVHeader(std::unique_ptr<sg_ofstream>& o);
+    void dumpCSV(std::unique_ptr<sg_ofstream>& o, int lineIndex);
+
 protected:
     void Run(double dt);
 
 private:
-    FGAISchedule *trafficRef;
+    FGAISchedule* trafficRef;
     FGATCController *controller,
                     *prevController,
                     *towerController; // Only needed to make a pre-announcement
@@ -205,11 +193,13 @@ private:
     int determineNextLeg(int leg);
     void handleATCRequests(double dt);
 
-    inline bool isStationary() {
+    inline bool isStationary()
+    {
         return ((fabs(speed) <= 0.0001) && (fabs(tgt_speed) <= 0.0001));
     }
 
-    inline bool needGroundElevation() {
+    inline bool needGroundElevation()
+    {
         if (!isStationary())
             _needsGroundElevation = true;
         return _needsGroundElevation;
@@ -243,11 +233,11 @@ private:
 
     bool holdPos = false;
 
-    const char * _getTransponderCode() const;
+    const char* _getTransponderCode() const;
 
     bool needsTaxiClearance = false;
     bool _needsGroundElevation = true;
-    int  takeOffStatus; // 1 = joined departure queue; 2 = Passed DepartureHold waypoint; handover control to tower; 0 = any other state.
+    int takeOffStatus; // 1 = joined departure queue; 2 = Passed DepartureHold waypoint; handover control to tower; 0 = any other state.
     time_t takeOffTimeSlot;
     time_t timeElapsed;
 
@@ -259,9 +249,9 @@ private:
 
     struct
     {
-       double remainingLength;
-       std::string startWptName;
-       std::string finalWptName;
+        double remainingLength;
+        std::string startWptName;
+        std::string finalWptName;
     } trackCache;
 
     // these are init-ed on first use by lazyInitControlsNodes()

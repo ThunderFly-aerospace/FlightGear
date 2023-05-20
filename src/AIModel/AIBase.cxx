@@ -1,24 +1,10 @@
-// FGAIBase - abstract base class for AI objects
-// Written by David Culp, started Nov 2003, based on
-// David Luff's FGAIEntity class.
-// - davidculp2@comcast.net
-//
-// With additions by Mathias Froehlich & Vivian Meazza 2004 -2007
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-
+/*
+ * SPDX-FileName: AIBase.cxx
+ * SPDX-FileComment: abstract base class for AI objects, based on David Luff's FGAIEntity class.
+ * SPDX-FileCopyrightText: Written by David Culp, started Nov 2003 - davidculp2@comcast.net
+ * SPDX-FileContributor: With additions by Mathias Froehlich & Vivian Meazza 2004-2007
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
 
 #include <config.h>
 
@@ -470,11 +456,11 @@ void FGAIBase::updateLOD()
                   _model->setRange(modelLowDetailIndex , maxRangeBare, maxRangeDetail); // least detailed
                 } else if (_low_res.valid() && !_high_res.valid()) {
                   // we have only low_res_model model it obviously will have to be displayed from the smallest value
-                  _model->setRange(modelLowDetailIndex, min(maxRangeBare, maxRangeDetail), FLT_MAX );
+                  _model->setRange(modelLowDetailIndex, std::min(maxRangeBare, maxRangeDetail), FLT_MAX );
                   _model->setRange(modelHighDetailIndex, 0,0);
                 } else if (!_low_res.valid() && _high_res.valid()) {
                     // we have only high_res model it obviously will have to be displayed from the smallest value
-                    _model->setRange(modelHighDetailIndex, min(maxRangeBare, maxRangeDetail), FLT_MAX );
+                    _model->setRange(modelHighDetailIndex, std::min(maxRangeBare, maxRangeDetail), FLT_MAX );
                     _model->setRange(modelLowDetailIndex, 0,0);
                 }
             } else {
@@ -654,7 +640,7 @@ bool FGAIBase::init(ModelSearchOrder searchOrder)
 
     // Load models
     _model = new osg::LOD();
-    vector<string> model_list = resolveModelPath(searchOrder);
+    std::vector<string> model_list = resolveModelPath(searchOrder);
     if(model_list.size() == 1 && _modeldata && _modeldata->hasInteriorPath()) {
         // Only one model and interior available (expecting this to be a high_res model)
         _low_res = new osg::PagedLOD(); // Dummy node to keep LOD node happy

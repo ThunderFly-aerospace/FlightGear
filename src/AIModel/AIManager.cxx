@@ -1,22 +1,9 @@
-// AIManager.cxx  Based on David Luff's AIMgr:
-// - a global management type for AI objects
-//
-// Written by David Culp, started October 2003.
-// - davidculp2@comcast.net
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+/*
+ * SPDX-FileName: AIManager.cxx
+ * SPDX-FileComment: a global management type for AI objects, based on David Luff's AIMgr
+ * SPDX-FileCopyrightText: Written by David Culp, started October 2003 - davidculp2@comcast.net
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
 
 #include <algorithm>
 #include <cstring>
@@ -263,7 +250,7 @@ SGPropertyNode_ptr FGAIManager::registerScenarioFile(SGPropertyNode_ptr root, co
     } catch (sg_exception& e) {
         SG_LOG(SG_AI, SG_WARN, "Skipping malformed scenario file:" << xmlPath);
         simgear::reportFailure(simgear::LoadFailure::BadData, simgear::ErrorCode::ScenarioLoad,
-                               string{"The scenario couldn't be loaded:"} + e.getFormattedMessage(),
+                               std::string{"The scenario couldn't be loaded:"} + e.getFormattedMessage(),
                                e.getLocation());
         sNode.reset();
     }
@@ -282,7 +269,7 @@ FGAIManager::postinit()
 
     // process all scenarios
     for (auto n : root->getChildren("scenario")) {
-        const string& name = n->getStringValue();
+        const std::string& name = n->getStringValue();
         if (name.empty())
             continue;
 
@@ -425,7 +412,7 @@ FGAIManager::updateLOD(SGPropertyNode* node)
 void
 FGAIManager::attach(const SGSharedPtr<FGAIBase> &model)
 {
-    string_view typeString = model->getTypeString();
+    std::string_view typeString = model->getTypeString();
     SGPropertyNode* root = globals->get_props()->getNode("ai/models", true);
     SGPropertyNode* p;
     int i;
@@ -619,7 +606,7 @@ FGAIBasePtr FGAIManager::getObjectFromProperty(const SGPropertyNode* aProp) cons
 }
 
 bool
-FGAIManager::loadScenario( const string &id )
+FGAIManager::loadScenario( const std::string &id )
 {
     SGPath path;
     SGPropertyNode_ptr file = loadScenarioFile(id, path);
@@ -643,7 +630,7 @@ FGAIManager::loadScenario( const string &id )
 
 
 bool
-FGAIManager::unloadScenario( const string &filename)
+FGAIManager::unloadScenario( const std::string &filename)
 {
     auto it = _scenarios.find(filename);
     if (it == _scenarios.end()) {

@@ -1,21 +1,9 @@
-// FGAIBase.hxx - abstract base class for AI objects
-// Written by David Culp, started Nov 2003, based on
-// David Luff's FGAIEntity class.
-// - davidculp2@comcast.net
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+/*
+ * SPDX-FileName: AIBase.hxx
+ * SPDX-FileComment: abstract base class for AI objects, based on David Luff's FGAIEntity class.
+ * SPDX-FileCopyrightText: Written by David Culp, started Nov 2003 - davidculp2@comcast.net
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
 
 #pragma once
 
@@ -33,13 +21,18 @@
 #include <simgear/structure/SGReferenced.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>
 
-namespace osg { class PagedLOD; }
-namespace simgear { class BVHMaterial; }
+
+namespace osg {
+class PagedLOD;
+}
+namespace simgear {
+class BVHMaterial;
+}
 
 class FGAIManager;
 class FGAIFlightPlan;
 class FGFX;
-class FGAIModelData;    // defined below
+class FGAIModelData; // defined below
 
 
 class FGAIBase : public SGReferenced
@@ -59,13 +52,13 @@ public:
         otGroundVehicle,
         otEscort,
         otMultiplayer,
-        MAX_OBJECTS     // Needs to be last!!!
+        MAX_OBJECTS // Needs to be last!!!
     };
 
     FGAIBase(object_type ot, bool enableHot);
     virtual ~FGAIBase();
 
-    // these depend on the order in which the models are loaded. OSG is a little vague about this, but 
+    // these depend on the order in which the models are loaded. OSG is a little vague about this, but
     // from experimentation it seems to work best if the LODs are in the range list in terms of detail
     // from lowest to highest
     const int modelLowDetailIndex = 0;
@@ -86,7 +79,7 @@ public:
     virtual void unbind();
     virtual void reinit() {}
 
-    // default model radius for LOD. 
+    // default model radius for LOD.
     virtual double getDefaultModelRadius() { return 20.0; }
 
     void updateLOD();
@@ -94,45 +87,45 @@ public:
 
     void setManager(FGAIManager* mgr, SGPropertyNode* p);
 
-    void setPath( const char* model );
-    void setPathLowres( std::string model );
+    void setPath(const char* model);
+    void setPathLowres(std::string model);
 
-    void setFallbackModelIndex(const int i );
-    void setSMPath( const std::string& p );
-    void setCallSign(const std::string& );
+    void setFallbackModelIndex(const int i);
+    void setSMPath(const std::string& p);
+    void setCallSign(const std::string&);
 
-    void setSpeed( double speed_KTAS );
+    void setSpeed(double speed_KTAS);
     void setMaxSpeed(double kts);
 
-    void setAltitude( double altitude_ft );
-    void setAltitudeAGL( double altitude_agl_ft );
-    void setHeading( double heading );
-    void setLatitude( double latitude );
-    void setLongitude( double longitude );
+    void setAltitude(double altitude_ft);
+    void setAltitudeAGL(double altitude_agl_ft);
+    void setHeading(double heading);
+    void setLatitude(double latitude);
+    void setLongitude(double longitude);
 
-    void setBank( double bank );
-    void setPitch( double newpitch );
-    void setRadius ( double radius );
+    void setBank(double bank);
+    void setPitch(double newpitch);
+    void setRadius(double radius);
 
-    void setXoffset( double x_offset );
-    void setYoffset( double y_offset );
-    void setZoffset( double z_offset );
+    void setXoffset(double x_offset);
+    void setYoffset(double y_offset);
+    void setZoffset(double z_offset);
 
-    void setPitchoffset( double x_offset );
-    void setRolloffset( double y_offset );
-    void setYawoffset( double z_offset );
+    void setPitchoffset(double x_offset);
+    void setRolloffset(double y_offset);
+    void setYawoffset(double z_offset);
 
-    void setServiceable ( bool serviceable );
+    void setServiceable(bool serviceable);
 
     bool getDie();
-    void setDie( bool die );
+    void setDie(bool die);
     bool isValid() const;
 
-    void setCollisionData( bool i, double lat, double lon, double elev );
-    void setImpactData( bool d );
-    void setImpactLat( double lat );
-    void setImpactLon( double lon );
-    void setImpactElev( double e );
+    void setCollisionData(bool i, double lat, double lon, double elev);
+    void setImpactData(bool d);
+    void setImpactLat(double lat);
+    void setImpactLon(double lon);
+    void setImpactElev(double e);
 
     void setName(const std::string& n);
     bool setParentNode();
@@ -142,7 +135,7 @@ public:
     void setCollisionHeight(int height);
 
     void calcRangeBearing(double lat, double lon, double lat2, double lon2,
-        double &range, double &bearing) const;
+                          double& range, double& bearing) const;
     double calcRelBearingDeg(double bearing, double heading);
     double calcTrueBearingDeg(double bearing, double heading);
     double calcRecipBearingDeg(double bearing);
@@ -224,14 +217,14 @@ protected:
     FGAIManager* manager = nullptr;
 
     // these describe the model's actual state
-    SGGeod pos;         // WGS84 lat & lon in degrees, elev above sea-level in meters
-    double hdg;         // True heading in degrees
-    double roll;        // degrees, left is negative
-    double pitch;       // degrees, nose-down is negative
-    double speed;       // knots true airspeed
-    double speed_fps = 0.0;   // fps true airspeed
-    double altitude_ft; // feet above sea level
-    double vs_fps;      // vertical speed
+    SGGeod pos;             // WGS84 lat & lon in degrees, elev above sea-level in meters
+    double hdg;             // True heading in degrees
+    double roll;            // degrees, left is negative
+    double pitch;           // degrees, nose-down is negative
+    double speed;           // knots true airspeed
+    double speed_fps = 0.0; // fps true airspeed
+    double altitude_ft;     // feet above sea level
+    double vs_fps;          // vertical speed
     double speed_north_deg_sec;
     double speed_east_deg_sec;
     double turn_radius_ft; // turn radius ft at 15 kts rudder angle 15 degrees
@@ -250,17 +243,17 @@ protected:
     double tgt_vs;
 
     // these describe radar information for the user
-    bool in_range;       // true if in range of the radar, otherwise false
-    double bearing;      // true bearing from user to this model
-    double elevation;    // elevation in degrees from user to this model
-    double range;        // range from user to this model, nm
-    double rdot;         // range rate, in knots
-    double horiz_offset; // look left/right from user to me, deg
-    double vert_offset;  // look up/down from user to me, deg
-    double x_shift;      // value used by radar display instrument
-    double y_shift;      // value used by radar display instrument
-    double rotation;     // value used by radar display instrument
-    double ht_diff;      // value used by radar display instrument
+    bool in_range;                 // true if in range of the radar, otherwise false
+    double bearing;                // true bearing from user to this model
+    double elevation;              // elevation in degrees from user to this model
+    double range;                  // range from user to this model, nm
+    double rdot;                   // range rate, in knots
+    double horiz_offset;           // look left/right from user to me, deg
+    double vert_offset;            // look up/down from user to me, deg
+    double x_shift;                // value used by radar display instrument
+    double y_shift;                // value used by radar display instrument
+    double rotation;               // value used by radar display instrument
+    double ht_diff;                // value used by radar display instrument
 
     std::string model_path;        // Path to the 3D model
     std::string model_path_lowres; // Path to optional low res 3D model
@@ -308,25 +301,24 @@ private:
     osg::ref_ptr<osg::PagedLOD> _high_res;
     osg::ref_ptr<osg::Group> _group;
     osg::ref_ptr<osg::PagedLOD> _interior;
-
     osg::ref_ptr<FGAIModelData> _modeldata;
 
-    SGSharedPtr<FGFX>  _fx;
+    SGSharedPtr<FGFX> _fx;
 
     std::vector<std::string> resolveModelPath(ModelSearchOrder searchOrder);
 
 public:
     object_type getType();
 
-    virtual string_view getTypeString(void) const { return "null"; }
+    virtual std::string_view getTypeString(void) const { return "null"; }
 
-    bool isa( object_type otype );
+    bool isa(object_type otype);
 
-    void _setVS_fps( double _vs );
-    void _setAltitude( double _alt );
-    void _setLongitude( double longitude );
-    void _setLatitude ( double latitude );
-    void _setSubID( int s );
+    void _setVS_fps(double _vs);
+    void _setAltitude(double _alt);
+    void _setLongitude(double longitude);
+    void _setLatitude(double latitude);
+    void _setSubID(int s);
 
     double _getAltitudeAGL(SGGeod inpos, double start);
 
@@ -359,12 +351,12 @@ public:
     double _getYOffset() const;
     double _getZOffset() const;
 
-    bool   _getServiceable() const;
-    bool   _getFirstTime() const;
-    bool   _getImpact();
-    bool   _getImpactData();
-    bool   _getCollisionData();
-    bool   _getExpiryData();
+    bool _getServiceable() const;
+    bool _getFirstTime() const;
+    bool _getImpact();
+    bool _getImpactData();
+    bool _getCollisionData();
+    bool _getExpiryData();
 
     SGPropertyNode* _getProps() const;
 
@@ -385,126 +377,152 @@ public:
     static bool _isNight();
 
     const std::string& getCallSign() const { return _callsign; }
-    ModelSearchOrder getSearchOrder() const {return _searchOrder;}
+    ModelSearchOrder getSearchOrder() const { return _searchOrder; }
 };
 
 typedef SGSharedPtr<FGAIBase> FGAIBasePtr;
 
-inline void FGAIBase::setManager(FGAIManager* mgr, SGPropertyNode* p) {
+inline void FGAIBase::setManager(FGAIManager* mgr, SGPropertyNode* p)
+{
     manager = mgr;
     props = p;
 }
 
-inline void FGAIBase::setPath(const char* model ) {
+inline void FGAIBase::setPath(const char* model)
+{
     model_path.append(model);
 }
 
-inline void FGAIBase::setPathLowres(std::string model ) {
+inline void FGAIBase::setPathLowres(std::string model)
+{
     model_path_lowres.append(model);
 }
 
-inline void FGAIBase::setFallbackModelIndex(const int i ) {
+inline void FGAIBase::setFallbackModelIndex(const int i)
+{
     _fallback_model_index = i;
 }
 
-inline void FGAIBase::setSMPath(const std::string& p) {
+inline void FGAIBase::setSMPath(const std::string& p)
+{
     _path = p;
 }
 
-inline void FGAIBase::setServiceable(bool s) {
+inline void FGAIBase::setServiceable(bool s)
+{
     serviceable = s;
 }
 
-inline void FGAIBase::setSpeed( double speed_KTAS ) {
+inline void FGAIBase::setSpeed(double speed_KTAS)
+{
     speed = tgt_speed = speed_KTAS;
 }
 
-inline void FGAIBase::setRadius( double radius ) {
+inline void FGAIBase::setRadius(double radius)
+{
     turn_radius_ft = radius;
 }
 
-inline void FGAIBase::setHeading( double heading ) {
+inline void FGAIBase::setHeading(double heading)
+{
     hdg = tgt_heading = heading;
 }
 
-inline void FGAIBase::setAltitude( double alt_ft ) {
+inline void FGAIBase::setAltitude(double alt_ft)
+{
     altitude_ft = tgt_altitude_ft = alt_ft;
     pos.setElevationFt(altitude_ft);
 }
 
-inline void FGAIBase::setAltitudeAGL( double alt_ft ) {
+inline void FGAIBase::setAltitudeAGL(double alt_ft)
+{
     altitude_agl_ft = alt_ft;
 }
 
-inline void FGAIBase::setBank( double bank ) {
+inline void FGAIBase::setBank(double bank)
+{
     roll = tgt_roll = bank;
     no_roll = false;
 }
 
-inline void FGAIBase::setPitch( double newpitch ) {
+inline void FGAIBase::setPitch(double newpitch)
+{
     pitch = tgt_pitch = newpitch;
 }
 
-inline void FGAIBase::setLongitude( double longitude ) {
-    pos.setLongitudeDeg( longitude );
+inline void FGAIBase::setLongitude(double longitude)
+{
+    pos.setLongitudeDeg(longitude);
 }
 
-inline void FGAIBase::setLatitude ( double latitude ) {
-    pos.setLatitudeDeg( latitude );
+inline void FGAIBase::setLatitude(double latitude)
+{
+    pos.setLatitudeDeg(latitude);
 }
 
-inline void FGAIBase::setCallSign(const std::string& s) {
+inline void FGAIBase::setCallSign(const std::string& s)
+{
     _callsign = s;
 }
 
-inline void FGAIBase::setXoffset(double x) {
+inline void FGAIBase::setXoffset(double x)
+{
     _x_offset = x;
 }
 
-inline void FGAIBase::setYoffset(double y) {
+inline void FGAIBase::setYoffset(double y)
+{
     _y_offset = y;
 }
 
-inline void FGAIBase::setZoffset(double z) {
+inline void FGAIBase::setZoffset(double z)
+{
     _z_offset = z;
 }
 
-inline void FGAIBase::setPitchoffset(double p) {
+inline void FGAIBase::setPitchoffset(double p)
+{
     _pitch_offset = p;
 }
 
-inline void FGAIBase::setRolloffset(double r) {
+inline void FGAIBase::setRolloffset(double r)
+{
     _roll_offset = r;
 }
 
-inline void FGAIBase::setYawoffset(double y) {
+inline void FGAIBase::setYawoffset(double y)
+{
     _yaw_offset = y;
 }
 
-inline void FGAIBase::setParentName(const std::string& p) {
+inline void FGAIBase::setParentName(const std::string& p)
+{
     _parent = p;
 }
 
-inline void FGAIBase::setName(const std::string& n) {
+inline void FGAIBase::setName(const std::string& n)
+{
     _name = n;
 }
 
-inline void FGAIBase::setCollisionLength(int length){
+inline void FGAIBase::setCollisionLength(int length)
+{
     collisionLength = length;
 }
 
-inline void FGAIBase::setCollisionHeight(int height){
+inline void FGAIBase::setCollisionHeight(int height)
+{
     collisionHeight = height;
 }
 
-inline void FGAIBase::setDie( bool die ) { delete_me = die; }
+inline void FGAIBase::setDie(bool die) { delete_me = die; }
 
 inline bool FGAIBase::getDie() { return delete_me; }
 
 inline FGAIBase::object_type FGAIBase::getType() { return _otype; }
 
 inline void FGAIBase::calcRangeBearing(double lat, double lon, double lat2, double lon2,
-                                  double &range, double &bearing) const
+                                       double& range, double& bearing) const
 {
     // calculate the bearing and range of the second pos from the first
     double az2, distance;
@@ -512,25 +530,29 @@ inline void FGAIBase::calcRangeBearing(double lat, double lon, double lat2, doub
     range = distance * SG_METER_TO_NM;
 }
 
-inline double FGAIBase::calcRelBearingDeg(double bearing, double heading){
+inline double FGAIBase::calcRelBearingDeg(double bearing, double heading)
+{
     double angle = bearing - heading;
     SG_NORMALIZE_RANGE(angle, -180.0, 180.0);
     return angle;
 }
 
-inline double FGAIBase::calcTrueBearingDeg(double bearing, double heading){
+inline double FGAIBase::calcTrueBearingDeg(double bearing, double heading)
+{
     double angle = bearing + heading;
     SG_NORMALIZE_RANGE(angle, 0.0, 360.0);
     return angle;
 }
 
-inline double FGAIBase::calcRecipBearingDeg(double bearing){
+inline double FGAIBase::calcRecipBearingDeg(double bearing)
+{
     double angle = bearing - 180;
     SG_NORMALIZE_RANGE(angle, 0.0, 360.0);
     return angle;
 }
 
-inline void FGAIBase::setMaxSpeed(double m) {
+inline void FGAIBase::setMaxSpeed(double m)
+{
     _max_speed = m;
 }
 
@@ -539,7 +561,7 @@ inline void FGAIBase::setMaxSpeed(double m) {
  * The difference in height is used first and then the range must be within 
  * the value specifed in the length field. This effective chops the top and 
  * bottom off the circle - but does not take into account the orientation of the
- * AI model; so this algorithm is fast but fairly innaccurate.
+ * AI model; so this algorithm is fast but fairly inaccurate.
  * 
  * Default values:
  * +---------------+-------------+------------+
@@ -561,7 +583,7 @@ inline void FGAIBase::setMaxSpeed(double m) {
  * +---------------+-------------+------------+
  */
 const static double tgt_ht[] = {0, 50, 100, 250, 0, 100, 0, 0, 50, 50, 20, 100, 50};
-const static double tgt_length[] = {0, 100, 200, 750, 0,  50, 0, 0, 200, 100, 40, 200, 100};
+const static double tgt_length[] = {0, 100, 200, 750, 0, 50, 0, 0, 200, 100, 40, 200, 100};
 
 inline int FGAIBase::getCollisionHeight() const
 {
@@ -577,4 +599,3 @@ inline int FGAIBase::getCollisionLength() const
 
     return collisionLength;
 }
-
