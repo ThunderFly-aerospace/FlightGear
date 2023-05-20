@@ -1,25 +1,10 @@
-// viewmgr.cxx -- class for managing all the views in the flightgear world.
-//
-// Written by Curtis Olson, started October 2000.
-//   partially rewritten by Jim Wilson March 2002
-//
-// Copyright (C) 2000  Curtis L. Olson  - http://www.flightgear.org/~curt
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-//
-// $Id$
+/*
+ * SPDX-FileName: viewmgr.cxx
+ * SPDX-FileComment: class for managing all the views in the flightgear world
+ * SPDX-FileCopyrightText: Copyright (C) 2000  Curtis L. Olson  - http://www.flightgear.org/~curt
+ * SPDX-FileContributor: partially rewritten by Jim Wilson March 2002
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
 
 #include "config.h"
 
@@ -441,7 +426,7 @@ bool FGViewMgr::video_start(
     
     std::string codec = codec_in;
     
-    string directory = fgGetString("/sim/video/directory");
+    std::string directory = fgGetString("/sim/video/directory");
     SGPath  path = SGPath(directory);
     path.append(name);
     if (path.exists())

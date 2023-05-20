@@ -1,25 +1,9 @@
-// splash.cxx -- draws the initial splash screen
-//
-// Written by Curtis Olson, started July 1998.  (With a little looking
-// at Freidemann's panel code.) :-)
-//
-// Copyright (C) 1997  Michele F. America  - nomimarketing@mail.telepac.pt
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-//
-// $Id$
+/*
+ * SPDX-FileName: splash.cxx
+ * SPDX-FileComment: draws the initial splash screen. Written by Curtis Olson, started July 1998.
+ * SPDX-FileCopyrightText: Copyright (C) 1997  Michele F. America  - nomimarketing@mail.telepac.pt
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
 
 #include <config.h>
 
@@ -858,7 +842,7 @@ void fgSplashProgress( const char *identifier, unsigned int percent )
         } else if (kbytesPerSec > 0) {
             oss << " - " << kbytesPerSec << " "s << kbytesPerSecUnitText;
         } else if (kbytesPendingExtract > 0) {
-            const string extractText = globals->get_locale()->getLocalizedString("scenery-extract", "sys");
+            const std::string extractText = globals->get_locale()->getLocalizedString("scenery-extract", "sys");
             std::ostringstream os2;
 
             if (kbytesPendingExtract > 1024) {
@@ -881,7 +865,7 @@ void fgSplashProgress( const char *identifier, unsigned int percent )
 
         unsigned int kbytesPendingExtract = fgGetInt("/sim/terrasync/extract-pending-kbytes");
         if (kbytesPendingExtract > 0) {
-            const string extractText = globals->get_locale()->getLocalizedString("scenery-extract", "sys");
+            const std::string extractText = globals->get_locale()->getLocalizedString("scenery-extract", "sys");
             std::ostringstream oss;
             if (kbytesPendingExtract > 1024) {
                 int mBytesPendingExtract = kbytesPendingExtract >> 10;
@@ -899,8 +883,8 @@ void fgSplashProgress( const char *identifier, unsigned int percent )
 
     // over-write the spinner
     if (!strncmp(identifier, "navdata-", 8)) {
-        const string percentText = globals->get_locale()->getLocalizedString("navdata-load-percent", "sys");
-        auto finalText = simgear::strutils::replace(percentText, "[VALUE]", to_string(percent));
+        const std::string percentText = globals->get_locale()->getLocalizedString("navdata-load-percent", "sys");
+        auto finalText = simgear::strutils::replace(percentText, "[VALUE]", std::to_string(percent));
         fgSetString("/sim/startup/splash-progress-spinner", finalText);
     }
 

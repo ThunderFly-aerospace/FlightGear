@@ -1,7 +1,9 @@
-// system_mgr.cxx - manage aircraft systems.
-// Written by David Megginson, started 2002.
-//
-// This file is in the Public Domain and comes with no warranty.
+/*
+ * SPDX-FileName: system_mgr.cxx
+ * SPDX-FileComment: manage aircraft systems
+ * SPDX-FileCopyrightText: Written by David Megginson, started 2002.
+ * SPDX-License-Identifier: This file is in the Public Domain and comes with no warranty.
+ */
 
 #ifdef HAVE_CONFIG_H
 #  include <config.h>
@@ -73,7 +75,7 @@ bool FGSystemMgr::build (SGPropertyNode* config_props)
     int count = config_props->nChildren();
     for ( i = 0; i < count; ++i ) {
         node = config_props->getChild(i);
-        string name = node->getNameString();
+        std::string name = node->getNameString();
         std::ostringstream temp;
         temp << i;
         if ( name == "electrical" ) {
