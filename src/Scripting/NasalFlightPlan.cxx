@@ -1,22 +1,9 @@
-// NasalFlightPlan.cxx -- expose FlightPlan classes to Nasal
-//
-// Written by James Turner, started 2020.
-//
-// Copyright (C) 2020 James Turner
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+/*
+ * SPDX-FileName: NasalFlightPlan.cxx
+ * SPDX-FileComment: expose FlightPlan classes to Nasal
+ * SPDX-FileCopyrightText: Copyright (C) 2020 James Turner
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
 
 #include "config.h"
 
@@ -812,7 +799,7 @@ static void flightplanGhostSetMember(naContext c, void* g, naRef field, naRef va
         }
 
         if (naIsNil(value)) {
-            fp->setSID(fp->sid(), string{});
+            fp->setSID(fp->sid(), std::string{});
             return;
         }
 
@@ -882,7 +869,7 @@ static void flightplanGhostSetMember(naContext c, void* g, naRef field, naRef va
         }
 
         if (naIsNil(value)) {
-            fp->setSTAR(fp->star(), string{});
+            fp->setSTAR(fp->star(), std::string{});
             return;
         }
 
@@ -947,7 +934,7 @@ static void flightplanGhostSetMember(naContext c, void* g, naRef field, naRef va
         }
 
         if (naIsNil(value)) {
-            fp->setApproach(fp->approach(), string{});
+            fp->setApproach(fp->approach(), std::string{});
             return;
         }
 
@@ -2175,7 +2162,7 @@ static naRef f_procedure_transition(naContext c, naRef me, int argc, naRef* args
         naRuntimeError(c, "procedure.transition called on non-procedure object");
     }
 
-    const string ident{naStr_data(args[0])};
+    const std::string ident{naStr_data(args[0])};
     const auto ty = proc->type();
     if (Approach::isApproach(ty)) {
         const auto app = static_cast<Approach*>(proc);
