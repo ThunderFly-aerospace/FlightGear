@@ -1,21 +1,10 @@
-// -*- coding: utf-8 -*-
-//
-// AddonMetadataParser.cxx --- Parser for FlightGear add-on metadata files
-// Copyright (C) 2018  Florent Rougon
-//
-// This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 2 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License along
-// with this program; if not, write to the Free Software Foundation, Inc.,
-// 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+/*
+ * SPDX-FileName: AddonMetadataParser.cxx
+ * SPDX-FileComment: Parser for FlightGear add-on metadata files
+ * SPDX-FileCopyrightText: Copyright (C) 2018  Florent Rougon
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
+
 
 #include <regex>
 #include <string>
@@ -43,10 +32,7 @@ namespace strutils = simgear::strutils;
 using std::string;
 using std::vector;
 
-namespace flightgear
-{
-
-namespace addons
+namespace flightgear::addons
 {
 
 // Static method
@@ -56,7 +42,7 @@ Addon::MetadataParser::getMetadataFile(const SGPath& addonPath)
   return addonPath / "addon-metadata.xml";
 }
 
-static string getMaybeLocalized(const string& tag, SGPropertyNode* base, SGPropertyNode* lang)
+static std::string getMaybeLocalized(const std::string& tag, SGPropertyNode* base, SGPropertyNode* lang)
 {
     if (lang) {
         auto n = lang->getChild(tag);
@@ -83,9 +69,9 @@ static SGPropertyNode* getAndCheckLocalizedNode(SGPropertyNode* addonNode,
 
     for (int i = 0; i < localizedNode->nChildren(); ++i) {
         const auto node = localizedNode->getChild(i);
-        const string& name = node->getNameString();
+        const std::string& name = node->getNameString();
 
-        if (name.find('_') != string::npos) {
+        if (name.find('_') != std::string::npos) {
             throw errors::error_loading_metadata_file(
                 "underscores not allowed in names of children of <localized> "
                 "(in add-on metadata file '" + metadataFile.utf8Str() + "'); "
@@ -133,7 +119,7 @@ Addon::MetadataParser::parseMetadataFile(const SGPath& addonPath)
       metadataFile.utf8Str() + "'");
   }
 
-  string fileType = fileTypeNode->getStringValue();
+  std::string fileType = fileTypeNode->getStringValue();
   if (fileType != "FlightGear add-on metadata") {
     throw errors::error_loading_metadata_file(
       "Invalid /meta/file-type value for add-on metadata file '" +
@@ -180,7 +166,7 @@ Addon::MetadataParser::parseMetadataFile(const SGPath& addonPath)
     throw errors::error_loading_metadata_file(
       "empty or whitespace-only value for the /addon/identifier node in "
       "add-on metadata file '" + metadataFile.utf8Str() + "'");
-  } else if (metadata.id.find('.') == string::npos) {
+  } else if (metadata.id.find('.') == std::string::npos) {
     SG_LOG(SG_GENERAL, SG_WARN,
            "Add-on identifier '" << metadata.id << "' does not use reverse DNS "
            "style (e.g., org.flightgear.addons.MyAddon) in add-on metadata "
@@ -235,18 +221,18 @@ Addon::MetadataParser::parseMetadataFile(const SGPath& addonPath)
   if (minNode != nullptr) {
     metadata.minFGVersionRequired = strutils::strip(minNode->getStringValue());
   } else {
-    metadata.minFGVersionRequired = string();
+    metadata.minFGVersionRequired = std::string();
   }
 
   SGPropertyNode *maxNode = addonNode->getChild("max-FG-version");
   if (maxNode != nullptr) {
     metadata.maxFGVersionRequired = strutils::strip(maxNode->getStringValue());
   } else {
-    metadata.maxFGVersionRequired = string();
+    metadata.maxFGVersionRequired = std::string();
   }
 
   metadata.homePage = metadata.downloadUrl = metadata.supportUrl =
-    metadata.codeRepositoryUrl = string(); // defaults
+    metadata.codeRepositoryUrl = std::string(); // defaults
   SGPropertyNode *urlsNode = addonNode->getChild("urls");
   if (urlsNode != nullptr) {
     SGPropertyNode *homePageNode = urlsNode->getChild("home-page");
@@ -281,13 +267,13 @@ Addon::MetadataParser::parseMetadataFile(const SGPath& addonPath)
 //
 // Read a node such as "name", "email" or "url", child of a contact node (e.g.,
 // of an "author" or "maintainer" node).
-static string
+static std::string
 parseContactsNode_readNode(const SGPath& metadataFile,
                            SGPropertyNode* contactNode,
-                           string subnodeName, bool allowEmpty)
+                           std::string subnodeName, bool allowEmpty)
 {
   SGPropertyNode *node = contactNode->getChild(subnodeName);
-  string contents;
+  std::string contents;
 
   if (node != nullptr) {
     contents = simgear::strutils::strip(node->getStringValue());
@@ -317,7 +303,7 @@ Addon::MetadataParser::parseContactsNode(const SGPath& metadataFile,
     res.reserve(contactNodes.size());
 
     for (const auto& contactNode: contactNodes) {
-      string name, email, url;
+      std::string name, email, url;
 
       name = parseContactsNode_readNode(metadataFile, contactNode.get(),
                                         "name", false /* allowEmpty */);
@@ -335,18 +321,18 @@ Addon::MetadataParser::parseContactsNode(const SGPath& metadataFile,
 };
 
 // Static method
-std::tuple<string, SGPath, string>
+std::tuple<std::string, SGPath, std::string>
 Addon::MetadataParser::parseLicenseNode(const SGPath& addonPath,
                                         SGPropertyNode* addonNode)
 {
   SGPath metadataFile = getMetadataFile(addonPath);
-  string licenseDesignation;
+  std::string licenseDesignation;
   SGPath licenseFile;
-  string licenseUrl;
+  std::string licenseUrl;
 
   SGPropertyNode *licenseNode = addonNode->getChild("license");
   if (licenseNode == nullptr) {
-    return std::tuple<string, SGPath, string>();
+    return std::tuple<std::string, SGPath, std::string>();
   }
 
   SGPropertyNode *licenseDesigNode = licenseNode->getChild("designation");
@@ -357,10 +343,10 @@ Addon::MetadataParser::parseLicenseNode(const SGPath& addonPath,
   SGPropertyNode *licenseFileNode = licenseNode->getChild("file");
   if (licenseFileNode != nullptr) {
     // This effectively disallows filenames starting or ending with whitespace
-    string licenseFile_s = strutils::strip(licenseFileNode->getStringValue());
+    std::string licenseFile_s = strutils::strip(licenseFileNode->getStringValue());
 
     if (!licenseFile_s.empty()) {
-      if (licenseFile_s.find('\\') != string::npos) {
+      if (licenseFile_s.find('\\') != std::string::npos) {
         throw errors::error_loading_metadata_file(
           "in add-on metadata file '" + metadataFile.utf8Str() + "': the "
           "value of /addon/license/file contains '\\'; please use '/' "
@@ -379,13 +365,13 @@ Addon::MetadataParser::parseLicenseNode(const SGPath& addonPath,
       std::smatch results;
 
       if (std::regex_match(licenseFile_s, results, winDriveRegexp)) {
-        string winDrive = results.str(1);
+        std::string winDrive = results.str(1);
 #else // all this 'else' clause should be removed once we actually require C++11
       if (licenseFile_s.size() >= 2 &&
           (('a' <= licenseFile_s[0] && licenseFile_s[0] <= 'z') ||
            ('A' <= licenseFile_s[0] && licenseFile_s[0] <= 'Z')) &&
           licenseFile_s[1] == ':') {
-        string winDrive = licenseFile_s.substr(0, 2);
+        std::string winDrive = licenseFile_s.substr(0, 2);
 #endif
         throw errors::error_loading_metadata_file(
           "in add-on metadata file '" + metadataFile.utf8Str() + "': the "
@@ -411,6 +397,4 @@ Addon::MetadataParser::parseLicenseNode(const SGPath& addonPath,
   return std::make_tuple(licenseDesignation, licenseFile, licenseUrl);
 }
 
-} // of namespace addons
-
-} // of namespace flightgear
+} // of namespace flightgear::addons
