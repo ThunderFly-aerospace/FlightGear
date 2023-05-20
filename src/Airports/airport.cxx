@@ -1,25 +1,10 @@
-// airport.cxx -- Classes representing airports, seaports and helipads
-//
-// Written by Curtis Olson, started April 1998.
-// Updated by Durk Talsma, started December, 2004.
-//
-// Copyright (C) 1998  Curtis L. Olson  - http://www.flightgear.org/~curt
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-//
-// $Id$
+/*
+ * SPDX-FileName: airport.cxx
+ * SPDX-FileComment: Classes representing airports, seaports and helipads
+ * SPDX-FileCopyrightText: Copyright (C) 1998  Curtis L. Olson  - http://www.flightgear.org/~curt
+ * SPDX-FileContributor: Updated by Durk Talsma, started December, 2004
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
 
 #include <config.h>
 
@@ -1072,7 +1057,7 @@ flightgear::Transition* FGAirport::selectSIDByEnrouteTransition(FGPositioned* en
     return nullptr;
 }
 
-Transition *FGAirport::selectSIDByTransition(const FGRunway* runway,  const string &aIdent) const
+Transition *FGAirport::selectSIDByTransition(const FGRunway* runway,  const std::string &aIdent) const
 {
     loadProcedures();
     for (auto sid : mSIDs) {
@@ -1099,7 +1084,7 @@ flightgear::Transition* FGAirport::selectSTARByEnrouteTransition(FGPositioned* e
     return nullptr;
 }
 
-Transition *FGAirport::selectSTARByTransition(const FGRunway* runway, const string &aIdent) const
+Transition *FGAirport::selectSTARByTransition(const FGRunway* runway, const std::string &aIdent) const
 {
     loadProcedures();
     for (auto star : mSTARs) {

@@ -1,25 +1,9 @@
-// AirportBuilder.hxx -- Builder to create airports based on airport data for
-//                       rendering in the scenery
-//
-// Written by Stuart Buchanan, started June 2020
-//
-// Copyright (C) 2020  Stuart Buchanan stuart13@gmail.com
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-//
-// $Id$
+/*
+ * SPDX-FileName: AirportBuilder.cxx
+ * SPDX-FileComment: Builder to create airports based on airport data for rendering in the scenery
+ * SPDX-FileCopyrightText: Copyright (C) 2020  Stuart Buchanan stuart13@gmail.com
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
 
 #include <algorithm>
 
@@ -86,7 +70,7 @@ osgDB::ReaderWriter::ReadResult AirportBuilder::readNode(const std::string& file
 
   if (! aptFile.isFile()) return ReadResult::FILE_NOT_HANDLED;;
 
-  const string airportId = aptFile.file_base();
+  const std::string airportId = aptFile.file_base();
   APTLoader aptLoader;
 
   const FGAirport* airport = aptLoader.loadAirportFromFile(airportId, aptFile);
