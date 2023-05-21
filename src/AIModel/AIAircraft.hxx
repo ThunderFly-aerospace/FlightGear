@@ -49,7 +49,7 @@ enum Type {
 class FGAIAircraft : public FGAIBaseAircraft
 {
 public:
-    FGAIAircraft(FGAISchedule* ref = 0);
+    explicit FGAIAircraft(FGAISchedule* ref = 0);
     virtual ~FGAIAircraft();
 
     std::string_view getTypeString(void) const override { return "aircraft"; }
@@ -86,7 +86,7 @@ public:
     void ClimbTo(double altitude);
     void TurnTo(double heading);
 
-    void getGroundElev(double dt); //TODO these 3 really need to be public?
+    void getGroundElev(double dt); // TODO: these 3 really need to be public?
     void doGroundAltitude();
     bool loadNextLeg(double dist = 0);
     void resetPositionFromFlightPlan();
@@ -99,7 +99,7 @@ public:
     void setCompany(const std::string& comp) { company = comp; };
 
     //ATC
-    void announcePositionToController(); //TODO have to be public?
+    void announcePositionToController(); // TODO: have to be public?
     void processATC(const FGATCInstruction& instruction);
     void setTaxiClearanceRequest(bool arg) { needsTaxiClearance = arg; };
     bool getTaxiClearanceRequest() { return needsTaxiClearance; };
@@ -135,8 +135,8 @@ public:
 
     void clearATCController();
     bool isBlockedBy(FGAIAircraft* other);
-    void dumpCSVHeader(std::unique_ptr<sg_ofstream>& o);
-    void dumpCSV(std::unique_ptr<sg_ofstream>& o, int lineIndex);
+    void dumpCSVHeader(const std::unique_ptr<sg_ofstream>& o);
+    void dumpCSV(const std::unique_ptr<sg_ofstream>& o, int lineIndex);
 
 protected:
     void Run(double dt);
@@ -144,8 +144,8 @@ protected:
 private:
     FGAISchedule* trafficRef;
     FGATCController *controller,
-                    *prevController,
-                    *towerController; // Only needed to make a pre-announcement
+        *prevController,
+        *towerController; // Only needed to make a pre-announcement
 
     bool hdg_lock;
     bool alt_lock;
@@ -166,7 +166,7 @@ private:
     SGPropertyNode_ptr tcasRANode;
 
     // helpers for Run
-    //TODO sort out which ones are better protected virtuals to allow
+    // TODO: sort out which ones are better protected virtuals to allow
     //subclasses to override specific behaviour
     bool fpExecutable(time_t now);
     void handleFirstWaypoint(void);
@@ -238,8 +238,8 @@ private:
     bool needsTaxiClearance = false;
     bool _needsGroundElevation = true;
     int takeOffStatus; // 1 = joined departure queue; 2 = Passed DepartureHold waypoint; handover control to tower; 0 = any other state.
-    time_t takeOffTimeSlot;
-    time_t timeElapsed;
+    time_t takeOffTimeSlot{0};
+    time_t timeElapsed{0};
 
     PerformanceData* _performance; // the performance data for this aircraft
 
@@ -264,5 +264,5 @@ private:
         _controlsTargetSpeed;
 
     std::unique_ptr<sg_ofstream> csvFile;
-    long csvIndex;
+    long csvIndex{0};
 };
