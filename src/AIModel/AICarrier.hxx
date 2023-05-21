@@ -81,7 +81,7 @@ private:
     /// Is sufficient to be private, stores a possible position to place an
     /// aircraft on start
     struct ParkPosition {
-        ParkPosition(const ParkPosition& pp)
+        explicit ParkPosition(const ParkPosition& pp)
             : name(pp.name), offset(pp.offset), heading_deg(pp.heading_deg)
         {
         }
