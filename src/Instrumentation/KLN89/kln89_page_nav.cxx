@@ -98,7 +98,7 @@ void KLN89NavPage::Update(double dt) {
 				} else if(_cdiFormat == 1) {
 					_kln89->DrawText("Fly", 2, 2, 2);
 					double x = _kln89->CalcCrossTrackDeviation();
-					// TODO - check the R/L from sign of x below - I *think* it holds but not sure!
+					// TODO: check the R/L from sign of x below - I *think* it holds but not sure!
 					// Note also that we're setting Fly R or L based on the aircraft
 					// position only, not the heading.  Not sure if this is correct or not.
 					_kln89->DrawText(x < 0.0 ? "R" : "L", 2, 6, 2);
@@ -153,7 +153,7 @@ void KLN89NavPage::Update(double dt) {
 			}
 			
 			// Radial to/from active waypoint.
-			// TODO - Not sure if this either is or should be true or mag!!!!!!!
+			// TODO: Not sure if this either is or should be true or mag!!!!!!!
 			if(!(crsr && blink && _uLinePos == 2)) {
 				if(0 == _vnv) {
 					_kln89->DrawHeading((int)_kln89->GetHeadingToActiveWaypoint(), 2, 4, 0);
@@ -168,7 +168,7 @@ void KLN89NavPage::Update(double dt) {
 			// It seems that the floating point groundspeed must be at least 30kt
 			// for an ETA to be calculated.  Note that this means that (integer) 30kt
 			// can appear in the frame 1 display both with and without an ETA displayed.
-			// TODO - need to switch off track (and heading bug change) based on instantaneous speed as well
+			// TODO: need to switch off track (and heading bug change) based on instantaneous speed as well
 			// since the long gps lag filter means we can still be displaying when stopped on ground.
 			if(_kln89->_groundSpeed_kts > 30.0) {
 				// Assuming eta display is always hh:mm
@@ -197,7 +197,7 @@ void KLN89NavPage::Update(double dt) {
 		}
 	} else if(2 == _subPage) {
 		_kln89->DrawText("Time", 2, 0, 3);
-		// TODO - hardwired to UTC at the moment
+		// TODO: hardwired to UTC at the moment
 		_kln89->DrawText("UTC", 2, 6, 3);
 		string th = fgGetString("/instrumentation/clock/indicated-hour");
 		string tm = fgGetString("/instrumentation/clock/indicated-min");
@@ -213,7 +213,7 @@ void KLN89NavPage::Update(double dt) {
 			 the ETA to the final (destination) waypoint of the active flightplan.
 			 If the active waypoint is not part of the active flightplan, then
 			 display the ETA to the active waypoint. */
-			// TODO - implement the above properly - we haven't below!
+			// TODO: implement the above properly - we haven't below!
 			string wid = "";
 			if(fp->waypoints.size()) {
 				wid = fp->waypoints[fp->waypoints.size() - 1]->id;
@@ -354,7 +354,7 @@ void KLN89NavPage::Update(double dt) {
 			case 0:
 				// DTK
 				_kln89->DrawLabel("DTK", -39, 6); 
-				// TODO - check we have an active FP / dtk and draw dashes if not.
+				// TODO: check we have an active FP / dtk and draw dashes if not.
 				char buf0[4];
 				snprintf(buf0, 4, "%03i", (int)(_kln89->_dtkMag));
 				_kln89->DrawText((string)buf0, 1, 3, 0);
@@ -505,7 +505,7 @@ void KLN89NavPage::Knob1Right1() {
 void KLN89NavPage::Knob2Left1() {
 	// If the inner-knob is out on the nav4 page, the only effect is to cycle the displayed waypoint.
 	if(3 == _subPage && fgGetBool("/instrumentation/kln89/scan-pull")) {
-		if(_kln89->_activeFP->waypoints.size()) {	// TODO - find out what happens when scan-pull is on on nav4 without an active FP.
+		if(_kln89->_activeFP->waypoints.size()) {	// TODO: find out what happens when scan-pull is on on nav4 without an active FP.
 			// It's unlikely that we could get here without _scanWpSet, but theoretically possible, so we need to cover it.
 			if(!_scanWpSet) {
 				_scanWpIndex = _kln89->GetActiveWaypointIndex();
@@ -546,7 +546,7 @@ void KLN89NavPage::Knob2Left1() {
 				_kln89->UpdateMapHeading();
 			}
 		} else if(_uLinePos == 3) {
-			// TODO - add AUTO
+			// TODO: add AUTO
 			if(_kln89->_mapScaleIndex == 0) {
 				_kln89->_mapScaleIndex = 20;
 			} else {
@@ -559,7 +559,7 @@ void KLN89NavPage::Knob2Left1() {
 void KLN89NavPage::Knob2Right1() {
 	// If the inner-knob is out on the nav4 page, the only effect is to cycle the displayed waypoint.
 	if(3 == _subPage && fgGetBool("/instrumentation/kln89/scan-pull")) {
-		if(_kln89->_activeFP->waypoints.size()) {	// TODO - find out what happens when scan-pull is on on nav4 without an active FP.
+		if(_kln89->_activeFP->waypoints.size()) {	// TODO: find out what happens when scan-pull is on on nav4 without an active FP.
 			// It's unlikely that we could get here without _scanWpSet, but theoretically possible, so we need to cover it.
 			if(!_scanWpSet) {
 				_scanWpIndex = _kln89->GetActiveWaypointIndex();
@@ -599,7 +599,7 @@ void KLN89NavPage::Knob2Right1() {
 				_kln89->UpdateMapHeading();
 			}
 		} else if(_uLinePos == 3) {
-			// TODO - add AUTO
+			// TODO: add AUTO
 			if(_kln89->_mapScaleIndex == 20) {
 				_kln89->_mapScaleIndex = 0;
 			} else {

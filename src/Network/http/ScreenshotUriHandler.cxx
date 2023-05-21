@@ -219,7 +219,7 @@ public:
 
     // add our ScreenshotCallback to the camera
     if ( NULL == camera->getFinalDrawCallback()) {
-      //TODO: are we leaking the Callback on reinit?
+      // TODO: are we leaking the Callback on reinit?
       camera->setFinalDrawCallback(new ScreenshotCallback());
     }
 

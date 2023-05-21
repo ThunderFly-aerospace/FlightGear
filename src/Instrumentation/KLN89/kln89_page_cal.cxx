@@ -51,15 +51,15 @@ void KLN89CalPage::Update(double dt) {
 	bool crsr = (_kln89->_mode == KLN89_MODE_CRSR);
 	bool blink = _kln89->_blink;
 	if(_subPage == 0) {
-		if(1) { // TODO - fix this hardwiring!
+		if(1) { // TODO: fix this hardwiring!
 			// Flightplan calc
 			_kln89->DrawText(">Fpl:", 2, 0, 3);
-			_kln89->DrawText("0", 2, 6, 3);// TODO - fix this hardwiring!
+			_kln89->DrawText("0", 2, 6, 3);// TODO: fix this hardwiring!
 			GPSFlightPlan* fp = _kln89->_flightPlans[_nFp0];
 			if(fp) {
 				unsigned int n = fp->waypoints.size();
 				if(n < 2) {
-					// TODO - check that this is what really happens
+					// TODO: check that this is what really happens
 					_kln89->DrawText("----", 2, 9, 3);
 					_kln89->DrawText("----", 2, 9, 2);
 				} else {
@@ -83,16 +83,16 @@ void KLN89CalPage::Update(double dt) {
 			_kln89->DrawText(">Wpt:", 2, 0, 3);
 		}
 		_kln89->DrawText("To", 2, 6, 2);
-		_kln89->DrawText("ESA ----'", 2, 7, 1);	// TODO - implement an ESA calc
+		_kln89->DrawText("ESA ----'", 2, 7, 1);	// TODO: implement an ESA calc
 		_kln89->DrawText("ETE", 2, 7, 0);
 	} else if(_subPage == 1) {
-		_kln89->DrawText(">Fpl: 0", 2, 0, 3);	// TODO - fix this hardwiring!
+		_kln89->DrawText(">Fpl: 0", 2, 0, 3);	// TODO: fix this hardwiring!
 		_kln89->DrawText("FF:", 2, 0, 2);
 		_kln89->DrawText("Res:", 2, 7, 1);
 		_kln89->DrawText("Fuel Req", 2, 0, 0);
 	} else if(_subPage == 2) {
         _kln89->DrawText("Time:", 2, 0, 3);
-		// TODO - hardwired to UTC at the moment
+		// TODO: hardwired to UTC at the moment
 		if(!(_uLinePos == 1 && crsr && blink)) { _kln89->DrawText("UTC", 2, 6, 3); }
 		if(_uLinePos == 1 && crsr) { _kln89->Underline(2, 6, 3, 3); }
 		string th = fgGetString("/instrumentation/clock/indicated-hour");
@@ -210,7 +210,7 @@ void KLN89CalPage::Knob2Left1() {
 	
 	if(_subPage == 2) {
 		if(_uLinePos == 1) {
-			// TODO - allow time zone to be changed
+			// TODO: allow time zone to be changed
 		} else if(_uLinePos == 2) {
 			ClockTime t(1,0);
 			if(_alarmAnnotate) {
@@ -275,7 +275,7 @@ void KLN89CalPage::Knob2Right1() {
 	
 	if(_subPage == 2) {
 		if(_uLinePos == 1) {
-			// TODO - allow time zone to be changed
+			// TODO: allow time zone to be changed
 		} else if(_uLinePos == 2) {
 			ClockTime t(1,0);
 			if(_alarmAnnotate) {

@@ -796,7 +796,7 @@ void FGAIBallistic::Run(double dt) {
                     dynamic_friction_force_lbs = static_friction_force_lbs * 0.95;
 
                 // Ignore wind when on the ground for now
-                //TODO fix this
+                // TODO: fix this
                 _wind_from_north = 0;
                 _wind_from_east = 0;
             }

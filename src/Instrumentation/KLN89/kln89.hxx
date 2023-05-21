@@ -176,7 +176,7 @@ private:
     // Draw an integer heading, where px specifies the position of the degrees sign at the RIGHT of the value.
     void DrawHeading(int h, int field, int px, int py);
 
-    // Draw a distance spec'd as nm as an integer (TODO - may need 1 decimal place if < 100) where px specifies RHS of units.
+    // Draw a distance spec'd as nm as an integer (TODO: may need 1 decimal place if < 100) where px specifies RHS of units.
     // Some uses definately don't want decimal place though (as at present), so would have to be arg.
     void DrawDist(double d, int field, int px, int py);
 

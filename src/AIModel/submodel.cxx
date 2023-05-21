@@ -91,7 +91,7 @@ void FGSubmodelMgr::postinit()
     while (_found_sub)
         loadSubmodels();
 
-    //TODO reload submodels if an MP ac joins
+    // TODO: reload submodels if an MP ac joins
 
     //_model_added_node = fgGetNode("ai/models/model-added", true);
     //_model_added_node->addChangeListener(this, false);

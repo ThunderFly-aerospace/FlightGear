@@ -222,7 +222,7 @@ DCLGPS::DCLGPS(RenderArea2D* instrument) {
 DCLGPS::~DCLGPS() {
   delete _approachFP;		// Don't need to delete the waypoints inside since they point to
 							// the waypoints in the approach database.
-	// TODO - may need to delete the approach database!!
+	// TODO: may need to delete the approach database!!
 }
 
 void DCLGPS::draw(osg::State& state) {
@@ -273,7 +273,7 @@ void DCLGPS::update(double dt) {
 	_checkLon = _gpsLon;
 	_checkLat = _gpsLat;
 
-	// TODO - check for unit power before running this.
+	// TODO: check for unit power before running this.
 	if(!_powerOnTimerSet) {
 		SetPowerOnTimer();
 	}
@@ -297,7 +297,7 @@ void DCLGPS::update(double dt) {
 			_departureTimeString = th + tm;
 		}
 	} else {
-		// TODO - check - is this prone to drift error over time?
+		// TODO: check - is this prone to drift error over time?
 		// Should we difference the departure and current times?
 		// What about when the user resets the time of day from the menu?
 		_elapsedTime += dt;
@@ -321,7 +321,7 @@ void DCLGPS::update(double dt) {
 		if(_approachLoaded) {
 			if(!_approachReallyArmed && !_approachActive) {
 				// arm if within 30nm of airport.
-				// TODO - let user cancel approach arm using external GPS-APR switch
+				// TODO: let user cancel approach arm using external GPS-APR switch
 				bool multi;
 				const FGAirport* ap = FindFirstAptById(_approachID, multi, true);
 				if(ap != NULL) {
@@ -348,7 +348,7 @@ void DCLGPS::update(double dt) {
 					//cout << "Active waypoint is FAF, id is " << _activeWaypoint.id << '\n';
 					if(GetGreatCircleDistance(_gpsLat, _gpsLon, _activeWaypoint.lat, _activeWaypoint.lon) <= 2.0 && !_obsMode) {
 						// Assume heading is OK for now
-						_approachArm = false;	// TODO - check - maybe arm is left on when actv comes on?
+						_approachArm = false;	// TODO: check - maybe arm is left on when actv comes on?
 						_approachReallyArmed = false;
 						_approachActive = true;
 						_targetCdiScaleIndex = 2;
@@ -357,7 +357,7 @@ void DCLGPS::update(double dt) {
 						} else if(_currentCdiScaleIndex == 1) {
 							_sourceCdiScaleIndex = 1;
 							_cdiScaleTransition = true;
-							_cdiTransitionTime = 30.0;	// TODO - compress it if time to FAF < 30sec
+							_cdiTransitionTime = 30.0;	// TODO: compress it if time to FAF < 30sec
 							_currentCdiScale = _cdiScales[_currentCdiScaleIndex];
 						} else {
 							// Abort going active?
@@ -409,7 +409,7 @@ void DCLGPS::update(double dt) {
 		// reverses to from once wp is passed).
 		/*
 		if(_fromWaypoint != NULL) {
-			// TODO - how do we handle the change of track with distance over long legs?
+			// TODO: how do we handle the change of track with distance over long legs?
 			_dtkTrue = GetGreatCircleCourse(_fromWaypoint->lat, _fromWaypoint->lon, _activeWaypoint->lat, _activeWaypoint->lon) * SG_RADIANS_TO_DEGREES;
 			_dtkMag = GetMagHeadingFromTo(_fromWaypoint->lat, _fromWaypoint->lon, _activeWaypoint->lat, _activeWaypoint->lon);
 			// Don't change the heading bug if speed is too low otherwise it flickers to/from at rest
@@ -424,7 +424,7 @@ void DCLGPS::update(double dt) {
 		} else {
 			_dtkTrue = 0.0;
 			_dtkMag = 0.0;
-			// TODO - in DTO operation the position of initiation of DTO defines the "from waypoint".
+			// TODO: in DTO operation the position of initiation of DTO defines the "from waypoint".
 		}
 		*/
 		if(!_activeWaypoint.id.empty()) {
@@ -449,16 +449,16 @@ void DCLGPS::update(double dt) {
 		_dist2Act = GetGreatCircleDistance(_gpsLat, _gpsLon, _activeWaypoint.lat, _activeWaypoint.lon) * SG_NM_TO_METER;
 		if(_groundSpeed_ms > 10.0) {
 			_eta = _dist2Act / _groundSpeed_ms;
-			if(_eta <= 36) {	// TODO - this is slightly different if turn anticipation is enabled.
+			if(_eta <= 36) {	// TODO: this is slightly different if turn anticipation is enabled.
 				if(_headingBugTo) {
-					_waypointAlert = true;	// TODO - not if the from flag is set.
+					_waypointAlert = true;	// TODO: not if the from flag is set.
 				}
 			}
 			if(_eta < 60) {
 				// Check if we should sequence to next leg.
 				// Perhaps this should be done on distance instead, but 60s time (about 1 - 2 nm) seems reasonable for now.
 				//double reverseHeading = GetGreatCircleCourse(_activeWaypoint->lat, _activeWaypoint->lon, _fromWaypoint->lat, _fromWaypoint->lon);
-				// Hack - let's cheat and do it on heading bug for now.  TODO - that stops us 'cutting the corner'
+				// Hack - let's cheat and do it on heading bug for now.  TODO: that stops us 'cutting the corner'
 				// when we happen to approach the inside turn of a waypoint - we should probably sequence at the midpoint
 				// of the heading difference between legs in this instance.
 				int idx = GetActiveWaypointIndex();
@@ -480,7 +480,7 @@ void DCLGPS::update(double dt) {
 						// Course alteration message format is dependent on whether we are slaved HSI/CDI indicator or not.
 						string s;
 						if(fgGetBool("/instrumentation/nav[0]/slaved-to-gps")) {
-							// TODO - avoid the hardwiring on nav[0]
+							// TODO: avoid the hardwiring on nav[0]
 							s = "Adj Nav Crs to ";
 						} else {
 							s = "GPS Course is ";
@@ -792,7 +792,7 @@ void DCLGPS::LoadApproachData() {
 										string rwystr;
 										try {
 											rwystr = w.id.substr(2, 2);
-											// TODO - sanity check the rwystr at this point to ensure we have a double digit number
+											// TODO: sanity check the rwystr at this point to ensure we have a double digit number
 											if(w.id.size() > 4) {
 												if(w.id[4] == 'L' || w.id[4] == 'C' || w.id[4] == 'R') {
 													rwystr += w.id[4];
@@ -835,7 +835,7 @@ void DCLGPS::LoadApproachData() {
 								if(!wp_error) {
 									if(route_in_progress) {
 										if(sequence_number > last_sequence_number) {
-											// TODO - add a check for runway numbers
+											// TODO: add a check for runway numbers
 											// Check for the waypoint ID being the same as the previous line.
 											// This is often the case for the missed approach holding point.
 											if(wp_ident == last_wp_ident) {
@@ -862,7 +862,7 @@ void DCLGPS::LoadApproachData() {
 											// This seems to happen once per final approach route - one of the waypoints
 											// is duplicated with the same sequence number - I'm not sure what information
 											// the second line give yet so ignore it for now.
-											// TODO - figure this out!
+											// TODO: figure this out!
 										} else {
 											// Finalise the current route and start a new one
 											//
@@ -911,7 +911,7 @@ void DCLGPS::LoadApproachData() {
 					}
 				} else {
 					// Check and finalise any approaches in progress
-					// TODO - sanity check that the approach has all the required elements
+					// TODO: sanity check that the approach has all the required elements
 					if(iap_in_progress) {
 						// This is a new approach - store the last one and trigger
 						// starting afresh by setting the in progress flag to false.
@@ -931,7 +931,7 @@ void DCLGPS::LoadApproachData() {
 	}
 
 	// If we get to the end of the file, load any approach that is still in progress
-	// TODO - sanity check that the approach has all the required elements
+	// TODO: sanity check that the approach has all the required elements
 	if(iap_in_progress) {
 		if(iap_error) {
 			//cout << "ERROR: Unable to load approach " << iap->_ident << " at " << iap->_aptIdent << '\n';
@@ -984,7 +984,7 @@ double DCLGPS::GetCDIDeflection() const {
 void DCLGPS::DtoInitiate(const string& s) {
 	const GPSWaypoint* wp = FindFirstByExactId(s);
 	if(wp) {
-		// TODO - Currently we start DTO operation unconditionally, regardless of which mode we are in.
+		// TODO: Currently we start DTO operation unconditionally, regardless of which mode we are in.
 		// In fact, the following rules apply:
 		// In LEG mode, start DTO as we currently do.
 		// In OBS mode, set the active waypoint to the requested waypoint, and then:
@@ -1000,7 +1000,7 @@ void DCLGPS::DtoInitiate(const string& s) {
 		_fromWaypoint.id = "_DTOWP_";
 		delete wp;
 	} else {
-		// TODO - Should bring up the user waypoint page.
+		// TODO: Should bring up the user waypoint page.
 		_dto = false;
 	}
 }
@@ -1040,7 +1040,7 @@ void DCLGPS::ToggleOBSMode() {
 			_obsHeading = static_cast<int>(_dtkMag + 0.5);
 			//cout << "_dtkMag = " << _dtkMag << ", _dtkTrue = " << _dtkTrue << ", _obsHeading = " << _obsHeading << '\n';
 		} else {
-			// TODO - what should we really do here?
+			// TODO: what should we really do here?
 			_obsHeading = 0;
 		}
 
@@ -1048,7 +1048,7 @@ void DCLGPS::ToggleOBSMode() {
 		if(_obsHeading > 359) _obsHeading -= 360;
 		if(_obsHeading < 0) _obsHeading += 360;
 
-		// TODO - the _fromWaypoint location will change as the OBS heading changes.
+		// TODO: the _fromWaypoint location will change as the OBS heading changes.
 		// Might need to store the OBS initiation position somewhere in case it is needed again.
 		SetOBSFromWaypoint();
 	}
@@ -1059,7 +1059,7 @@ void DCLGPS::SetOBSFromWaypoint() {
 	if(!_obsMode) return;
 	if(_activeWaypoint.id.empty()) return;
 
-	// TODO - base the 180 deg correction on the to/from flag.
+	// TODO: base the 180 deg correction on the to/from flag.
 	_fromWaypoint = GetPositionOnMagRadial(_activeWaypoint, 10, _obsHeading + 180.0);
 	_fromWaypoint.type = GPS_WP_VIRT;
 	_fromWaypoint.id = "_OBSWP_";
@@ -1104,7 +1104,7 @@ double DCLGPS::GetETE() {
 	if(_groundSpeed_kts < 30.0) {
 		return(-1.0);
 	} else {
-		// TODO - handle OBS / DTO operation appropriately
+		// TODO: handle OBS / DTO operation appropriately
 		if(_activeFP->waypoints.empty()) {
 			return(-1.0);
 		} else {
@@ -1146,7 +1146,7 @@ double DCLGPS::GetTimeToWaypoint(const string& id) {
 }
 
 // Returns magnetic great-circle heading
-// TODO - document units.
+// TODO: document units.
 float DCLGPS::GetHeadingToActiveWaypoint() {
 	if(_activeWaypoint.id.empty()) {
 		return(-888);
@@ -1159,7 +1159,7 @@ float DCLGPS::GetHeadingToActiveWaypoint() {
 }
 
 // Returns magnetic great-circle heading
-// TODO - what units?
+// TODO: what units?
 float DCLGPS::GetHeadingFromActiveWaypoint() {
 	if(_activeWaypoint.id.empty()) {
 		return(-888);
@@ -1208,7 +1208,7 @@ void DCLGPS::OrientateToFlightPlan(GPSFlightPlan* fp) {
 	} else {
 		_navFlagged = false;
 		if(fp->waypoints.size() == 1) {
-			// TODO - may need to flag nav here if not dto or obs, or possibly handle it somewhere else.
+			// TODO: may need to flag nav here if not dto or obs, or possibly handle it somewhere else.
 			_activeWaypoint = *fp->waypoints[0];
 			_fromWaypoint.id.clear();
 		} else {
@@ -1384,7 +1384,7 @@ GPSWaypoint* DCLGPS::FindFirstByExactId(const string& id) const
   return GPSWaypoint::createFromPositioned(result);
 }
 
-// TODO - add the ASCII / alphabetical stuff from the Atlas version
+// TODO: add the ASCII / alphabetical stuff from the Atlas version
 FGPositioned* DCLGPS::FindTypedFirstById(const string& id, FGPositioned::Type ty, bool &multi, bool exact)
 {
   multi = false;
@@ -1437,7 +1437,7 @@ FGNavRecord* DCLGPS::FindClosestVor(double lat_rad, double lon_rad) {
 double DCLGPS::GetMagHeadingFromTo(double latA, double lonA, double latB, double lonB) {
 	double h = GetGreatCircleCourse(latA, lonA, latB, lonB);
 	h *= SG_RADIANS_TO_DEGREES;
-	// TODO - use the real altitude below instead of 0.0!
+	// TODO: use the real altitude below instead of 0.0!
 	//cout << "MagVar = " << sgGetMagVar(_gpsLon, _gpsLat, 0.0, _time->getJD()) * SG_RADIANS_TO_DEGREES << '\n';
   double jd = globals->get_time_params()->getJD();
 	h -= sgGetMagVar(_gpsLon, _gpsLat, 0.0, jd) * SG_RADIANS_TO_DEGREES;

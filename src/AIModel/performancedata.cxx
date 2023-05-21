@@ -172,7 +172,7 @@ double PerformanceData::actualPitch(FGAIAircraft* ac, double tgt_pitch, double d
     double pdiff = tgt_pitch - pitch;
 
     if (pdiff > 0.0) { // nose up
-        pitch += 0.005*_climbRate * dt / 3.0; //TODO avoid hardcoded 3 secs
+        pitch += 0.005*_climbRate * dt / 3.0; // TODO: avoid hardcoded 3 secs
 
         if (pitch > tgt_pitch)
             pitch = tgt_pitch;
@@ -200,7 +200,7 @@ double PerformanceData::actualVerticalSpeed(FGAIAircraft* ac, double tgt_vs, dou
 
     if (fabs(vs_diff) > .001) {
         if (vs_diff > 0.0) {
-            vs += _climbRate * dt / 3.0; //TODO avoid hardcoded 3 secs to attain climb rate from level flight
+            vs += _climbRate * dt / 3.0; // TODO: avoid hardcoded 3 secs to attain climb rate from level flight
 
             if (vs > tgt_vs)
                 vs = tgt_vs;

@@ -273,7 +273,7 @@ sc::WindowPtr DesktopGroup::windowAtPosition(const osg::Vec2f& screen_pos)
     osg::Group *element = _scene_group->getChild(i)->asGroup();
 
     if( !element || !element->getUserData() )
-      continue; // TODO warn/log?
+      continue; // TODO: warn/log?
 
     sc::WindowPtr window =
       dynamic_cast<sc::Window*>
@@ -613,7 +613,7 @@ bool DesktopGroup::handleDrag(const sc::EventPtr& event)
       drag_window->handleEvent(event->clone(sc::Event::DRAG_START));
   }
 
-  // TODO dragover
+  // TODO: dragover
   return drag_window && drag_window->handleEvent(event);
 }
 

@@ -37,7 +37,7 @@ KLN89VorPage::KLN89VorPage(KLN89* parent)
 	_nSubPages = 2;
 	_subPage = 0;
 	_name = "VOR";
-	_vor_id = "OSI";	// TODO - check a property for an initial value to allow user-override.
+	_vor_id = "OSI";	// TODO: check a property for an initial value to allow user-override.
 	np = NULL;
 }
 
@@ -93,9 +93,9 @@ void KLN89VorPage::Update(double dt) {
 			}
 		}
 		if(_subPage == 0) {
-			//// TODO - will almost certainly have to process freq below for FG
+			//// TODO: will almost certainly have to process freq below for FG
 			_kln89->DrawFreq(np->get_freq(), 2, 9, 3);
-			// TODO - trim VOR-DME from the name, convert to uppercase, abbreviate, etc
+			// TODO: trim VOR-DME from the name, convert to uppercase, abbreviate, etc
 			_kln89->DrawText(np->name(), 2, 0, 2);
 			//cout << np->lat << "... ";
 			_kln89->DrawLatitude(np->get_lat(), 2, 3, 1);
@@ -127,7 +127,7 @@ void KLN89VorPage::Update(double dt) {
 	
 	if(_kln89->_mode == KLN89_MODE_CRSR) {
 		if(_uLinePos > 0 && _uLinePos < 4) {
-			// TODO - blink as well
+			// TODO: blink as well
 			_kln89->Underline(2, _uLinePos, 3, 1);
 		}
 		for(unsigned int i = 0; i < _vor_id.size(); ++i) {

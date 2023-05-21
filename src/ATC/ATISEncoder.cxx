@@ -382,7 +382,7 @@ string ATISEncoder::getTime( SGPropertyNode_ptr )
 static inline FGRunwayRef findBestRunwayForWind( FGAirportRef airport, int windDeg, int windKt )
 {
   struct FGAirport::FindBestRunwayForHeadingParams p;
-  //TODO: ramp down the heading weight with wind speed
+  // TODO: ramp down the heading weight with wind speed
   p.ilsWeight = 4;
   return airport->findBestRunwayForHeading( windDeg, &p );
 }
@@ -392,7 +392,7 @@ string ATISEncoder::getApproachType( SGPropertyNode_ptr )
   FGRunwayRef runway = findBestRunwayForWind( airport, _atis->getWindDeg(), _atis->getWindSpeedKt() );
   if( runway.valid() ) {
     if( NULL != runway->ILS() ) return globals->get_locale()->getLocalizedString("ils", "atc", "ils" );
-    //TODO: any chance to find other approach types? localizer-dme, vor-dme, vor, ndb?
+    // TODO: any chance to find other approach types? localizer-dme, vor-dme, vor, ndb?
   }
 
   return globals->get_locale()->getLocalizedString("visual", "atc", "visual" );
@@ -412,7 +412,7 @@ string ATISEncoder::getLandingRunway( SGPropertyNode_ptr )
 
 string ATISEncoder::getTakeoffRunway( SGPropertyNode_ptr p )
 {
-  //TODO: if the airport has more than one runway, probably pick another one?
+  // TODO: if the airport has more than one runway, probably pick another one?
   return getLandingRunway( p );
 }
 

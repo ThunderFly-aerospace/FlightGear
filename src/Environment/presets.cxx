@@ -60,7 +60,7 @@ void Wind::preset( double min_hdg, double max_hdg, double speed_kt, double gust_
 {
     // see: PresetBase::setOverride()
 
-    //TODO: handle variable wind and gusts
+    // TODO: handle variable wind and gusts
     if( _fromNorthNode == NULL )
         _fromNorthNode = fgGetNode("/environment/config/presets/wind-from-north-fps", true );
     

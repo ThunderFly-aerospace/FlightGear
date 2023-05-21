@@ -106,13 +106,13 @@ void KLN89SetPage::Update(double dt) {
 			_kln89->DrawSpecialChar(5, 2, 7, 1);	// +- sign.
 			if(_kln89->_mode == KLN89_MODE_CRSR && _uLinePos == 2) {
 				if(!_kln89->_blink) {
-					_kln89->DrawText("00300", 2, 8, 1);		// TODO - fix this hardwiring!!!!
+					_kln89->DrawText("00300", 2, 8, 1);		// TODO: fix this hardwiring!!!!
 				}
 				_kln89->Underline(2, 8, 1, 5);
 			} else {
-				_kln89->DrawText("00300", 2, 8, 1);		// TODO - fix this hardwiring!!!!
+				_kln89->DrawText("00300", 2, 8, 1);		// TODO: fix this hardwiring!!!!
 			}
-			_kln89->DrawText("ft", 2, 13, 1);	// TODO - fix this hardwiring!!!!
+			_kln89->DrawText("ft", 2, 13, 1);	// TODO: fix this hardwiring!!!!
 		}
 		break;
 	case 8:
@@ -261,7 +261,7 @@ void KLN89SetPage::Knob2Left1() {
 				_kln89->SetSuaAlertEnabled(!_kln89->GetSuaAlertEnabled());
 				_maxULinePos = (_kln89->GetSuaAlertEnabled() ? 2 : 1);
 			} else if(_uLinePos == 2) {
-				// TODO - implement variable sua alert buffer
+				// TODO: implement variable sua alert buffer
 			}
 			break;
 		case 8:
@@ -310,7 +310,7 @@ void KLN89SetPage::Knob2Right1() {
 				_kln89->SetSuaAlertEnabled(!_kln89->GetSuaAlertEnabled());
 				_maxULinePos = (_kln89->GetSuaAlertEnabled() ? 2 : 1);
 			} else if(_uLinePos == 2) {
-				// TODO - implement variable sua alert buffer
+				// TODO: implement variable sua alert buffer
 			}
 			break;
 		case 8:

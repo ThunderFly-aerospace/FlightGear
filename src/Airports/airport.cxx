@@ -127,7 +127,7 @@ FGRunwayMap FGAirport::getRunwayMap() const
 
   for (auto rwy : mRunways) {
     // ignore unusably short runways
-    // TODO other methods don't check this...
+    // TODO: other methods don't check this...
     if( rwy->lengthFt() >= minLengthFt )
       map[ rwy->ident() ] = rwy;
   }

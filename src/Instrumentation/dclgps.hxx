@@ -105,7 +105,7 @@ public:
     inline bool IsEmpty() { return waypoints.empty(); }
 };
 
-// TODO - probably de-public the internals of the next 2 classes and add some methods!
+// TODO: probably de-public the internals of the next 2 classes and add some methods!
 // Instrument approach procedure base class
 class FGIAP
 {
@@ -199,7 +199,7 @@ private:
 
 // ------------------------------------------------------------------------------
 
-// TODO - merge generic GPS functions instead and split out KLN specific stuff.
+// TODO: merge generic GPS functions instead and split out KLN specific stuff.
 class DCLGPS : public SGSubsystem
 {
 public:
@@ -337,7 +337,7 @@ protected:
 protected:
     void LoadApproachData();
 
-    // Find first of any type of waypoint by id.  (TODO - Possibly we should return multiple waypoints here).
+    // Find first of any type of waypoint by id.  (TODO: Possibly we should return multiple waypoints here).
     GPSWaypoint* FindFirstById(const std::string& id) const;
     GPSWaypoint* FindFirstByExactId(const std::string& id) const;
 
@@ -373,7 +373,7 @@ protected:
     // Hack - it seems that the GPS gets initialised before FG's initial position is properly set.
     // By checking for abnormal slew in the position we can force a re-initialisation of active flight
     // plan leg and anything else that might be affected.
-    // TODO - sort FlightGear's initialisation order properly!!!
+    // TODO: sort FlightGear's initialisation order properly!!!
     double _checkLat, _checkLon;    // (Radians)
     double _groundSpeed_ms;  // filtered groundspeed (m/s)
     double _groundSpeed_kts; // ditto in knots

@@ -17,7 +17,7 @@ class SGPath;
  *
  * @author Thomas F�rster <t.foerster@biologie.hu-berlin.de>
 */
-//TODO provide std::map interface?
+// TODO: provide std::map interface?
 class PerformanceDB : public SGSubsystem
 {
 public:

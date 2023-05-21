@@ -59,7 +59,7 @@ void KLN89FplPage::Update(double dt) {
     Calc();
     
     // NOTE - we need to draw the active leg arrow outside of this block to avoid the _delFP check.
-    // TODO - we really ought to merge the page 0 and other pages drawing code with a couple of lines of extra logic.
+    // TODO: we really ought to merge the page 0 and other pages drawing code with a couple of lines of extra logic.
     if(_subPage == 0 && !_delFP) {  // Note that in the _delFP case, the active flightplan gets a header, and hence the same geometry as the other fps, so we draw it there.
         // active FlightPlan
         // NOTE THAT FOR THE ACTIVE FLIGHT PLAN, TOP POSITION IS STILL 4 in the underline position scheme, to make 
@@ -236,7 +236,7 @@ void KLN89FplPage::Update(double dt) {
         if(waylist.size() < 4) last_pos = waylist.size();
         
         // Don't draw the cyclic field header if the top waypoint is the approach header
-        // Not sure if this also applies to the fence - don't think so but TODO - check!
+        // Not sure if this also applies to the fence - don't think so but TODO: check!
         if(!waylist.empty() && _fplPos < waylist.size()) {
             if(waylist[_fplPos].appType != GPS_HDR) {
                 _kln89->DrawChar('>', 2, 12, 3);
@@ -369,7 +369,7 @@ void KLN89FplPage::Update(double dt) {
                             _kln89->DrawText(s, 2, 16-s.size(), 3-i);
                         }
                     } else if(_actFpMode == 3) {    // DTK
-                        // TODO - figure out properly what to do in DTK mode when beyond a waypoint being entered.
+                        // TODO: figure out properly what to do in DTK mode when beyond a waypoint being entered.
                         // I *think* it is OK to do the same as here, but maybe not for the waypoint immediately
                         // beyond the one being entered - need to check.
                         string s = _params[_fplPos + i - 1];
@@ -482,7 +482,7 @@ void KLN89FplPage::Update(double dt) {
                     }
                     if(last_pos > 0 && last_pos < waylist.size() && i > 0) {
                         // Draw the param
-                        // TODO - we should also handle DTK mode params here.
+                        // TODO: we should also handle DTK mode params here.
                         if(_fpMode == 0) {  // DIS
                             if(_kln89->_mode == KLN89_MODE_CRSR && _bEntWp && _uLinePos < i+4) {
                                 // This means that we are beyond the waypoint being entered.  In DIS mode
@@ -501,7 +501,7 @@ void KLN89FplPage::Update(double dt) {
                     }
                     if(i > 0) {
                         // Draw the param
-                        // TODO - we should also handle DTK mode params here.
+                        // TODO: we should also handle DTK mode params here.
                         if(_fpMode == 0) {  // DIS
                             if(_kln89->_mode == KLN89_MODE_CRSR && _bEntWp && _uLinePos < i+4) {
                                 // This means that we are beyond the waypoint being entered.  In DIS mode
@@ -527,7 +527,7 @@ void KLN89FplPage::DrawFpMode(int ypos) {
         if(_actFpMode == 1) {
             s = "ETE";
         } else if(_actFpMode == 2) {
-            s = "UTC";  // TODO - alter depending on chosen timezone
+            s = "UTC";  // TODO: alter depending on chosen timezone
         } else if(_actFpMode == 3) {
             s = (_kln89->_obsMode ? "OBS" : "Dtk");
         }
@@ -560,7 +560,7 @@ void KLN89FplPage::Calc() {
                 cum_tot += _kln89->GetGreatCircleDistance(_kln89->_gpsLat, _kln89->_gpsLon, wv[0]->lat, wv[0]->lon);
             }
             for(unsigned int i=1; i<wv.size(); ++i) {
-                cum_tot += _kln89->GetGreatCircleDistance(wv[i-1]->lat, wv[i-1]->lon, wv[i]->lat, wv[i]->lon);  // TODO - add units switch!
+                cum_tot += _kln89->GetGreatCircleDistance(wv[i-1]->lat, wv[i-1]->lon, wv[i]->lat, wv[i]->lon);  // TODO: add units switch!
                 int n = (int)(cum_tot + 0.5);
                 _params.push_back(GPSitoa(n));
             }
@@ -582,7 +582,7 @@ void KLN89FplPage::Calc() {
         if(0 == _fpMode) {
             double cum_tot = 0.0;
             for(unsigned int i=1; i<wv.size(); ++i) {
-                cum_tot += _kln89->GetGreatCircleDistance(wv[i-1]->lat, wv[i-1]->lon, wv[i]->lat, wv[i]->lon);  // TODO - add units switch!
+                cum_tot += _kln89->GetGreatCircleDistance(wv[i-1]->lat, wv[i-1]->lon, wv[i]->lat, wv[i]->lon);  // TODO: add units switch!
                 int n = (int)(cum_tot + 0.5);
                 _params.push_back(GPSitoa(n));
             }
@@ -637,7 +637,7 @@ void KLN89FplPage::ClrPressed() {
         _kln89->_mode = KLN89_MODE_DISP;
     } else {
         if(KLN89_MODE_CRSR == _kln89->_mode) {
-            // TODO - see if we need to delete a waypoint
+            // TODO: see if we need to delete a waypoint
             if(_uLinePos >= 4) {
                 if(_delWp) {
                     // If we are already displaying a clear waypoint dialog in response to the CLR button,
@@ -713,7 +713,7 @@ void KLN89FplPage::ClrPressed() {
 }
 
 void KLN89FplPage::CleanUp() {
-    // TODO - possibly need to clean up _delWp here as well, since it goes off if dto and then ent are pressed.
+    // TODO: possibly need to clean up _delWp here as well, since it goes off if dto and then ent are pressed.
     
     _bEntWp = false;
     for(unsigned int i = 0; i < _kln89->_flightPlans[_subPage]->waypoints.size(); ++i) {
@@ -770,7 +770,7 @@ void KLN89FplPage::EntPressed() {
         }
     } else if(_bEntWp) {
         if(_entWp != NULL) {
-            // TODO - should be able to get rid of this switch I think and use the enum values.
+            // TODO: should be able to get rid of this switch I think and use the enum values.
             switch(_entWp->type) {
             case GPS_WP_APT:
                 _kln89->_activePage = _kln89->_pages[0];
@@ -1006,7 +1006,7 @@ void KLN89FplPage::Knob2Left1() {
             }
             
             if(hdrPos) {
-                // TODO - not sure what we actually do in this condition
+                // TODO: not sure what we actually do in this condition
                 _changeAppr = true;
             } else if(fencePos) {
                 // no-op?
@@ -1090,7 +1090,7 @@ void KLN89FplPage::Knob2Right1() {
             }
             
             if(hdrPos) {
-                // TODO - not sure what we actually do in this condition
+                // TODO: not sure what we actually do in this condition
                 _changeAppr = true;
             } else if(fencePos) {
                 // no-op?

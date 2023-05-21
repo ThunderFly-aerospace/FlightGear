@@ -1451,7 +1451,7 @@ void GPS::addAirportToScratch(FGAirport* aAirport)
     for (unsigned int r=0; r<aAirport->numRunways(); ++r) {
         SGPropertyNode* rwyNd = _scratchNode->getChild("runways", r, true);
         FGRunway* rwy = aAirport->getRunwayByIndex(r);
-        // TODO - filter out unsuitable runways in the future
+        // TODO: filter out unsuitable runways in the future
         // based on config again
         
         rwyNd->setStringValue("id", rwy->ident().c_str());
@@ -1459,7 +1459,7 @@ void GPS::addAirportToScratch(FGAirport* aAirport)
         rwyNd->setIntValue("width-ft", rwy->widthFt());
         rwyNd->setIntValue("heading-deg", rwy->headingDeg());
         // map surface code to a string
-        // TODO - lighting information
+        // TODO: lighting information
         
         if (rwy->ILS()) {
             rwyNd->setDoubleValue("ils-frequency-mhz", rwy->ILS()->get_freq() / 100.0);

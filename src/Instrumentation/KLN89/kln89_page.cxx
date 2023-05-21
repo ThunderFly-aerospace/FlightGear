@@ -218,7 +218,7 @@ const string& KLN89Page::GetId() {
 	return(_id);
 }
 
-// TODO - this function probably shouldn't be here - FG almost certainly has better handling
+// TODO: this function probably shouldn't be here - FG almost certainly has better handling
 // of this somewhere already.
 string KLN89Page::GPSitoa(int n) {
 	char buf[6];

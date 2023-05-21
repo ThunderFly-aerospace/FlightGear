@@ -188,7 +188,7 @@ void QtQuickFGCanvasItem::wheelEvent(QWheelEvent *event)
     canvasEvent->time = event->timestamp() / 1000.0;
     canvasEvent->type = sc::Event::WHEEL;
 
-    // TODO - check if using pixelDelta is beneficial at all.
+    // TODO: check if using pixelDelta is beneficial at all.
     canvasEvent->delta.set(event->angleDelta().x(),
                            event->angleDelta().y());
 }

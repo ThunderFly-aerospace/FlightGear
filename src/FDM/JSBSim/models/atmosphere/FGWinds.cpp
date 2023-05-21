@@ -279,7 +279,7 @@ void FGWinds::Turbulence(double h)
     }
 
     // keep values from last timesteps
-    // TODO maybe use deque?
+    // TODO: maybe use deque?
     static double
       xi_u_km1 = 0, nu_u_km1 = 0,
       xi_v_km1 = 0, xi_v_km2 = 0, nu_v_km1 = 0, nu_v_km2 = 0,

@@ -204,7 +204,7 @@ void FGProps::PropsChannel::beginNasal(const ParameterList &param)
     setTerminator(eofMarker);
 }
 
-//TODO: provide support for different types of subscriptions MODES ? (child added/removed, thesholds, min/max)
+// TODO: provide support for different types of subscriptions MODES ? (child added/removed, thresholds, min/max)
   void FGProps::PropsChannel::valueChanged(SGPropertyNode* ptr)
   {
       _dirtySubscriptions.insert(ptr);

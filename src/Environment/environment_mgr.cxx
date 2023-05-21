@@ -340,7 +340,7 @@ void FGEnvironmentMgr::updateClosestAirport()
             SG_LOG(SG_ENVIRONMENT, SG_DEBUG, "no tower for airport-id=" << nearestAirport->getId());
         }
         //Ensure that the tower isn't at ground level by adding a nominal amount
-        //TODO: (fix the data so that too short or too tall towers aren't present in the data)
+        // TODO: (fix the data so that too short or too tall towers aren't present in the data)
         auto towerAirpotDistance = abs(nearestTowerPosition.getElevationFt() - nearestAirport->geod().getElevationFt());
         if (towerAirpotDistance < min_tower_height_feet) {
             nearestTowerPosition.setElevationFt(nearestTowerPosition.getElevationFt() + default_tower_height_feet);

@@ -76,7 +76,7 @@ void KLN89IntPage::Update(double dt) {
 			                                            _fp->get_lat() * SG_DEGREES_TO_RADIANS, _fp->get_lon() * SG_DEGREES_TO_RADIANS);
 				_nvDist = _kln89->GetGreatCircleDistance(_nearestVor->get_lat() * SG_DEGREES_TO_RADIANS, _nearestVor->get_lon() * SG_DEGREES_TO_RADIANS,
 			                                             _fp->get_lat() * SG_DEGREES_TO_RADIANS, _fp->get_lon() * SG_DEGREES_TO_RADIANS);
-				_refNav = _nearestVor;	// TODO - check that this *always* holds - eg. when changing INT id after explicitly setting ref nav 
+				_refNav = _nearestVor;	// TODO: check that this *always* holds - eg. when changing INT id after explicitly setting ref nav 
 				    					// but with no loss of focus.
 			} else {
 				_refNav = NULL;
@@ -113,7 +113,7 @@ void KLN89IntPage::Update(double dt) {
 			_kln89->DrawText("Rad:", 2, 1, 1);
 			_kln89->DrawText("Dis:", 2, 1, 0);
 			if(_refNav) {
-				_kln89->DrawText(_refNav->get_ident(), 2, 9, 2);	// TODO - flash and allow to change if under cursor
+				_kln89->DrawText(_refNav->get_ident(), 2, 9, 2);	// TODO: flash and allow to change if under cursor
 				//_kln89->DrawHeading(_nvRadial, 2, 11, 1);
 				//_kln89->DrawDist(_nvDist, 2, 11, 0);
 				// Currently our draw heading and draw dist functions don't do as many decimal points as we want here,
@@ -134,7 +134,7 @@ void KLN89IntPage::Update(double dt) {
 			}
 		}
 	} else {
-		// TODO - when we leave the page with invalid id and return it should
+		// TODO: when we leave the page with invalid id and return it should
 		// revert to showing the last valid id.  Same for vor/ndb/probably apt etc.
 		if(_kln89->_mode != KLN89_MODE_CRSR) _kln89->DrawText(_int_id, 2, 1, 3);
 		if(_subPage == 0) {
@@ -151,7 +151,7 @@ void KLN89IntPage::Update(double dt) {
 	
 	if(_kln89->_mode == KLN89_MODE_CRSR) {
 		if(_uLinePos > 0 && _uLinePos < 6) {
-			// TODO - blink as well
+			// TODO: blink as well
 			_kln89->Underline(2, _uLinePos, 3, 1);
 		}
 		for(unsigned int i = 0; i < _int_id.size(); ++i) {
@@ -163,7 +163,7 @@ void KLN89IntPage::Update(double dt) {
 		}
 	}
 	
-	// TODO - fix this duplication - use _id instead of _apt_id, _vor_id, _ndb_id, _int_id etc!
+	// TODO: fix this duplication - use _id instead of _apt_id, _vor_id, _ndb_id, _int_id etc!
 	_id = _int_id;
 	
 	KLN89Page::Update(dt);
@@ -226,7 +226,7 @@ void KLN89IntPage::Knob2Left1() {
 			if(_subPage == 0) {
 				// NO-OP - from/to field is switched by clr button, not inner knob.
 			} else {
-				// TODO - LNR type field.
+				// TODO: LNR type field.
 			}
 		}
 	}
@@ -249,7 +249,7 @@ void KLN89IntPage::Knob2Right1() {
 			if(_subPage == 0) {
 				// NO-OP - from/to field is switched by clr button, not inner knob.
 			} else {
-				// TODO - LNR type field.
+				// TODO: LNR type field.
 			}
 		}
 	}

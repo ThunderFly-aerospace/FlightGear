@@ -334,7 +334,7 @@ void FGATCController::transmit(FGTrafficRecord * rec, FGAirportDynamics *parent,
         break;
     case MSG_CLEARED_TO_LAND:
         activeRunway = rec->getRunway();
-        //TODO Weather
+        // TODO: Weather
         text = receiver + " runway " + activeRunway + " cleared to land. " + sender;
         break;
     case MSG_ACKNOWLEDGE_CLEARED_TO_LAND:

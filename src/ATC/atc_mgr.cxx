@@ -388,7 +388,7 @@ void FGATCManager::update ( double time ) {
                     SG_LOG(SG_AI, SG_BULK, "Error: Could not find Dynamics at airport : " << userAircraftTrafficRef->getDepartureAirport()->getId());
                 }
                 break;
-                /* TODO link up with state system?
+                /* TODO: link up with state system?
             case AILeg::APPROACH:
                 if (userAircraftTrafficRef->getArrivalAirport()->getDynamics()) {
                     controller = trafficRef->getArrivalAirport()->getDynamics()->getApproachController();

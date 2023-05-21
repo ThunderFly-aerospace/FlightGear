@@ -143,7 +143,7 @@ void JSON::toProp(cJSON * json, SGPropertyNode_ptr base)
     const char * name = cj->valuestring;
     if (NULL == name) name = "";
 
-    //TODO: better check for valid name
+    // TODO: better check for valid name
     string namestr = simgear::strutils::strip(string(name));
     if( !namestr.empty() ) {
       int index = 0;

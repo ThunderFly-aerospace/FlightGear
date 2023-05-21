@@ -696,6 +696,6 @@ void FGNewEngine::Do_Prop_Calcs()
         // The problem is that we're doing this calculation backwards - we're working out the thrust from the power consumed and the velocity, which becomes invalid as velocity goes to zero.
         // It would be far more natural to work out the power consumed from the thrust - FIXME!!!!!.
     else
-        prop_thrust = neta_prop * prop_power_consumed_SI / forward_velocity;       //TODO - rename forward_velocity to IAS_SI
+        prop_thrust = neta_prop * prop_power_consumed_SI / forward_velocity;       // TODO: rename forward_velocity to IAS_SI
     //cout << "prop_thrust = " << prop_thrust << '\n';
 }

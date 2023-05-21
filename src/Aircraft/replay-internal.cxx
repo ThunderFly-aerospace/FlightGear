@@ -2067,7 +2067,7 @@ FGReplayInternal::loadTape(
                         );
             }
             m_sim_time = get_end_time(*this);
-            // TODO we could (re)store these too
+            // TODO: we could (re)store these too
             m_last_mt_time = m_last_lt_time = m_sim_time;
         }
         /* done *********************************************************/
