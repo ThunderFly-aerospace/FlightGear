@@ -1,23 +1,10 @@
-// FGAIBallistic - FGAIBase-derived class creates a ballistic object
-//
-// Written by David Culp, started November 2003.
-// - davidculp2@comcast.net
-//
-// With major additions by Mathias Froehlich & Vivian Meazza 2004-2008
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+/*
+ * SPDX-FileName: AIBallistic.cxx
+ * SPDX-FileComment: GAIBase-derived class creates a ballistic object
+ * SPDX-FileCopyrightText: Copyright (C) 2003  David P. Culp - davidculp2@comcast.net
+ * SPDX-FileContributor: With major additions by Mathias Froehlich & Vivian Meazza 2004-2008
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
 
 #include <config.h>
 
@@ -900,7 +887,7 @@ void FGAIBallistic::Run(double dt) {
         //cout<< "_aero_stabilised " << hdg << " az " << _azimuth << endl;
         const double coeff = 0.9;
 
-        // we assume a symetrical MI about the pitch and yaw axis
+        // we assume a symmetrical MI about the pitch and yaw axis
         setPch(_elevation, dt, coeff);
         setHdg(_azimuth, dt, coeff);
     }
@@ -918,7 +905,7 @@ void FGAIBallistic::Run(double dt) {
         if (force_pitch <= force_elevation_deg)
             force_pitch = force_elevation_deg;
 
-        // we assume a symetrical MI about the pitch and yaw axis
+        // we assume a symmetrical MI about the pitch and yaw axis
         setPch(force_pitch,dt, coeff);
         setHdg(_azimuth, dt, coeff);
     }
