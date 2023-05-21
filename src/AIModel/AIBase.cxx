@@ -46,7 +46,7 @@ using namespace simgear;
 
 class FGAIModelData : public simgear::SGModelData {
 public:
-    FGAIModelData(SGPropertyNode *root = nullptr)
+    explicit FGAIModelData(SGPropertyNode *root = nullptr)
       : _root (root)
     {
     }
@@ -105,7 +105,7 @@ public:
      * Not thread-safe. Call from main thread only. */
     void init(void) { _initialized = true; }
 
-    bool needInitilization(void) { return _ready && !_initialized;}
+    bool needInitialization(void) { return _ready && !_initialized;}
     bool isInitialized(void) { return _initialized;}
     inline std::string& get_sound_path() { return _fxpath;}
 
@@ -292,7 +292,7 @@ void FGAIBase::update(double dt) {
     ft_per_deg_lat = 366468.96 - 3717.12 * cos(pos.getLatitudeRad());
     ft_per_deg_lon = 365228.16 * cos(pos.getLatitudeRad());
 
-    if ((_modeldata)&&(_modeldata->needInitilization()))
+    if ((_modeldata)&&(_modeldata->needInitialization()))
     {
         // process deferred nasal initialization,
         // which must be done in main thread
