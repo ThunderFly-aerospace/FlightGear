@@ -434,7 +434,7 @@ void FGAIFlightPlan::setLeadDistance(double speed,
   double turn_radius_m;
   // Handle Ground steering
   // At a turn rate of 30 degrees per second, it takes 12 seconds to do a full 360 degree turn
-  // So, to get an estimate of the turn radius, calculate the cicumference of the circle
+  // So, to get an estimate of the turn radius, calculate the circumference of the circle
   // we travel on. Get the turn radius by dividing by PI (*2).
   // FIXME Why when going backwards? No fabs
   if (speed < 0.5) {
