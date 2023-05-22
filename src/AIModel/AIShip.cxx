@@ -819,16 +819,16 @@ bool FGAIShip::initFlightPlan()
 {
     SG_LOG(SG_AI, SG_ALERT, "AIShip: " << _name << " initializing waypoints ");
 
-    bool init = false;
+    bool doInit = false;
     _start_sec = 0;
     _tunnel = _initial_tunnel;
 
     fp->restart();
     fp->IncrementWaypoint(false);
 
-prev = fp->getPreviousWaypoint();   //first waypoint
-curr = fp->getCurrentWaypoint();    //second waypoint
-next = fp->getNextWaypoint();       //third waypoint (might not exist!)
+    prev = fp->getPreviousWaypoint(); //first waypoint
+    curr = fp->getCurrentWaypoint();  //second waypoint
+    next = fp->getNextWaypoint();     //third waypoint (might not exist!)
 
     while (curr && (curr->getName() == "WAIT" || curr->getName() == "WAITUNTIL")) { // don't wait when initialising
         SG_LOG(SG_AI, SG_DEBUG, "AIShip: " << _name << " re-initializing waypoints ");
@@ -843,16 +843,16 @@ next = fp->getNextWaypoint();       //third waypoint (might not exist!)
 
         if (_start_sec < day_sec) {
             //cout << "flight plan has already started " << _start_time << endl;
-            init = advanceFlightPlan(_start_sec, day_sec);
+            doInit = advanceFlightPlan(_start_sec, day_sec);
 
         } else if (_start_sec > day_sec && _repeat) {
             //cout << "flight plan has not started, " << _start_time;
             //cout << "offsetting start time by -24 hrs" << endl;
             _start_sec -= _day;
-            init = advanceFlightPlan(_start_sec, day_sec);
+            doInit = advanceFlightPlan(_start_sec, day_sec);
         }
 
-        if (init)
+        if (doInit)
             _start_sec = 0; // set to zero for an immediate start of the Flight Plan
         else {
             fp->restart();
@@ -886,9 +886,9 @@ next = fp->getNextWaypoint();       //third waypoint (might not exist!)
     SG_LOG(SG_AI, SG_ALERT, "AIShip: " << _name << " done initialising waypoints " << _tunnel);
 
     if (prev)
-        init = true;
+        doInit = true;
 
-    if (init)
+    if (doInit)
         return true;
     else
         return false;
