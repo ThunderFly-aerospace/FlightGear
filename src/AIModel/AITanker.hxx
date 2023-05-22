@@ -26,10 +26,10 @@
 class FGAITanker : public FGAIAircraft
 {
 public:
-    FGAITanker(FGAISchedule* ref = 0);
+    explicit FGAITanker(FGAISchedule* ref = 0);
     virtual ~FGAITanker() = default;
 
-    std::string_view getTypeString(void) const override { return "tanker"; }
+    std::string_view getTypeString() const override { return "tanker"; }
     void readFromScenario(SGPropertyNode* scFileNode) override;
     void bind() override;
 

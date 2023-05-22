@@ -1,56 +1,47 @@
-// AITanker.cxx  Based on David Culp's AIModel code
-// - Tanker specific code isolated from AI Aircraft code
-// by Thomas Foerster, started June 2007
-//
-// 
-// Original code written by David Culp, started October 2003.
-// - davidculp2@comcast.net/
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+/*
+ * SPDX-FileName: AITanker.cxx
+ * SPDX-FileComment: Tanker specific code isolated from AI Aircraft code, based on David Culp's AIModel code
+ * SPDX-FileCopyrightText: by Thomas Foerster, started June 2007
+ * SPDX-FileContributor: Original code written by David Culp, started October 2003 - davidculp2@comcast.net
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
 
 #include "AITanker.hxx"
 
-using std::string;
 
-FGAITanker::FGAITanker(FGAISchedule* ref): FGAIAircraft(ref){
+FGAITanker::FGAITanker(FGAISchedule* ref) : FGAIAircraft(ref)
+{
 }
 
-void FGAITanker::readFromScenario(SGPropertyNode* scFileNode) {
+void FGAITanker::readFromScenario(SGPropertyNode* scFileNode)
+{
     if (!scFileNode)
         return;
 
     FGAIAircraft::readFromScenario(scFileNode);
-    setTACANChannelID(scFileNode->getStringValue("TACAN-channel-ID",""));
+    setTACANChannelID(scFileNode->getStringValue("TACAN-channel-ID", ""));
     setName(scFileNode->getStringValue("name", "Tanker"));
 }
 
-void FGAITanker::bind() {
+void FGAITanker::bind()
+{
     FGAIAircraft::bind();
 
     tie("refuel/contact", SGRawValuePointer<bool>(&contact));
-    tie("position/altitude-agl-ft",SGRawValuePointer<double>(&altitude_agl_ft));
+    tie("position/altitude-agl-ft", SGRawValuePointer<double>(&altitude_agl_ft));
 
     props->setStringValue("navaids/tacan/channel-ID", TACAN_channel_id.c_str());
     props->setStringValue("name", _name.c_str());
     props->setBoolValue("tanker", true);
 }
 
-void FGAITanker::setTACANChannelID(const string& id) {
+void FGAITanker::setTACANChannelID(const std::string& id)
+{
     TACAN_channel_id = id;
 }
 
-void FGAITanker::Run(double dt) {
+void FGAITanker::Run(double dt)
+{
     double start = pos.getElevationFt() + 1000.0;
     altitude_agl_ft = _getAltitudeAGL(pos, start);
 
@@ -60,15 +51,16 @@ void FGAITanker::Run(double dt) {
     double range_ft2 = UpdateRadar(manager);
 
     // check if radar contact
-    if ( (range_ft2 < 250.0 * 250.0) && (y_shift > 0.0) && (elevation > 0.0) ) {
+    if ((range_ft2 < 250.0 * 250.0) && (y_shift > 0.0) && (elevation > 0.0)) {
         contact = true;
     } else {
         contact = false;
     }
 }
 
-void FGAITanker::update(double dt) {
-     FGAIAircraft::update(dt);
-     Run(dt);
-     Transform();
+void FGAITanker::update(double dt)
+{
+    FGAIAircraft::update(dt);
+    Run(dt);
+    Transform();
 }
