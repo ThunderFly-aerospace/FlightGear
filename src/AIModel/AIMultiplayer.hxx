@@ -22,7 +22,7 @@ public:
     FGAIMultiplayer();
     virtual ~FGAIMultiplayer() = default;
 
-    std::string_view getTypeString(void) const override { return "multiplayer"; }
+    std::string_view getTypeString() const override { return "multiplayer"; }
     bool init(ModelSearchOrder searchOrder) override;
     void bind() override;
     void update(double dt) override;
@@ -33,7 +33,7 @@ public:
   void setDoubleProperty(const std::string& prop, double val);
 #endif
 
-    long getLastTimestamp(void) const
+    long getLastTimestamp() const
     {
         return mLastTimestamp;
     }
@@ -42,7 +42,7 @@ public:
     {
         mAllowExtrapolation = allowExtrapolation;
     }
-    bool getAllowExtrapolation(void) const
+    bool getAllowExtrapolation() const
     {
         return mAllowExtrapolation;
     }
@@ -54,7 +54,7 @@ public:
         mLagAdjustSystemSpeed = lagAdjustSystemSpeed;
     }
 
-    double getLagAdjustSystemSpeed(void) const
+    double getLagAdjustSystemSpeed() const
     {
         return mLagAdjustSystemSpeed;
     }
@@ -64,7 +64,7 @@ public:
         mPropertyMap[id] = props->getNode(name, true);
     }
 
-    double getplayerLag(void) const
+    double getplayerLag() const
     {
         return playerLag;
     }
@@ -74,7 +74,7 @@ public:
         playerLag = mplayerLag;
     }
 
-    int getcompensateLag(void) const
+    int getcompensateLag() const
     {
         return compensateLag;
     }

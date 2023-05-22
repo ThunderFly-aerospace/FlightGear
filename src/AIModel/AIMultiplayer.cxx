@@ -1,25 +1,10 @@
-// FGAIMultiplayer - FGAIBase-derived class creates an AI multiplayer aircraft
-//
-// Based on FGAIAircraft
-// Written by David Culp, started October 2003.
-// Also by Gregor Richards, started December 2005.
-//
-// Copyright (C) 2003  David P. Culp - davidculp2@comcast.net
-// Copyright (C) 2005  Gregor Richards
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+/*
+ * SPDX-FileName: AIMultiplayer.cxx
+ * SPDX-FileComment: AIBase-derived class creates an AI multiplayer aircraft
+ * SPDX-FileCopyrightText: Copyright (C) 2003  David P. Culp - davidculp2@comcast.net
+ * SPDX-FileContributor: Also by Gregor Richards, started December 2005.
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
 
 #include <config.h>
 
@@ -60,7 +45,7 @@ bool FGAIMultiplayer::init(ModelSearchOrder searchOrder)
     const string str2 = "MOBIL";
 
     string::size_type loc1= str1.find( str2, 0 );
-    if ( (loc1 != string::npos && str2 != "") ){
+    if ( (loc1 != string::npos) ){
         // cout << " string found " << str2 << " in " << str1 << endl;
         isTanker = true;
         // cout << "isTanker " << isTanker << " " << mCallSign <<endl;
@@ -272,7 +257,7 @@ void FGAIMultiplayer::FGAIMultiplayerExtrapolate(
     props->setDoubleValue("lag/norm-vel", normVel);
     props->setDoubleValue("lag/norm-angular-vel", normAngularVel);
     
-    // not doing rotationnal prediction for small speed or rotation rate,
+    // not doing rotational prediction for small speed or rotation rate,
     // to avoid agitated parked plane
     
     if (( normAngularVel > 0.05 ) || ( normVel > 1.0 ))
@@ -608,7 +593,7 @@ void FGAIMultiplayer::update(double dt)
     
     if (nextIt != mMotionInfo.end() && nextIt->first >= tInterp)
     {
-        // Ok, we need a time prevous to the last available packet,
+        // Ok, we need a time previous to the last available packet,
         // that is good ...
         // the case tInterp = curentPkgTime need to be in the interpolation, to avoid a bug zeroing the position
 
@@ -864,7 +849,7 @@ FGAIMultiplayer::addMotionInfo(FGExternalMotionData& motionInfo,
         // wildly different times from us, if simple-time mode is enabled.
         //
         // So most code with an <iterator> into mMotionInfo that needs to
-        // use the MP packet's time, will actuall use iterator->first, not
+        // use the MP packet's time, will actually use iterator->first, not
         // iterator->second.time..
         //
         mMotionInfo[t_key] = motionInfo;
