@@ -8,9 +8,9 @@
 #include <string>
 #include <vector>
 
+#include <simgear/math/SGMath.hxx>
 #include <simgear/props/props.hxx>
 #include <simgear/structure/subsystem_mgr.hxx>
-#include <simgear/math/SGMath.hxx>
 
 #include <Autopilot/inputvalue.hxx>
 
@@ -28,68 +28,68 @@ public:
         SGPropertyNode_ptr submodel_node;
         SGPropertyNode_ptr speed_node;
 
-        std::string        name;
-        std::string        model;
-        double             speed;
-        bool               slaved;
-        bool               repeat;
-        double             delay;
-        double             timer;
-        int                count;
-        bool               offsets_in_meter;
+        std::string name;
+        std::string model;
+        double speed;
+        bool slaved;
+        bool repeat;
+        double delay;
+        double timer;
+        int count;
+        bool offsets_in_meter;
         FGXMLAutopilot::InputValue_ptr x_offset;
         FGXMLAutopilot::InputValue_ptr y_offset;
         FGXMLAutopilot::InputValue_ptr z_offset;
         FGXMLAutopilot::InputValue_ptr yaw_offset;
         FGXMLAutopilot::InputValue_ptr pitch_offset;
-        double             drag_area;
-        double             life;
-        double             buoyancy;
+        double drag_area;
+        double life;
+        double buoyancy;
         FGXMLAutopilot::InputValue_ptr azimuth_error;
         FGXMLAutopilot::InputValue_ptr elevation_error;
         FGXMLAutopilot::InputValue_ptr cd_randomness;
         FGXMLAutopilot::InputValue_ptr life_randomness;
-        bool               wind;
-        bool               first_time;
-        double             cd;
-        double             weight;
-        double             mass;
-        double             contents;
-        bool               aero_stabilised;
-        int                id;
-        bool               no_roll;
-        bool               serviceable;
-        bool               random;
-        bool               collision;
-        bool               expiry;
-        bool               impact;
-        std::string        impact_report;
-        double             fuse_range;
-        std::string        submodel;
-        int                sub_id;
-        bool               force_stabilised;
-        bool               ext_force;
-        std::string        force_path;
-    }   submodel;
+        bool wind;
+        bool first_time;
+        double cd;
+        double weight;
+        double mass;
+        double contents;
+        bool aero_stabilised;
+        int id;
+        bool no_roll;
+        bool serviceable;
+        bool random;
+        bool collision;
+        bool expiry;
+        bool impact;
+        std::string impact_report;
+        double fuse_range;
+        std::string submodel;
+        int sub_id;
+        bool force_stabilised;
+        bool ext_force;
+        std::string force_path;
+    } submodel;
 
     typedef struct {
-        double     lat;
-        double     lon;
-        double     alt;
-        double     roll;
-        double     azimuth;
-        double     elevation;
-        double     speed;
-        double     wind_from_east;
-        double     wind_from_north;
-        double     speed_down_fps;
-        double     speed_east_fps;
-        double     speed_north_fps;
-        double     mass;
-        int        id;
-        bool       no_roll;
-        int        parent_id;
-    }   IC_struct;
+        double lat;
+        double lon;
+        double alt;
+        double roll;
+        double azimuth;
+        double elevation;
+        double speed;
+        double wind_from_east;
+        double wind_from_north;
+        double speed_down_fps;
+        double speed_east_fps;
+        double speed_north_fps;
+        double mass;
+        int id;
+        bool no_roll;
+        int parent_id;
+    } IC_struct;
 
     FGSubmodelMgr();
     virtual ~FGSubmodelMgr() = default;
@@ -108,39 +108,39 @@ public:
     void load();
 
 private:
-    typedef std::vector <submodel*> submodel_vector_type;
+    typedef std::vector<submodel*> submodel_vector_type;
     typedef submodel_vector_type::iterator submodel_vector_iterator;
 
-    submodel_vector_type       submodels;
-    submodel_vector_type       subsubmodels;
-    submodel_vector_iterator   submodel_iterator, subsubmodel_iterator;
+    submodel_vector_type submodels;
+    submodel_vector_type subsubmodels;
+    submodel_vector_iterator submodel_iterator, subsubmodel_iterator;
 
-    int index;
+    int index{0};
 
     double x_offset, y_offset, z_offset;
     double pitch_offset, yaw_offset;
 
-    double _parent_lat;
-    double _parent_lon;
-    double _parent_elev;
-    double _parent_hdg;
-    double _parent_pitch;
-    double _parent_roll;
-    double _parent_speed;
+    double _parent_lat{0.0};
+    double _parent_lon{0.0};
+    double _parent_elev{0.0};
+    double _parent_hdg{0.0};
+    double _parent_pitch{0.0};
+    double _parent_roll{0.0};
+    double _parent_speed{0.0};
 
-    double _x_offset;
-    double _y_offset;
-    double _z_offset;
+    double _x_offset{0.0};
+    double _y_offset{0.0};
+    double _z_offset{0.0};
 
     // Conversion factor
     static const double lbs_to_slugs;
 
-    double contrail_altitude;
+    double contrail_altitude{0.0};
 
-    bool _impact;
-    bool _hit;
-    bool _expiry;
-    bool _found_sub;
+    bool _impact{false};
+    bool _hit{false};
+    bool _expiry{false};
+    bool _found_sub{false};
 
     SGPropertyNode_ptr _serviceable_node;
     SGPropertyNode_ptr _user_lat_node;
@@ -166,7 +166,7 @@ private:
     SGPropertyNode_ptr _path_node;
     SGPropertyNode_ptr _selected_ac;
 
-    IC_struct  IC;
+    IC_struct IC;
 
     // Helper to retrieve the AI manager, if it currently exists
     FGAIManager* aiManager();
@@ -174,12 +174,12 @@ private:
     void loadAI();
     void loadSubmodels();
     void setData(int id, const std::string& path, bool serviceable, const std::string& property_path, submodel_vector_type& models);
-    void valueChanged (SGPropertyNode *);
-    void transform(submodel *);
+    void valueChanged(SGPropertyNode*);
+    void transform(submodel*);
     void setParentNode(int parent_id);
-    bool release(submodel *, double dt);
+    bool release(submodel*, double dt);
 
-    int _count;
+    int _count{0};
 
     SGGeod userpos;
     SGGeod offsetpos;
