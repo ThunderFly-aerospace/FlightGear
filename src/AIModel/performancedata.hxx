@@ -1,5 +1,4 @@
-#ifndef PERFORMANCEDATA_HXX
-#define PERFORMANCEDATA_HXX
+#pragma once
 
 class FGAIAircraft;
 class SGPropertyNode;
@@ -14,18 +13,18 @@ class PerformanceData
 public:
     PerformanceData();
 
-    explicit PerformanceData(PerformanceData* clone);
+    explicit PerformanceData(const PerformanceData* clone);
 
     void initFromProps(SGPropertyNode* props);
 
-    ~PerformanceData() = default;
+    virtual ~PerformanceData() = default;
 
-    double actualSpeed(FGAIAircraft* ac, double tgt_speed, double dt, bool needMaxBrake);
-    double actualBankAngle(FGAIAircraft* ac, double tgt_roll, double dt);
-    double actualPitch(FGAIAircraft* ac, double tgt_pitch, double dt);
-    double actualHeading(FGAIAircraft* ac, double tgt_heading, double dt);
-    double actualAltitude(FGAIAircraft* ac, double tgt_altitude, double dt);
-    double actualVerticalSpeed(FGAIAircraft* ac, double tgt_vs, double dt);
+    double actualSpeed(const FGAIAircraft* ac, double tgt_speed, double dt, bool needMaxBrake);
+    double actualBankAngle(const FGAIAircraft* ac, double tgt_roll, double dt);
+    double actualPitch(const FGAIAircraft* ac, double tgt_pitch, double dt);
+    double actualHeading(const FGAIAircraft* ac, double tgt_heading, double dt);
+    double actualAltitude(const FGAIAircraft* ac, double tgt_altitude, double dt);
+    double actualVerticalSpeed(const FGAIAircraft* ac, double tgt_vs, double dt);
 
     bool gearExtensible(const FGAIAircraft* ac);
 
@@ -56,27 +55,25 @@ public:
     static PerformanceData* getDefaultData();
 
 private:
-    double _acceleration;
-    double _deceleration;
-    double _brakeDeceleration;
-    double _climbRate;
-    double _descentRate;
-    double _vRotate;
-    double _vTakeOff;
-    double _vClimb;
-    double _vCruise;
-    double _vDescent;
-    double _vApproach;
-    double _vTouchdown;
-    double _vTaxi;
+    double _acceleration{0.0};
+    double _deceleration{0.0};
+    double _brakeDeceleration{0.0};
+    double _climbRate{0.0};
+    double _descentRate{0.0};
+    double _vRotate{0.0};
+    double _vTakeOff{0.0};
+    double _vClimb{0.0};
+    double _vCruise{0.0};
+    double _vDescent{0.0};
+    double _vApproach{0.0};
+    double _vTouchdown{0.0};
+    double _vTaxi{0.0};
 
-    double _rollrate;
-    double _maxbank;
+    double _rollrate{0.0};
+    double _maxbank{0.0};
 
     // Data for aerodynamic wake computation
-    double _wingSpan;
-    double _wingChord;
-    double _weight;
+    double _wingSpan{0.0};
+    double _wingChord{0.0};
+    double _weight{0.0};
 };
-
-#endif
