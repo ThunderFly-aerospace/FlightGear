@@ -93,9 +93,9 @@ public:
 
     const std::string& getName() { return name; };
     const SGGeod& getPos() { return pos; };
-    double getLatitude();
-    double getLongitude();
-    double getAltitude();
+    double getLatitude() const;
+    double getLongitude() const;
+    double getAltitude() const;
     double getSpeed() { return speed; };
 
     double getCrossat() { return crossat; };
@@ -198,7 +198,7 @@ public:
     void restart(void);
     int getNrOfWayPoints() { return waypoints.size(); }
 
-    int getRouteIndex(int i); // returns the AI related index of this current routes.
+    int getRouteIndex(int i) const; // returns the AI related index of this current routes.
 
     const std::string& getRunway() { return activeRunway; }
     bool isActive(time_t time) { return time >= this->getStartTime(); }
@@ -220,12 +220,12 @@ public:
     void setSID(FGAIFlightPlan* fp) { sid = fp; };
     FGAIFlightPlan* getSID() { return sid; };
     FGAIWaypoint* getWayPoint(int i) { return waypoints[i]; };
-    FGAIWaypoint* getLastWaypoint();
+    FGAIWaypoint* getLastWaypoint() const;
 
-    void shortenToFirst(unsigned int number, std::string name);
+    void shortenToFirst(unsigned int number, const std::string& name);
 
     void setGate(const ParkingAssignment& pka);
-    FGParking* getParkingGate();
+    FGParking* getParkingGate() const;
 
     FGAirportRef departureAirport() const;
     FGAirportRef arrivalAirport() const;
