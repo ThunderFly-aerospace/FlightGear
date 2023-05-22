@@ -48,21 +48,21 @@ private:
     void Run(double dt);
 
     double get_strength_fac(double alt_frac);
-    double max_strength;
-    double strength;
-    double diameter;
-    double height = 0.0;
-    double factor;
-    double alt_rel = 0.0;
-    double alt;
-    double v_up_max = 0.0;
-    double v_up_min = 0.0;
-    double r_up_frac = 0.0;
-    double cycle_timer;
-    double dt_count;
-    double time = 0.0;
-    double xx = 0.0;
-    double ground_elev_ft; // ground level in ft
+    double max_strength{0.0};
+    double strength{0.0};
+    double diameter{0.0};
+    double height{0.0};
+    double factor{0.0};
+    double alt_rel{0.0};
+    double alt{0.0};
+    double v_up_max{0.0}; //max updraft at the user altitude and time
+    double v_up_min{0.0}; //min updraft at the user altitude and time, this is a negative number
+    double r_up_frac{0.9}; //the relative radius of the thermal where we have updraft, between 0 an 1
+    double cycle_timer{0.0};
+    double dt_count{0.0};
+    double time{0.0};
+    double xx{0.0};
+    double ground_elev_ft{0.0}; // ground level in ft
 
     bool do_agl_calc = false;
     bool is_forming = false;
