@@ -67,7 +67,7 @@ private:
     stringVec landing;
     stringVec takeoff;
     stringVec milActive, comActive, genActive, ulActive;
-    stringVec* currentlyActive;
+    stringVec* currentlyActive{nullptr};
 
     int atisSequenceIndex;
     double atisSequenceTimeStamp;
@@ -86,7 +86,7 @@ private:
     SGTimeStamp _lastFallbackUpdate;
     FGRunwayList _fallbackDepartureRunways,
         _fallbackArrivalRunways;
-    unsigned int _fallbackRunwayCounter;
+    unsigned int _fallbackRunwayCounter{0};
 
 public:
     explicit FGAirportDynamics(FGAirport* ap);
