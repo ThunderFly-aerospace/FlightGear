@@ -7,7 +7,6 @@
 
 #pragma once
 
-#include "airport.hxx"
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -18,10 +17,13 @@
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>
 
+#include "airport.hxx"
+
 
 class NavDataCache;
 class sg_gzifstream;
 class FGPavement;
+
 
 namespace flightgear {
 
@@ -29,7 +31,7 @@ class APTLoader
 {
 public:
     APTLoader();
-    ~APTLoader();
+    virtual ~APTLoader();
 
     // Read the specified apt.dat file into 'airportInfoMap'.
     // 'bytesReadSoFar' and 'totalSizeOfAllAptDatFiles' are used for progress
@@ -43,11 +45,11 @@ public:
 
     // Load a specific airport defined in aptdb_file, and return a "rich" view
     // of the airport including taxiways, pavement and line features.
-    const FGAirport* loadAirportFromFile(std::string id, const SGPath& aptdb_file);
+    const FGAirport* loadAirportFromFile(const std::string& id, const SGPath& aptdb_file);
 
 private:
     struct Line {
-        Line(unsigned int number_, unsigned int rowCode_, std::string str_)
+        Line(unsigned int number_, unsigned int rowCode_, const std::string& str_)
             : number(number_), rowCode(rowCode_), str(str_) {}
 
         unsigned int number;
@@ -78,7 +80,7 @@ private:
     APTLoader(const APTLoader&);            // disable copy constructor
     APTLoader& operator=(const APTLoader&); // disable copy-assignment operator
 
-    const FGAirport* loadAirport(const std::string aptDat, const std::string airportID, RawAirportInfo* airport_info, bool createFGAirport = false);
+    const FGAirport* loadAirport(const std::string& aptDat, const std::string& airportID, RawAirportInfo* airport_info, bool createFGAirport = false);
 
     // Tell whether an apt.dat line is blank or a comment line
     bool isBlankOrCommentLine(const std::string& line);
@@ -111,10 +113,10 @@ private:
 
     std::vector<std::string> token;
     AirportInfoMapType airportInfoMap;
-    double rwy_lat_accum;
-    double rwy_lon_accum;
-    double last_rwy_heading;
-    int rwy_count;
+    double rwy_lat_accum{0.0};
+    double rwy_lon_accum{0.0};
+    double last_rwy_heading{0.0};
+    int rwy_count{0};
     std::string last_apt_id;
     double last_apt_elev;
     SGGeod tower;
