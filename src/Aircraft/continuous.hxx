@@ -1,42 +1,40 @@
 #pragma once
 
-#include "replay-internal.hxx"
-
-#include <simgear/props/props.hxx>
-
 #include <fstream>
-
 #include <mutex>
 #include <thread>
 
+#include <simgear/props/props.hxx>
 
-struct Continuous : SGPropertyChangeListener
-{
-    Continuous(std::shared_ptr<FGFlightRecorder> flight_recorder);
-    
+#include "replay-internal.hxx"
+
+
+struct Continuous : SGPropertyChangeListener {
+    explicit Continuous(std::shared_ptr<FGFlightRecorder> flight_recorder);
+
     /* Callback for SGPropertyChangeListener. */
-    void valueChanged(SGPropertyNode * node) override;
-    
-    std::shared_ptr<FGFlightRecorder>   m_flight_recorder;
-    
-    std::ifstream                   m_in;
-    bool                            m_in_multiplayer = false;
-    bool                            m_in_extra_properties = false;
-    std::mutex                      m_in_time_to_frameinfo_lock;
-    std::map<double, FGFrameInfo>   m_in_time_to_frameinfo;
-    SGPropertyNode_ptr              m_in_config;
-    double                          m_in_time_last = 0;
-    double                          m_in_frame_time_last = 0;
+    void valueChanged(SGPropertyNode* node) override;
+
+    std::shared_ptr<FGFlightRecorder> m_flight_recorder;
+
+    std::ifstream m_in;
+    bool m_in_multiplayer = false;
+    bool m_in_extra_properties = false;
+    std::mutex m_in_time_to_frameinfo_lock;
+    std::map<double, FGFrameInfo> m_in_time_to_frameinfo;
+    SGPropertyNode_ptr m_in_config;
+    double m_in_time_last = 0;
+    double m_in_frame_time_last = 0;
     std::map<size_t, std::shared_ptr<FGReplayData>>
-                                    m_in_pos_to_frame;
-    
-    std::ifstream                   m_indexing_in;
-    std::streampos                  m_indexing_pos;
-    
-    bool                            m_replay_create_video = false;
-    double                          m_replay_fixed_dt = -1;
-    double                          m_replay_fixed_dt_prev = -1;
-    
+        m_in_pos_to_frame;
+
+    std::ifstream m_indexing_in;
+    std::streampos m_indexing_pos;
+
+    bool m_replay_create_video = false;
+    double m_replay_fixed_dt = -1;
+    double m_replay_fixed_dt_prev = -1;
+
     // Only used for gathering statistics that are then written into
     // properties.
     //
@@ -44,10 +42,10 @@ struct Continuous : SGPropertyChangeListener
     int m_num_frames_multiplayer = 0;
 
     // For writing Continuous fgtape file.
-    SGPropertyNode_ptr  m_out_config;
-    std::ofstream       m_out;
-    int                 m_out_compression = 0;
-    int                 m_in_compression = 0;
+    SGPropertyNode_ptr m_out_config;
+    std::ofstream m_out;
+    int m_out_compression = 0;
+    int m_in_compression = 0;
 };
 
 /* Attempts to load Continuous recording header properties into
@@ -60,12 +58,11 @@ int loadContinuousHeader(const std::string& path, std::istream* in, SGPropertyNo
 
 /* Writes one frame of continuous record information. */
 bool continuousWriteFrame(
-        Continuous& continuous,
-        FGReplayData* r,
-        std::ostream& out,
-        SGPropertyNode_ptr config,
-        FGTapeType tape_type
-        );
+    Continuous& continuous,
+    FGReplayData* r,
+    std::ostream& out,
+    SGPropertyNode_ptr config,
+    FGTapeType tape_type);
 
 /* Opens continuous recording file and writes header.
 
@@ -79,12 +76,11 @@ such information.
 If path_override is not "", we use it as the path (instead of the path
 determined by saveSetup(). */
 SGPropertyNode_ptr continuousWriteHeader(
-        Continuous&         continuous,
-        FGFlightRecorder*   m_pRecorder,
-        std::ofstream&      out,
-        const SGPath&       path,
-        FGTapeType          tape_type
-        );
+    Continuous& continuous,
+    FGFlightRecorder* m_pRecorder,
+    std::ofstream& out,
+    const SGPath& path,
+    FGTapeType tape_type);
 
 /* Replays one frame from Continuous recording.
 
