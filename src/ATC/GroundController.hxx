@@ -28,8 +28,10 @@
 #include <string>
 
 #include <ATC/trafficcontrol.hxx>
+#include <ATC/TowerController.hxx>
 
 class FGAirportDynamics;
+
 
 /**************************************************************************************
  * class FGGroundController
