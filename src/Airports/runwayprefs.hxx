@@ -78,7 +78,6 @@ private:
     std::string name;
     RunwayListVec rwyList;
     int active = -1;
-    //stringVec runwayNames;
     int choice[2] = {0};
     int nrActive = 0;
 
@@ -96,7 +95,6 @@ public:
 
     const std::string& getName() const { return name; };
     void clear() { rwyList.clear(); };
-    //void add(string, string);
 };
 
 /******************************************************************************/

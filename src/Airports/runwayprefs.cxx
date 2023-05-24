@@ -1,25 +1,9 @@
-// runwayprefs.cxx - class implementations corresponding to runwayprefs.hxx
-// assignments by the AI code
-//
-// Written by Durk Talsma, started January 2005.
-//
-// Copyright (C) 2004 Durk Talsma.
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-//
-// $Id$
+/*
+ * SPDX-FileName: runwayprefs.cxx
+ * SPDX-FileComment: class implementations corresponding to runwayprefs.hxx assignments by the AI code
+ * SPDX-FileCopyrightText: Copyright (C) 2004 Durk Talsma.
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
 
 #include <config.h>
 
@@ -33,14 +17,16 @@
 #include <simgear/misc/strutils.hxx>
 #include <simgear/structure/exception.hxx>
 
-#include <Main/globals.hxx>
 #include <Airports/runways.hxx>
+#include <Main/globals.hxx>
 
-#include "runwayprefs.hxx"
 #include "airport.hxx"
+#include "runwayprefs.hxx"
+
 
 using namespace std::string_literals;
 using namespace simgear;
+
 
 /******************************************************************************
  * ScheduleTime
@@ -53,51 +39,43 @@ void ScheduleTime::clear()
 }
 
 
-ScheduleTime::ScheduleTime(const ScheduleTime & other)
+ScheduleTime::ScheduleTime(const ScheduleTime& other)
 {
-    //timeVec   start;
     timeVecConstIterator i;
-    for (i = other.start.begin(); i != other.start.end(); i++)
+    for (i = other.start.begin(); i != other.start.end(); ++i)
         start.push_back(*i);
-    for (i = other.end.begin(); i != other.end.end(); i++)
+    for (i = other.end.begin(); i != other.end.end(); ++i)
         end.push_back(*i);
     stringVecConstIterator k;
-    for (k = other.scheduleNames.begin(); k != other.scheduleNames.end();
-         k++)
+    for (k = other.scheduleNames.begin(); k != other.scheduleNames.end(); ++k)
         scheduleNames.push_back(*k);
 
-    //timeVec   end;
-    //stringVec scheduleNames;
     tailWind = other.tailWind;
     crssWind = other.tailWind;
 }
 
 
-ScheduleTime & ScheduleTime::operator=(const ScheduleTime & other)
+ScheduleTime& ScheduleTime::operator=(const ScheduleTime& other)
 {
-    //timeVec   start;
     clear();
     timeVecConstIterator i;
-    for (i = other.start.begin(); i != other.start.end(); i++)
+    for (i = other.start.begin(); i != other.start.end(); ++i)
         start.push_back(*i);
-    for (i = other.end.begin(); i != other.end.end(); i++)
+    for (i = other.end.begin(); i != other.end.end(); ++i)
         end.push_back(*i);
     stringVecConstIterator k;
-    for (k = other.scheduleNames.begin(); k != other.scheduleNames.end();
-         k++)
+    for (k = other.scheduleNames.begin(); k != other.scheduleNames.end(); ++k)
         scheduleNames.push_back(*k);
 
-    //timeVec   end;
-    //stringVec scheduleNames;
     tailWind = other.tailWind;
     crssWind = other.tailWind;
+
     return *this;
 }
 
 std::string ScheduleTime::getName(time_t dayStart)
 {
-    if ((start.size() != end.size())
-        || (start.size() != scheduleNames.size())) {
+    if ((start.size() != end.size()) || (start.size() != scheduleNames.size())) {
         SG_LOG(SG_GENERAL, SG_INFO, "Unable to parse schedule times");
         throw sg_exception("Unable to parse schedule times");
     } else {
@@ -121,27 +99,26 @@ std::string ScheduleTime::getName(time_t dayStart)
  * RunwayList
  *****************************************************************************/
 
-RunwayList::RunwayList(const RunwayList & other)
+RunwayList::RunwayList(const RunwayList& other) : type{other.type}
 {
-    type = other.type;
     stringVecConstIterator i;
     for (i = other.preferredRunways.begin();
-         i != other.preferredRunways.end(); i++)
+         i != other.preferredRunways.end(); ++i)
         preferredRunways.push_back(*i);
 }
 
-RunwayList & RunwayList::operator=(const RunwayList & other)
+RunwayList& RunwayList::operator=(const RunwayList& other)
 {
     type = other.type;
     preferredRunways.clear();
     stringVecConstIterator i;
     for (i = other.preferredRunways.begin();
-         i != other.preferredRunways.end(); i++)
+         i != other.preferredRunways.end(); ++i)
         preferredRunways.push_back(*i);
     return *this;
 }
 
-void RunwayList::set(const std::string & tp, const std::string & lst)
+void RunwayList::set(const std::string& tp, const std::string& lst)
 {
     //weekday          = atoi(timeCopy.substr(0,1).c_str());
     //    timeOffsetInDays = weekday - currTimeDate->getGmt()->tm_wday;
@@ -168,45 +145,45 @@ void RunwayList::clear()
  *
  ***************************************************************************/
 
-RunwayGroup::RunwayGroup(const RunwayGroup & other)
+RunwayGroup::RunwayGroup(const RunwayGroup& other) : name{other.name}
 {
-    name = other.name;
     RunwayListVecConstIterator i;
-    for (i = other.rwyList.begin(); i != other.rwyList.end(); i++)
+    for (i = other.rwyList.begin(); i != other.rwyList.end(); ++i)
         rwyList.push_back(*i);
     choice[0] = other.choice[0];
     choice[1] = other.choice[1];
     nrActive = other.nrActive;
 }
 
-RunwayGroup & RunwayGroup::operator=(const RunwayGroup & other)
+RunwayGroup& RunwayGroup::operator=(const RunwayGroup& other)
 {
     rwyList.clear();
     name = other.name;
     RunwayListVecConstIterator i;
-    for (i = other.rwyList.begin(); i != other.rwyList.end(); i++)
+    for (i = other.rwyList.begin(); i != other.rwyList.end(); ++i)
         rwyList.push_back(*i);
+    active = other.active;
     choice[0] = other.choice[0];
     choice[1] = other.choice[1];
     nrActive = other.nrActive;
+
     return *this;
 }
 
-void RunwayGroup::setActive(const FGAirport * airport,
+void RunwayGroup::setActive(const FGAirport* airport,
                             double windSpeed,
                             double windHeading,
                             double maxTail,
-                            double maxCross, stringVec * currentlyActive)
+                            double maxCross, stringVec* currentlyActive)
 {
-    FGRunway *rwy;
-    int activeRwys = rwyList.size();    // get the number of runways active
+    FGRunway* rwy;
+    int activeRwys = rwyList.size(); // get the number of runways active
     int nrOfPreferences;
     // bool found = true;
     // double heading;
     double hdgDiff;
     double crossWind;
     double tailWind;
-    std::string name;
     //stringVec names;
     int bestMatch = 0, bestChoice = 0;
 
@@ -220,26 +197,24 @@ void RunwayGroup::setActive(const FGAirport * airport,
     // starting by the least preferred choice working toward the most preferred choice
 
     nrOfPreferences = rwyList[0].getPreferredRunways().size();
-    bool validSelection = true;
     bool foundValidSelection = false;
     for (int i = nrOfPreferences - 1; i >= 0; i--) {
         int match = 0;
-
 
         // Test each runway listed in the preference to see if it's possible to use
         // If one runway of the selection isn't allowed, we need to exclude this
         // preference, however, we don't want to stop right there, because we also
         // don't want to randomly swap runway preferences, unless there is a need to.
         //
-        validSelection = true;
+        bool validSelection = true;
 
         for (int j = 0; j < activeRwys; j++) {
             const auto& currentRunwayPrefs = rwyList.at(j).getPreferredRunways();
 
             // if this rwyList has shorter preferences vec than the first one,
-            // don't crash accesing an invalid index.
+            // don't crash accessing an invalid index.
             // see https://sourceforge.net/p/flightgear/codetickets/2439/
-            if ((int) currentRunwayPrefs.size() <= i) {
+            if ((int)currentRunwayPrefs.size() <= i) {
                 validSelection = false;
                 continue;
             }
@@ -256,8 +231,7 @@ void RunwayGroup::setActive(const FGAirport * airport,
 
             //cerr << "Succes" << endl;
             hdgDiff = fabs(windHeading - rwy->headingDeg());
-            name = rwy->name();
-
+            std::string l_name = rwy->name();
 
             if (hdgDiff > 180)
                 hdgDiff = 360 - hdgDiff;
@@ -276,9 +250,9 @@ void RunwayGroup::setActive(const FGAirport * airport,
             }
             //cerr << endl;
             for (stringVecIterator it = currentlyActive->begin();
-                 it != currentlyActive->end(); it++) {
-                //cerr << "Checking : \"" << (*it) << "\". vs \"" << name << "\"" << endl;
-                if ((*it) == name) {
+                 it != currentlyActive->end(); ++it) {
+                //cerr << "Checking : \"" << (*it) << "\". vs \"" << l_name << "\"" << endl;
+                if ((*it) == l_name) {
                     match++;
                 }
             }
@@ -296,7 +270,7 @@ void RunwayGroup::setActive(const FGAirport * airport,
     }
 
     if (foundValidSelection) {
-        //cerr << "Valid runay selection : " << bestChoice << endl;
+        //cerr << "Valid runway selection : " << bestChoice << endl;
         nrActive = activeRwys;
         active = bestChoice;
         return;
@@ -318,19 +292,19 @@ void RunwayGroup::setActive(const FGAirport * airport,
         bool validSelection = true;
         for (int j = 0; j < 2; j++) {
             const auto& currentRunwayPrefs = rwyList.at(choice[j]).getPreferredRunways();
-            if (i >= (int) currentRunwayPrefs.size()) {
+            if (i >= (int)currentRunwayPrefs.size()) {
                 validSelection = false;
                 continue;
             }
 
-            const auto& name = currentRunwayPrefs.at(i);
-            if (!airport->hasRunwayWithIdent(name)) {
+            const auto& l_name = currentRunwayPrefs.at(i);
+            if (!airport->hasRunwayWithIdent(l_name)) {
                 validSelection = false;
                 continue;
             }
 
-            rwy = airport->getRunwayByIdent(name);
-            //cerr << "Succes" << endl;
+            rwy = airport->getRunwayByIdent(l_name);
+            //cerr << "Success" << endl;
             hdgDiff = fabs(windHeading - rwy->headingDeg());
             if (hdgDiff > 180)
                 hdgDiff = 360 - hdgDiff;
@@ -343,7 +317,7 @@ void RunwayGroup::setActive(const FGAirport * airport,
         }
 
         if (validSelection) {
-            //cerr << "Valid runay selection : " << i << endl;
+            //cerr << "Valid runway selection : " << i << endl;
             active = i;
             nrActive = 2;
             return;
@@ -355,7 +329,7 @@ void RunwayGroup::setActive(const FGAirport * airport,
     nrActive = 0;
 }
 
-void RunwayGroup::getActive(int i, std::string & name, std::string & type)
+void RunwayGroup::getActive(int i, std::string& name, std::string& type)
 {
     if (i == -1) {
         return;
@@ -383,43 +357,43 @@ void RunwayGroup::getActive(int i, std::string & name, std::string & type)
 /*****************************************************************************
  * FGRunway preference
  ****************************************************************************/
-FGRunwayPreference::FGRunwayPreference(FGAirport * ap):
-_ap(ap)
+FGRunwayPreference::FGRunwayPreference(FGAirport* ap) : _ap{ap}
 {
     //cerr << "Running default Constructor" << endl;
     initialized = false;
 }
 
-FGRunwayPreference::FGRunwayPreference(const FGRunwayPreference & other)
+FGRunwayPreference::FGRunwayPreference(const FGRunwayPreference& other) : _ap{other._ap},
+                                                                          comTimes{other.comTimes},
+                                                                          genTimes{other.genTimes},
+                                                                          milTimes{other.milTimes}
 {
     initialized = other.initialized;
 
-    comTimes = other.comTimes;  // Commercial Traffic;
-    genTimes = other.genTimes;  // General Aviation;
-    milTimes = other.milTimes;  // Military Traffic;
-
     PreferenceListConstIterator i;
-    for (i = other.preferences.begin(); i != other.preferences.end(); i++)
+    for (i = other.preferences.begin(); i != other.preferences.end(); ++i)
         preferences.push_back(*i);
 }
 
-FGRunwayPreference & FGRunwayPreference::operator=(const FGRunwayPreference
-                                                   & other)
+FGRunwayPreference& FGRunwayPreference::operator=(const FGRunwayPreference& other)
 {
+    _ap = other._ap;
+
     initialized = other.initialized;
 
-    comTimes = other.comTimes;  // Commercial Traffic;
-    genTimes = other.genTimes;  // General Aviation;
-    milTimes = other.milTimes;  // Military Traffic;
+    comTimes = other.comTimes; // Commercial Traffic;
+    genTimes = other.genTimes; // General Aviation;
+    milTimes = other.milTimes; // Military Traffic;
 
     PreferenceListConstIterator i;
     preferences.clear();
-    for (i = other.preferences.begin(); i != other.preferences.end(); i++)
+    for (i = other.preferences.begin(); i != other.preferences.end(); ++i)
         preferences.push_back(*i);
+
     return *this;
 }
 
-ScheduleTime *FGRunwayPreference::getSchedule(const char *trafficType)
+ScheduleTime* FGRunwayPreference::getSchedule(const char* trafficType)
 {
     if (!(strcmp(trafficType, "com"))) {
         return &comTimes;
@@ -433,7 +407,7 @@ ScheduleTime *FGRunwayPreference::getSchedule(const char *trafficType)
     return 0;
 }
 
-RunwayGroup *FGRunwayPreference::getGroup(const std::string & groupName)
+RunwayGroup* FGRunwayPreference::getGroup(const std::string& groupName)
 {
     auto it = std::find_if(preferences.begin(), preferences.end(),
                            [&groupName](const RunwayGroup& g) {
