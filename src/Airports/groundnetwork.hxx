@@ -34,7 +34,7 @@ public:
         id = i;
     }
 
-    ~Block(){}
+    ~Block() {}
 
     int getId() { return id; }
 
@@ -146,7 +146,7 @@ public:
                                            routes(copy.routes),
                                            distance(copy.distance),
                                            currNode(nodes.begin()),
-                                           currRoute(routes.begin()){}
+                                           currRoute(routes.begin()) {}
 
     bool operator<(const FGTaxiRoute& other) const
     {
@@ -295,8 +295,7 @@ public:
     FGTaxiRoute findShortestRoute(FGTaxiNode* start, FGTaxiNode* end, bool fullSearch = true);
 
 
-    void blockSegmentsEndingAt(FGTaxiSegment* seg, int blockId,
-                               time_t blockTime, time_t now);
+    void blockSegmentsEndingAt(const FGTaxiSegment* seg, int blockId, time_t blockTime, time_t now);
 
     void addVersion(int v) { version = v; };
     void unblockAllSegments(time_t now);
