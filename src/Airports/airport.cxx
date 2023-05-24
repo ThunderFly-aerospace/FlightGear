@@ -992,7 +992,7 @@ FGAirport::commStationsOfType(FGPositioned::Type aTy) const
 class AirportWithSize
 {
 public:
-    AirportWithSize(FGPositionedRef pos) :
+    explicit AirportWithSize(FGPositionedRef pos) :
         _pos(pos),
         _sizeMetric(0)
     {
