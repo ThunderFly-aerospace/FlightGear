@@ -123,5 +123,5 @@ protected:
                         const std::string& name);
 
     FGAirportRef airport;
-    ATISInformationProvider* _atis;
+    ATISInformationProvider* _atis{nullptr};
 };

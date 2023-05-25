@@ -94,7 +94,7 @@ string ATCSpeech::getSpokenAltitude( int altitude )
 {
   string result;
   int thousands = altitude / 1000;
-  int hundrets = (altitude % 1000) / 100;
+  int hundreds = (altitude % 1000) / 100;
 
   if( thousands > 0 ) {
     result.append( getSpokenNumber(thousands) );
@@ -102,8 +102,8 @@ string ATCSpeech::getSpokenAltitude( int altitude )
     result.append( getSpokenDigit(1000) );
     result.SPACE;
   }
-  if( hundrets > 0 )
-      result.append( getSpokenNumber(hundrets) )
+  if( hundreds > 0 )
+      result.append( getSpokenNumber(hundreds) )
             .SPACE
             .append( getSpokenDigit(100) );
 
