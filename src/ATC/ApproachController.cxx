@@ -200,7 +200,7 @@ ActiveRunway *FGApproachController::getRunway(const string& name)
             if (rwy->getRunwayName() == name) {
                 break;
             }
-            rwy++;
+            ++rwy;
         }
     }
     if (rwy == activeRunways.end()) {
