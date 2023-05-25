@@ -64,7 +64,7 @@ class FGATCInstruction
 {
 private:
     bool holdPattern;
-    int  requestedArrivalTime;
+    int  requestedArrivalTime{0};
     bool holdPosition;
     bool changeSpeed;
     bool changeHeading;
@@ -144,9 +144,6 @@ public:
 };
 
 
-
-
-
 /**************************************************************************************
  * class FGTrafficRecord
  * Represents the interaction of an AI Aircraft and ATC
@@ -163,7 +160,7 @@ private:
     bool allowTransmission;
     bool allowPushback;
     int priority;
-    int  plannedArrivalTime;
+    int  plannedArrivalTime{0};
     time_t timer;
     intVec intentions;
     FGATCInstruction instruction;
@@ -292,7 +289,7 @@ public:
         instruction.setResolveCircularWait(false);
     };
 
-    void setCallsign(std::string clsgn) { callsign = clsgn; };
+    void setCallsign(const std::string& clsgn) { callsign = clsgn; };
     const std::string& getCallsign() const {
         return callsign;
     };
@@ -307,7 +304,7 @@ public:
         state++;
         allowTransmission=true;
     };
-    //string getCallSign() { return callsign; };
+
     FGAIAircraft *getAircraft() const;
 
     int getTime() const {

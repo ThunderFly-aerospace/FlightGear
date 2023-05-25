@@ -92,13 +92,6 @@ void ActiveRunway::updateDepartureQueue()
 time_t ActiveRunway::requestTimeSlot(time_t eta)
 {
     time_t newEta = 0;
-    // default separation - 60 seconds
-    time_t separation = 60;
-    //if (wakeCategory == "heavy_jet") {
-    //   SG_LOG(SG_ATC, SG_DEBUG, "Heavy jet, using extra separation");
-    //    time_t separation = 120;
-    //}
-    bool found = false;
 
     // if the aircraft is the first arrival, add to the vector and return eta directly
     if (estimatedArrivalTimes.empty()) {
@@ -107,16 +100,17 @@ time_t ActiveRunway::requestTimeSlot(time_t eta)
         return eta;
     } else {
         // First check the already assigned slots to see where we need to fit the flight in
-        TimeVectorIterator i = estimatedArrivalTimes.begin();
         SG_LOG(SG_ATC, SG_BULK, getRunwayName() << " Checking eta slots " << eta << " : " << estimatedArrivalTimes.size() << " Timediff : " << (eta - globals->get_time_params()->get_cur_time()));
 
         // is this needed - just a debug output?
+        TimeVectorIterator i;
         for (i = estimatedArrivalTimes.begin();
-                i != estimatedArrivalTimes.end(); i++) {
+                i != estimatedArrivalTimes.end(); ++i) {
             SG_LOG(SG_ATC, SG_BULK, "Stored time : " << (*i));
         }
 
         // if the flight is before the first scheduled slot + separation
+        time_t separation = 60;
         i = estimatedArrivalTimes.begin();
         if ((eta + separation) < (*i)) {
             newEta = eta;
@@ -127,6 +121,7 @@ time_t ActiveRunway::requestTimeSlot(time_t eta)
         }
 
         // else, look through the rest of the slots
+        bool found = false;
         while ((i != estimatedArrivalTimes.end()) && (!found)) {
             TimeVectorIterator j = i + 1;
 
@@ -145,7 +140,7 @@ time_t ActiveRunway::requestTimeSlot(time_t eta)
             } else {
                 // potential slot found
                 // check the distance between the previous and next slots
-                // distance msut be greater than 2* separation
+                // distance must be greater than 2* separation
                 if ((((*j) - (*i)) > (separation * 2))) {
                     // now check whether this slot is usable:
                     // eta should fall between the two points
@@ -178,7 +173,7 @@ time_t ActiveRunway::requestTimeSlot(time_t eta)
                        } */
                 }
             }
-            i++;
+            ++i;
         }
     }
 
@@ -354,7 +349,7 @@ bool FGTrafficRecord::checkPositionAndIntentions(FGTrafficRecord & other)
             if ((*i) == other.currentPos) {
                 break;
             }
-            i++;
+            ++i;
         }
         if (i != intentions.end()) {
             SG_LOG(SG_ATC, SG_BULK, getCallsign() << "| Check Position and intentions: " << other.getCallsign()<< " matches Index = " << (*i));
@@ -395,7 +390,7 @@ int FGTrafficRecord::crosses(FGGroundNetwork * net,
     if ((currentTargetNode == otherTargetNode) && currentTargetNode > 0)
         return currentTargetNode;
     if (! intentions.empty()) {
-        for (i = intentions.begin(); i != intentions.end(); i++) {
+        for (i = intentions.begin(); i != intentions.end(); ++i) {
             if ((*i) > 0) {
                 if (currentTargetNode ==
                         net->findSegment(*i)->getEnd()->getIndex()) {
@@ -406,8 +401,7 @@ int FGTrafficRecord::crosses(FGGroundNetwork * net,
         }
     }
     if (! other.intentions.empty()) {
-        for (i = other.intentions.begin(); i != other.intentions.end();
-                i++) {
+        for (i = other.intentions.begin(); i != other.intentions.end(); ++i) {
             if ((*i) > 0) {
                 if (otherTargetNode ==
                         net->findSegment(*i)->getEnd()->getIndex()) {
@@ -418,9 +412,8 @@ int FGTrafficRecord::crosses(FGGroundNetwork * net,
         }
     }
     if (! intentions.empty() && ! other.intentions.empty()) {
-        for (i = intentions.begin(); i != intentions.end(); i++) {
-            for (j = other.intentions.begin(); j != other.intentions.end();
-                    j++) {
+        for (i = intentions.begin(); i != intentions.end(); ++i) {
+            for (j = other.intentions.begin(); j != other.intentions.end(); ++j) {
                 SG_LOG(SG_ATC, SG_BULK, "finding segment " << *i << " and " << *j);
                 if (((*i) > 0) && ((*j) > 0)) {
                     currentTargetNode =
@@ -451,7 +444,7 @@ bool FGTrafficRecord::onRoute(FGGroundNetwork * net,
         return true;
     if (! other.intentions.empty()) {
         for (intVecIterator i = other.intentions.begin();
-                i != other.intentions.end(); i++) {
+                i != other.intentions.end(); ++i) {
             if (*i > 0) {
                 othernode = net->findSegment(*i)->getEnd()->getIndex();
                 if ((node == othernode) && (node > -1))
@@ -481,17 +474,16 @@ bool FGTrafficRecord::isOpposing(FGGroundNetwork * net,
                                  FGTrafficRecord & other, int node)
 {
     // Check if current segment is the reverse segment for the other aircraft
-    FGTaxiSegment *opp;
     SG_LOG(SG_ATC, SG_BULK, "Current segment " << currentPos);
+
     if ((currentPos > 0) && (other.currentPos > 0)) {
-        opp = net->findSegment(currentPos)->opposite();
+        FGTaxiSegment *opp = net->findSegment(currentPos)->opposite();
         if (opp) {
             if (opp->getIndex() == other.currentPos)
                 return true;
         }
 
-        for (intVecIterator i = intentions.begin(); i != intentions.end();
-                i++) {
+        for (intVecIterator i = intentions.begin(); i != intentions.end(); ++i) {
             if ((opp = net->findSegment(other.currentPos)->opposite())) {
                 if ((*i) > 0)
                     if (opp->getIndex() ==
@@ -507,7 +499,7 @@ bool FGTrafficRecord::isOpposing(FGGroundNetwork * net,
             }
             if (! other.intentions.empty()) {
                 for (intVecIterator j = other.intentions.begin();
-                        j != other.intentions.end(); j++) {
+                        j != other.intentions.end(); ++j) {
                     SG_LOG(SG_ATC, SG_BULK, "Current segment 1 " << (*i));
                     if ((*i) > 0) {
                         if ((opp = net->findSegment(*i)->opposite())) {
@@ -588,12 +580,3 @@ bool FGATCInstruction::hasInstruction() const
     return (holdPattern || holdPosition || changeSpeed || changeHeading
             || changeAltitude || resolveCircularWait);
 }
-
-
-
-
-
-
-
-
-
