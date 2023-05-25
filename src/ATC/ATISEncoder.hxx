@@ -27,8 +27,8 @@ class ATISInformationProvider
 {
 public:
     virtual ~ATISInformationProvider() {}
-    virtual bool isValid() = 0;
-    virtual std::string airportId() = 0;
+    virtual bool isValid() const = 0;
+    virtual std::string airportId() const = 0;
 
     static long makeAtisTime(int day, int hour, int minute)
     {
@@ -37,24 +37,24 @@ public:
     inline int getAtisTimeDay(long atisTime) { return atisTime / (100l * 100l); }
     inline int getAtisTimeHour(long atisTime) { return (atisTime % (100l * 100l)) / 100l; }
     inline int getAtisTimeMinute(long atisTime) { return atisTime % 100l; }
-    virtual long getTime() = 0; // see makeAtisTime
+    virtual long getTime() const = 0; // see makeAtisTime
 
-    virtual int getWindDeg() = 0;
-    virtual int getWindMinDeg() = 0;
-    virtual int getWindMaxDeg() = 0;
-    virtual int getWindSpeedKt() = 0;
-    virtual int getGustsKt() = 0;
-    virtual int getQnh() = 0;
-    virtual double getQnhInHg() = 0;
-    virtual bool isCavok() = 0;
-    virtual int getVisibilityMeters() = 0;
-    virtual std::string getPhenomena() = 0;
+    virtual int getWindDeg() const = 0;
+    virtual int getWindMinDeg() const = 0;
+    virtual int getWindMaxDeg() const = 0;
+    virtual int getWindSpeedKt() const = 0;
+    virtual int getGustsKt() const = 0;
+    virtual int getQnh() const = 0;
+    virtual double getQnhInHg() const = 0;
+    virtual bool isCavok() const = 0;
+    virtual int getVisibilityMeters() const = 0;
+    virtual std::string getPhenomena() const = 0;
 
     typedef std::map<int, std::string> CloudEntries;
     virtual CloudEntries getClouds() = 0;
-    virtual int getTemperatureDeg() = 0;
-    virtual int getDewpointDeg() = 0;
-    virtual std::string getTrend() = 0;
+    virtual int getTemperatureDeg() const = 0;
+    virtual int getDewpointDeg() const = 0;
+    virtual std::string getTrend() const = 0;
 };
 
 class ATISEncoder : public ATCSpeech
