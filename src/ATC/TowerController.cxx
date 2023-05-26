@@ -88,7 +88,7 @@ void FGTowerController::announcePosition(int id,
     // Search activeTraffic for a record matching our id
     TrafficVectorIterator i = FGATCController::searchActiveTraffic(id);
 
-    // Add a new TrafficRecord if no one exsists for this aircraft.
+    // Add a new TrafficRecord if no one exists for this aircraft.
     if (i == activeTraffic.end() || (activeTraffic.empty())) {
         FGTrafficRecord rec;
         rec.setId(id);
@@ -107,7 +107,7 @@ void FGTowerController::announcePosition(int id,
                 if (rwy->getRunwayName() == intendedRoute->getRunway()) {
                     break;
                 }
-                rwy++;
+                ++rwy;
             }
         }
         if (rwy == activeRunways.end()) {
@@ -158,17 +158,17 @@ void FGTowerController::updateAircraftInformation(int id, SGGeod geod,
 
     ActiveRunwayVecIterator rwy = activeRunways.begin();
     //if (parent->getId() == fgGetString("/sim/presets/airport-id")) {
-    //    for (rwy = activeRunways.begin(); rwy != activeRunways.end(); rwy++) {
+    //    for (rwy = activeRunways.begin(); rwy != activeRunways.end(); ++rwy) {
     //        rwy->printdepartureQueue();
     //    }
     //}
 
-    rwy = activeRunways.begin();
+    // rwy = activeRunways.begin();
     while (rwy != activeRunways.end()) {
         if (rwy->getRunwayName() == current.getRunway()) {
             break;
         }
-        rwy++;
+        ++rwy;
     }
 
     // only bother running the following code if the current aircraft is the
@@ -181,7 +181,7 @@ void FGTowerController::updateAircraftInformation(int id, SGGeod geod,
                 current.setHoldPosition(true);
             }
         } else {
-            // For now. At later stages, this will probably be the place to check for inbound traffc.
+            // For now. At later stages, this will probably be the place to check for inbound traffic.
             rwy->setCleared(id);
         }
     } */
@@ -227,9 +227,9 @@ void FGTowerController::updateAircraftInformation(int id, SGGeod geod,
             SG_LOG(SG_ATC, SG_BULK,
                current.getCallsign() << "| Cleared for runway " << getName() << " " << rwy->getRunwayName() << " Id " << id);
             rwy->setCleared(id);
-            auto ac = rwy->getFirstOfStatus(AITakeOffStatus::QUEUED);
-            if (ac) {
-                ac->setTakeOffStatus(AITakeOffStatus::QUEUED);
+            auto l_ac = rwy->getFirstOfStatus(AITakeOffStatus::QUEUED);
+            if (l_ac) {
+                l_ac->setTakeOffStatus(AITakeOffStatus::QUEUED);
                 // transmit takeoff clearance? But why twice?
             }
         } else {
@@ -274,12 +274,12 @@ void FGTowerController::signOff(int id)
     FGATCController::signOff(id);
 }
 
-// NOTE:
-// IF WE MAKE TRAFFICRECORD A MEMBER OF THE BASE CLASS
-// THE FOLLOWING THREE FUNCTIONS: SIGNOFF, HAS INSTRUCTION AND GETINSTRUCTION CAN
-// BECOME DEVIRTUALIZED AND BE A MEMBER OF THE BASE ATCCONTROLLER CLASS
-// WHICH WOULD SIMPLIFY CODE MAINTENANCE.
-// Note that this function is probably obsolete
+// Note:
+// if we make trafficrecord a member of the base class
+// the following three functions: signOff, hasInstruction and getInstruction can
+// become devirtualized and be a member of the base ATCController class
+// which would simplify code maintenance.
+// note that this function is probably obsolete
 bool FGTowerController::hasInstruction(int id)
 {
     // Search activeTraffic for a record matching our id
