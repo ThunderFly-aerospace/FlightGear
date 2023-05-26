@@ -85,7 +85,7 @@ void FGStartupController::announcePosition(int id,
     // Search activeTraffic for a record matching our id
     TrafficVectorIterator i = FGATCController::searchActiveTraffic(id);
 
-    // Add a new TrafficRecord if no one exsists for this aircraft.
+    // Add a new TrafficRecord if no one exists for this aircraft.
     if (i == activeTraffic.end() || activeTraffic.empty()) {
         FGTrafficRecord rec;
         rec.setId(id);
@@ -110,7 +110,7 @@ void FGStartupController::updateAircraftInformation(int id, SGGeod geod, double 
 {
     // Search activeTraffic for a record matching our id
     TrafficVectorIterator i = FGATCController::searchActiveTraffic(id);
-	TrafficVectorIterator current, closest;
+	TrafficVectorIterator current;
 
     if (i == activeTraffic.end() || (activeTraffic.size() == 0)) {
         SG_LOG(SG_ATC, SG_ALERT,
@@ -131,7 +131,7 @@ void FGStartupController::updateAircraftInformation(int id, SGGeod geod, double 
         return;
     }
 
-    // The user controlled aircraft should have crased here, because it doesn't have a traffic reference.
+    // The user controlled aircraft should have crashed here, because it doesn't have a traffic reference.
     // NOTE: if we create a traffic schedule for the user aircraft, we can use this to plan a flight.
     time_t startTime = i->getAircraft()->getTrafficRef()->getDepartureTime();
     time_t now = globals->get_time_params()->get_cur_time();
@@ -191,7 +191,7 @@ void FGStartupController::updateAircraftInformation(int id, SGGeod geod, double 
     }
 }
 
-// Note that this function is copied from simgear. for maintanance purposes, it's probabtl better to make a general function out of that.
+// Note that this function is copied from simgear. for maintenance purposes, it's probably better to make a general function out of that.
 static void WorldCoordinate(osg::Matrix& obj_pos, double lat,
                             double lon, double elev, double hdg, double slope)
 {
@@ -234,7 +234,7 @@ void FGStartupController::render(bool visible)
         double dx = 0;
         time_t now = globals->get_time_params()->get_cur_time();
 
-        for   (TrafficVectorIterator i = activeTraffic.begin(); i != activeTraffic.end(); i++) {
+        for   (TrafficVectorIterator i = activeTraffic.begin(); i != activeTraffic.end(); ++i) {
             if (i->isActive(300)) {
                 // Handle start point
                 int pos = i->getCurrentPosition();
@@ -318,7 +318,7 @@ void FGStartupController::render(bool visible)
                 } else {
                     SG_LOG(SG_ATC, SG_DEBUG, "BIG FAT WARNING: current position is here : " << pos);
                 }
-                for (intVecIterator j = (i)->getIntentions().begin(); j != (i)->getIntentions().end(); j++) {
+                for (intVecIterator j = (i)->getIntentions().begin(); j != (i)->getIntentions().end(); ++j) {
                     osg::Matrix obj_pos;
                     int k = (*j);
                     if (k > 0) {
