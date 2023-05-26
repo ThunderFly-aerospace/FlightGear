@@ -42,7 +42,7 @@
 using std::string;
 
 /**
-Constructer, initializes values to private boolean and FGATCController instances
+Constructor, initializes values to private boolean and FGATCController instances
 */
 FGATCManager::FGATCManager() :
     controller(NULL),
@@ -109,11 +109,10 @@ void FGATCManager::postinit()
     std::unique_ptr<FGAIFlightPlan> fp ;
     userAircraft->setTrafficRef(userAircraftTrafficRef.get());
 
-    string flightPlanName = curAirport + "-" + _routeManagerDestinationAirportNode->getStringValue() + ".xml";
-    //double cruiseAlt = 100; // Doesn't really matter right now.
-    //double courseToDest = 180; // Just use something neutral; this value might affect the runway that is used though...
-    //time_t deptime = 0;        // just make sure how flightplan processing is affected by this...
-
+    // string flightPlanName = curAirport + "-" + _routeManagerDestinationAirportNode->getStringValue() + ".xml";
+    // double cruiseAlt = 100; // Doesn't really matter right now.
+    // double courseToDest = 180; // Just use something neutral; this value might affect the runway that is used though...
+    // time_t deptime = 0;        // just make sure how flightplan processing is affected by this...
 
     FGAirportDynamicsRef dcs(flightgear::AirportDynamicsManager::find(curAirport));
     if (dcs && onGround) {// && !runway.empty()) {
@@ -421,7 +420,7 @@ void FGATCManager::update ( double time ) {
         // Ground network visibility:
         // a) check to see if the message to toggle visibility was called
         // b) if so, toggle network visibility and reset the transmission
-        // c) therafter disable rendering for the old controller (TODO: should this be earlier?)
+        // c) thereafter disable rendering for the old controller (TODO: should this be earlier?)
         // d) and render if enabled for the new controller
         int n = trans_num->getIntValue();
 
