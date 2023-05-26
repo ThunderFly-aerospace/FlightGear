@@ -230,7 +230,6 @@ void FGGroundController::checkSpeedAdjustment(int id, double lat,
 {
 
     TrafficVectorIterator current, closest, closestOnNetwork;
-    bool otherReasonToSlowDown = false;
     // bool previousInstruction;
 	TrafficVectorIterator i = FGATCController::searchActiveTraffic(id);
     if (!activeTraffic.size()) {
@@ -248,50 +247,51 @@ void FGGroundController::checkSpeedAdjustment(int id, double lat,
 
     // First check all our activeTraffic
     if (activeTraffic.size()) {
+        bool otherReasonToSlowDown = false;
         double course, dist, bearing, az2; // minbearing,
         SGGeod curr(SGGeod::fromDegM(lon, lat, alt));
-        //TrafficVector iterator closest;
         closest = current;
         closestOnNetwork = current;
-        for (TrafficVectorIterator i = activeTraffic.begin();
-                i != activeTraffic.end(); i++) {
-            if (i == current) {
+
+        for (TrafficVectorIterator iter = activeTraffic.begin();
+                iter != activeTraffic.end(); ++iter) {
+            if (iter == current) {
                 continue;
             }
 
-            SGGeod other = i->getPos();
+            SGGeod other = iter->getPos();
             SGGeodesy::inverse(curr, other, course, az2, dist);
             bearing = fabs(heading - course);
             if (bearing > 180)
                 bearing = 360 - bearing;
             if ((dist < mindist) && (bearing < 60.0)) {
                 mindist = dist;
-                closest = i;
-                closestOnNetwork = i;
+                closest = iter;
+                closestOnNetwork = iter;
                 // minbearing = bearing;
             }
         }
 
         // Next check with the tower controller
         if (towerController->hasActiveTraffic()) {
-            for (TrafficVectorIterator i =
+            for (TrafficVectorIterator iter =
                         towerController->getActiveTraffic().begin();
-                    i != towerController->getActiveTraffic().end(); i++) {
-                if( current->getId() == i->getId()) {
+                    iter != towerController->getActiveTraffic().end(); ++iter) {
+                if( current->getId() == iter->getId()) {
                     continue;
                 }
-                SG_LOG(SG_ATC, SG_BULK, current->getCallsign() << "| Comparing with " << i->getCallsign() << " Id: " << i->getId());
-                SGGeod other = i->getPos();
+                SG_LOG(SG_ATC, SG_BULK, current->getCallsign() << "| Comparing with " << iter->getCallsign() << " Id: " << iter->getId());
+                SGGeod other = iter->getPos();
                 SGGeodesy::inverse(curr, other, course, az2, dist);
                 bearing = fabs(heading - course);
                 if (bearing > 180)
                     bearing = 360 - bearing;
                 if ((dist < mindist) && (bearing < 60.0)) {
                     //SG_LOG(SG_ATC, SG_BULK, "Current aircraft " << current->getAircraft()->getTrafficRef()->getCallSign()
-                    //   << " is closest to " << i->getAircraft()->getTrafficRef()->getCallSign()
-                    //   << ", which has status " << i->getAircraft()->isScheduledForTakeoff());
+                    //   << " is closest to " << iter->getAircraft()->getTrafficRef()->getCallSign()
+                    //   << ", which has status " << iter->getAircraft()->isScheduledForTakeoff());
                     mindist = dist;
-                    closest = i;
+                    closest = iter;
                     // minbearing = bearing;
                     otherReasonToSlowDown = true;
                 }
@@ -299,7 +299,7 @@ void FGGroundController::checkSpeedAdjustment(int id, double lat,
         }
 
         // Finally, check UserPosition
-        // Note, as of 2011-08-01, this should no longer be necessecary.
+        // Note, as of 2011-08-01, this should no longer be necessary.
         /*
         double userLatitude = fgGetDouble("/position/latitude-deg");
         double userLongitude = fgGetDouble("/position/longitude-deg");
@@ -505,8 +505,6 @@ void FGGroundController::checkHoldPosition(int id, double lat,
     if (checkTransmissionState(ATCMessageState::ACK_SWITCH_GROUND_TOWER, ATCMessageState::ACK_SWITCH_GROUND_TOWER, current, now, MSG_ACKNOWLEDGE_SWITCH_TOWER_FREQUENCY, ATC_AIR_TO_GROUND)) {
     }
 
-
-
     //current->setState(0);
 }
 
@@ -559,26 +557,26 @@ bool FGGroundController::checkForCircularWaits(int id)
 
     while ((target > 0) && (target != id) && counter++ < trafficSize) {
         //printed = true;
-        TrafficVectorIterator i = activeTraffic.begin();
+        TrafficVectorIterator iter = activeTraffic.begin();
         if (trafficSize) {
-            while (i != activeTraffic.end()) {
-                if (i->getId() == target) {
+            while (iter != activeTraffic.end()) {
+                if (iter->getId() == target) {
                     break;
                 }
-                i++;
+                ++iter;
             }
         } else {
             return false;
         }
 
-        if (i == activeTraffic.end()) {
+        if (iter == activeTraffic.end()) {
             SG_LOG(SG_ATC, SG_DEBUG, "[Waiting for traffic at Runway: DONE] ");
             // The target id is not found on the current network, which means it's at the tower
             SG_LOG(SG_ATC, SG_ALERT, "AI error: Trying to access non-existing aircraft in FGGroundNetwork::checkForCircularWaits");
             return false;
         }
 
-        other = i;
+        other = iter;
         target = other->getWaitsForId();
 
         // actually this trap isn't as impossible as it first seemed:
@@ -893,8 +891,9 @@ void FGGroundController::updateStartupTraffic(TrafficVectorIterator i,
         length = seg->getLength();
         network->blockSegmentsEndingAt(seg, i->getId(), now, now);
     }
+
     for (intVecIterator j = i->getIntentions().begin(); j != i->getIntentions().end(); j++) {
-        int pos = (*j);
+        pos = (*j);
         if (pos > 0) {
             FGTaxiSegment *seg = network->findSegment(pos);
             length += seg->getLength();
@@ -956,7 +955,7 @@ bool FGGroundController::updateActiveTraffic(TrafficVectorIterator i,
 
     //after this, ivi points just behind the last valid unblocked taxi segment.
     for (intVecIterator j = i->getIntentions().begin(); j != ivi; j++) {
-        int pos = (*j);
+        pos = (*j);
         if (pos > 0) {
             FGTaxiSegment *seg = network->findSegment(pos);
             length += seg->getLength();
