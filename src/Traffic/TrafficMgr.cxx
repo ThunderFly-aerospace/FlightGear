@@ -91,7 +91,7 @@ using std::vector;
 class ScheduleParseThread : public SGThread, public XMLVisitor
 {
 public:
-  ScheduleParseThread(FGTrafficManager* traffic) :
+    explicit ScheduleParseThread(FGTrafficManager* traffic) :
     _trafficManager(traffic),
     _isFinished(false),
     _cancelThread(false),
@@ -227,15 +227,15 @@ public:
         else if (!strcmp(name, "flight")) {
             // We have loaded and parsed all the information belonging to this flight
             // so we temporarily store it.
-            //cerr << "Pusing back flight " << callsign << endl;
+            //cerr << "Pushing back flight " << callsign << endl;
             //cerr << callsign  <<  " " << fltrules     << " "<< departurePort << " " <<  arrivalPort << " "
             //   << cruiseAlt <<  " " << departureTime<< " "<< arrivalTime   << " " << repeat << endl;
 
             //Prioritize aircraft
-            string apt = fgGetString("/sim/presets/airport-id");
-            //cerr << "Airport information: " << apt << " " << departurePort << " " << arrivalPort << endl;
-            //if (departurePort == apt) score++;
-            //flights.push_back(new FGScheduledFlight(callsign,
+            // string apt = fgGetString("/sim/presets/airport-id");
+            // cerr << "Airport information: " << apt << " " << departurePort << " " << arrivalPort << endl;
+            // if (departurePort == apt) score++;
+            // flights.push_back(new FGScheduledFlight(callsign,
             //                                fltrules,
             //                                departurePort,
             //                                arrivalPort,
@@ -243,6 +243,7 @@ public:
             //                                departureTime,
             //                                arrivalTime,
             //                                repeat));
+
             if (requiredAircraft == "") {
                 char buffer[16];
                 snprintf(buffer, 16, "%d", acCounter);
@@ -255,7 +256,7 @@ public:
                    << cruiseAlt << " "
                    << departureTime << " "
                    << arrivalTime << " " << repeat << " " << requiredAircraft);
-            // For database maintainance purposes, it may be convenient to
+            // For database maintenance purposes, it may be convenient to
             //
             if (fgGetBool("/sim/traffic-manager/dumpdata") == true) {
                 SG_LOG(SG_AI, SG_ALERT, "Traffic Dump FLIGHT," << callsign << ","
@@ -350,8 +351,8 @@ private:
             homePort = departurePort;
         }
 
-        // caution, modifying the scheduled aircraft strucutre from the
-        // 'wrong' thread. This is safe becuase FGTrafficManager won't touch
+        // caution, modifying the scheduled aircraft structure from the
+        // 'wrong' thread. This is safe because FGTrafficManager won't touch
         // the structure while we exist.
         _trafficManager->scheduledAircraft.push_back(new FGAISchedule(mdl,
                                                      livery,
@@ -394,7 +395,7 @@ private:
                     }
                 } catch (sg_exception& e) {
                     simgear::reportFailure(simgear::LoadFailure::BadData, simgear::ErrorCode::AITrafficSchedule,
-                                           "XML errors parsinng traffic:" + e.getFormattedMessage(), xml);
+                                           "XML errors parsing traffic:" + e.getFormattedMessage(), xml);
                 }
             }
         } // of sub-directories iteration
@@ -478,7 +479,7 @@ void FGTrafficManager::shutdown()
             // Note: Intuitively, this doesn't make sense, but I do need to create the full file path first
             // before creating the directories. The SimGear fgpath code has changed so that it first chops off
             // the trailing dir separator and then determines the directory part of the file path by searching
-            // for the last dir separator. Effecively, this causes a full element of the directory tree to be
+            // for the last dir separator. Effectively, this causes a full element of the directory tree to be
             // skipped.
             SG_LOG(SG_GENERAL, SG_DEBUG, "Trying to create dir for : " << cacheData);
             if (!cacheData.exists()) {
@@ -584,7 +585,6 @@ void FGTrafficManager::init()
     } else {
         fgSetBool("/sim/traffic-manager/heuristics", false);
         SGPath path = string(fgGetString("/sim/traffic-manager/datafile"));
-        string ext = path.extension();
         if (path.extension() == "xml") {
             if (path.exists()) {
                 // use a SchedulerParser to parse, but run it in this thread,
@@ -649,8 +649,8 @@ void FGTrafficManager::loadHeuristics()
                  airport[0], airport[1], airport[2]);
       cacheData.append(buffer);
       cacheData.append(airport + "-cache.txt");
-      string revisionStr;
       if (cacheData.exists()) {
+        string revisionStr;
         sg_ifstream data(cacheData);
         data >> revisionStr;
         if (revisionStr != "[TrafficManagerCachedata:ref:2011:09:04]") {
@@ -765,7 +765,7 @@ void FGTrafficManager::update(double dt)
     //cerr << "Processing << " << (*currAircraft)->getRegistration() << " with score " << (*currAircraft)->getScore() << endl;
     if ((*currAircraft)->update(now, userCart)) {
         // schedule is done - process another aircraft in next iteration
-        currAircraft++;
+        ++currAircraft;
     }
 }
 
@@ -785,7 +785,6 @@ void FGTrafficManager::readTimeTableFromFile(SGPath infileName)
     double offset;
 
     char buffer[256];
-    string buffString;
     vector <string> tokens, depTime,arrTime;
 
     sg_ifstream infile(infileName);
@@ -795,7 +794,7 @@ void FGTrafficManager::readTimeTableFromFile(SGPath infileName)
              break;
          }
          //cerr << "Read line : " << buffer << endl;
-         buffString = string(buffer);
+         string buffString = string(buffer);
          tokens.clear();
          Tokenize(buffString, tokens, " \t");
          //for (it = tokens.begin(); it != tokens.end(); it++) {
@@ -807,7 +806,6 @@ void FGTrafficManager::readTimeTableFromFile(SGPath infileName)
                  if (tokens.size() != 13) {
                      throw sg_io_exception("Error parsing traffic file @ " + buffString, infileName);
                  }
-
 
                  model          = tokens[12];
                  livery         = tokens[6];
@@ -879,20 +877,20 @@ void FGTrafficManager::readTimeTableFromFile(SGPath infileName)
                  for (int i = 0; i < 7; i++) {
                      int j = i+1;
                      if (weekdays[i] != '.') {
-                         char buffer[4];
-                         snprintf(buffer, 4, "%d/", j);
-                         string departureTime = string(buffer) + depTimeGen + string(":00");
+                         char l_buffer[4];
+                         snprintf(l_buffer, 4, "%d/", j);
+                         string departureTime = string(l_buffer) + depTimeGen + string(":00");
                          string arrivalTime;
                          if (!arrivalWeekdayNeedsIncrement) {
-                             arrivalTime   = string(buffer) + arrTimeGen + string(":00");
+                             arrivalTime   = string(l_buffer) + arrTimeGen + string(":00");
                          }
                          if (arrivalWeekdayNeedsIncrement && i != 6 ) {
-                             snprintf(buffer, 4, "%d/", j+1);
-                             arrivalTime   = string(buffer) + arrTimeGen + string(":00");
+                             snprintf(l_buffer, 4, "%d/", j+1);
+                             arrivalTime   = string(l_buffer) + arrTimeGen + string(":00");
                          }
                          if (arrivalWeekdayNeedsIncrement && i == 6 ) {
-                             snprintf(buffer, 4, "%d/", 0);
-                             arrivalTime   = string(buffer) + arrTimeGen  + string(":00");
+                             snprintf(l_buffer, 4, "%d/", 0);
+                             arrivalTime   = string(l_buffer) + arrTimeGen  + string(":00");
                          }
                          SG_LOG(SG_AI, SG_ALERT, "Adding flight " << callsign       << " "
                                                       << fltrules       << " "
