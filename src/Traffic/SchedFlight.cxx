@@ -44,8 +44,6 @@
 #include <time.h>
 #include <iostream>
 #include <fstream>
-
-
 #include <string>
 #include <vector>
 
@@ -59,13 +57,12 @@
 #include <AIModel/AIManager.hxx>
 #include <Airports/airport.hxx>
 
-
-
 #include <Main/globals.hxx>
 
 #include "SchedFlight.hxx"
 
 using std::string;
+
 
 /******************************************************************************
  * FGScheduledFlight stuff
@@ -73,32 +70,30 @@ using std::string;
 
 std::map<std::string, std::string> FGScheduledFlight::missingAirports = std::map<std::string, std::string>();
 
-FGScheduledFlight::FGScheduledFlight()
+FGScheduledFlight::FGScheduledFlight() : departurePort{nullptr},
+                                         arrivalPort{nullptr},
+                                         departureTime{0},
+                                         arrivalTime{0},
+                                         repeatPeriod{0}
 {
-    departureTime  = 0;
-    arrivalTime    = 0;
     cruiseAltitude = 0;
-    repeatPeriod   = 0;
     initialized = false;
     available = true;
-    departurePort = NULL;
-    arrivalPort = NULL;
 }
 
-FGScheduledFlight::FGScheduledFlight(const FGScheduledFlight &other)
+FGScheduledFlight::FGScheduledFlight(const FGScheduledFlight &other) : callsign{other.callsign},
+                                                                       fltRules{other.fltRules},
+                                                                       departurePort{other.departurePort},
+                                                                       arrivalPort{other.arrivalPort},
+                                                                       depId{other.depId},
+                                                                       arrId{other.arrId},
+                                                                       requiredAircraft{other.requiredAircraft},
+                                                                       departureTime{other.departureTime},
+                                                                       arrivalTime{other.arrivalTime},
+                                                                       repeatPeriod{other.repeatPeriod}
 {
-  callsign          = other.callsign;
-  fltRules          = other.fltRules;
-  departurePort     = other.departurePort;
-  depId             = other.depId;
-  arrId             = other.arrId;
-  departureTime     = other.departureTime;
   cruiseAltitude    = other.cruiseAltitude;
-  arrivalPort       = other.arrivalPort;
-  arrivalTime       = other.arrivalTime;
-  repeatPeriod      = other.repeatPeriod;
   initialized       = other.initialized;
-  requiredAircraft  = other.requiredAircraft;
   available         = other.available;
 }
 
@@ -110,26 +105,28 @@ FGScheduledFlight::FGScheduledFlight(const FGScheduledFlight &other)
  */
 
 FGScheduledFlight::FGScheduledFlight(const string& cs,
-		   const string& fr,
-		   const string& depPrt,
-		   const string& arrPrt,
-		   int cruiseAlt,
-		   const string& deptime,
-		   const string& arrtime,
-		   const string& rep,
-                   const string& reqAC)
+		                             const string& fr,
+		                             const string& depPrt,
+		                             const string& arrPrt,
+		                             int cruiseAlt,
+		                             const string& deptime,
+		                             const string& arrtime,
+		                             const string& rep,
+		                             const string& reqAC) : callsign{cs},
+                                                            fltRules{fr},
+                                                            departurePort{nullptr},
+                                                            arrivalPort{nullptr},
+                                                            depId{depPrt},
+                                                            arrId{arrPrt},
+                                                            requiredAircraft{reqAC}
 {
-  callsign          = cs;
-  fltRules          = fr;
   //departurePort.setId(depPrt);
   //arrivalPort.setId(arrPrt);
-  depId = depPrt;
-  arrId = arrPrt;
+
   //cerr << "Constructor: departure " << depId << ". arrival " << arrId << endl;
   //departureTime     = processTimeString(deptime);
   //arrivalTime       = processTimeString(arrtime);
   cruiseAltitude    = cruiseAlt;
-  requiredAircraft  = reqAC;
 
   // Process the repeat period string
   if (rep.find("WEEK",0) != string::npos)
@@ -188,11 +185,11 @@ time_t FGScheduledFlight::processTimeString(const string& theTime)
     // okay first split theTime string into
     // weekday, hour, minute, second;
     // Check if a week day is specified
-    const auto daySeperatorPos = timeCopy.find("/", 0);
-    if (daySeperatorPos != string::npos) {
-        const int weekday = std::stoi(timeCopy.substr(0, daySeperatorPos));
+    const auto daySeparatorPos = timeCopy.find("/", 0);
+    if (daySeparatorPos != string::npos) {
+        const int weekday = std::stoi(timeCopy.substr(0, daySeparatorPos));
         timeOffsetInDays = weekday - currTimeDate->getGmt()->tm_wday;
-        timeCopy = theTime.substr(daySeperatorPos + 1);
+        timeCopy = theTime.substr(daySeparatorPos + 1);
     }
 
     const auto timeTokens = simgear::strutils::split(timeCopy, ":");
@@ -290,7 +287,7 @@ bool FGScheduledFlight::initializeAirports()
 {
   //cerr << "Initializing using : " << depId << " " << arrId << endl;
   departurePort = FGAirport::findByIdent(depId);
-  if(departurePort == NULL)
+  if(departurePort == nullptr)
     {
       if (!FGScheduledFlight::missingAirports.count(depId)) {
         FGScheduledFlight::missingAirports.insert(std::pair<std::string,std::string>(depId, depId));
@@ -299,7 +296,7 @@ bool FGScheduledFlight::initializeAirports()
       return false;
     }
   arrivalPort = FGAirport::findByIdent(arrId);
-  if(arrivalPort == NULL)
+  if(arrivalPort == nullptr)
     {
       if (!FGScheduledFlight::missingAirports.count(arrId)) {
         FGScheduledFlight::missingAirports.insert(std::pair<std::string,std::string>(arrId, arrId));
@@ -314,7 +311,7 @@ bool FGScheduledFlight::initializeAirports()
   return true;
 }
 
-bool compareScheduledFlights(FGScheduledFlight *a, FGScheduledFlight *b)
+bool FGScheduledFlight::compareScheduledFlights(const FGScheduledFlight *a, const FGScheduledFlight *b)
 {
   return (*a) < (*b);
 };
