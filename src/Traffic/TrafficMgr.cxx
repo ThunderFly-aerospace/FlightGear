@@ -622,8 +622,7 @@ void FGTrafficManager::finishInit()
         }
     }
 
-    sort(scheduledAircraft.begin(), scheduledAircraft.end(),
-         compareSchedules);
+    sort(scheduledAircraft.begin(), scheduledAircraft.end(), FGAISchedule::compareSchedules);
     currAircraft = scheduledAircraft.begin();
     currAircraftClosest = scheduledAircraft.begin();
 

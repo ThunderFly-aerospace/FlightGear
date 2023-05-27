@@ -1022,8 +1022,8 @@ bool FGAIAircraft::leadPointReached(FGAIWaypoint* curr, FGAIWaypoint* next, int 
 bool FGAIAircraft::aiTrafficVisible()
 {
     SGVec3d cartPos = SGVec3d::fromGeod(pos);
-    const double d2 = (TRAFFICTOAIDISTTODIE * SG_NM_TO_METER) *
-                      (TRAFFICTOAIDISTTODIE * SG_NM_TO_METER);
+    const double d2 = (TRAFFIC_TO_AI_DIST_TO_DIE * SG_NM_TO_METER) *
+                      (TRAFFIC_TO_AI_DIST_TO_DIE * SG_NM_TO_METER);
     return (distSqr(cartPos, globals->get_aircraft_position_cart()) < d2);
 }
 
