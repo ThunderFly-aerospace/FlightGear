@@ -1,4 +1,7 @@
-// fg_scene_commands.cxx - internal FGFS commands.
+/*
+ * SPDX-FileName: fg_scene_commands.cxx
+ * SPDX-FileComment: internal FGFS commands
+ */
 
 #include "config.h"
 
@@ -122,7 +125,7 @@ do_reposition (const SGPropertyNode * arg, SGPropertyNode * root)
 static bool
 do_panel_load (const SGPropertyNode * arg, SGPropertyNode * root)
 {
-  string panel_path = arg->getStringValue("path");
+  std::string panel_path = arg->getStringValue("path");
   if (!panel_path.empty()) {
     // write to the standard property, which will force a load
     fgSetString("/sim/panel/path", panel_path.c_str());
@@ -239,7 +242,7 @@ do_tile_cache_reload (const SGPropertyNode * arg, SGPropertyNode * root)
         master_freeze->setBoolValue(true);
     }
 
-    globals->get_subsystem("scenery")->reinit();
+    globals->get_subsystem<FGScenery>()->reinit();
 
     if ( !freeze ) {
         master_freeze->setBoolValue(false);
@@ -284,7 +287,7 @@ do_materials_reload (const SGPropertyNode * arg, SGPropertyNode * root)
 static bool
 do_dialog_new (const SGPropertyNode * arg, SGPropertyNode * root)
 {
-    NewGUI * gui = (NewGUI *)globals->get_subsystem("gui");
+    auto gui = globals->get_subsystem<NewGUI>();
     if (!gui) {
       return false;
     }
@@ -308,7 +311,7 @@ do_dialog_new (const SGPropertyNode * arg, SGPropertyNode * root)
 static bool
 do_dialog_show (const SGPropertyNode * arg, SGPropertyNode * root)
 {
-    NewGUI * gui = (NewGUI *)globals->get_subsystem("gui");
+    auto gui = globals->get_subsystem<NewGUI>();
     gui->showDialog(arg->getStringValue("dialog-name"));
     return true;
 }
@@ -321,7 +324,7 @@ do_dialog_show (const SGPropertyNode * arg, SGPropertyNode * root)
 static bool
 do_dialog_toggle (const SGPropertyNode * arg, SGPropertyNode * root)
 {
-    NewGUI * gui = (NewGUI *)globals->get_subsystem("gui");
+    auto gui = globals->get_subsystem<NewGUI>();
     gui->toggleDialog(arg->getStringValue("dialog-name"));
     return true;
 }
@@ -333,7 +336,7 @@ do_dialog_toggle (const SGPropertyNode * arg, SGPropertyNode * root)
 static bool
 do_dialog_close (const SGPropertyNode * arg, SGPropertyNode * root)
 {
-    NewGUI * gui = (NewGUI *)globals->get_subsystem("gui");
+    auto gui = globals->get_subsystem<NewGUI>();
     if(arg->hasValue("dialog-name"))
         return gui->closeDialog(arg->getStringValue("dialog-name"));
     return gui->closeActiveDialog();
@@ -348,7 +351,7 @@ do_dialog_close (const SGPropertyNode * arg, SGPropertyNode * root)
 static bool
 do_dialog_update (const SGPropertyNode * arg, SGPropertyNode * root)
 {
-    NewGUI * gui = (NewGUI *)globals->get_subsystem("gui");
+    auto gui = globals->get_subsystem<NewGUI>();
     FGDialog * dialog;
     if (arg->hasValue("dialog-name"))
         dialog = gui->getDialog(arg->getStringValue("dialog-name"));
@@ -366,7 +369,7 @@ do_dialog_update (const SGPropertyNode * arg, SGPropertyNode * root)
 static bool
 do_open_browser (const SGPropertyNode * arg, SGPropertyNode * root)
 {
-    string path;
+    std::string path;
     if (arg->hasValue("path"))
         path = arg->getStringValue("path");
     else
@@ -401,14 +404,14 @@ do_open_launcher(const SGPropertyNode*, SGPropertyNode*)
 static bool
 do_dialog_apply (const SGPropertyNode * arg, SGPropertyNode * root)
 {
-    NewGUI * gui = (NewGUI *)globals->get_subsystem("gui");
-    FGDialog * dialog;
+    auto gui = globals->get_subsystem<NewGUI>();
+    FGDialog* dialog = nullptr;
     if (arg->hasValue("dialog-name"))
         dialog = gui->getDialog(arg->getStringValue("dialog-name"));
     else
         dialog = gui->getActiveDialog();
 
-    if (dialog != 0) {
+    if (dialog) {
         dialog->applyValues(arg->getStringValue("object-name"));
         return true;
     } else {
@@ -424,7 +427,7 @@ do_dialog_apply (const SGPropertyNode * arg, SGPropertyNode * root)
 static bool
 do_gui_redraw (const SGPropertyNode * arg, SGPropertyNode * root)
 {
-    NewGUI * gui = (NewGUI *)globals->get_subsystem("gui");
+    auto gui = globals->get_subsystem<NewGUI>();
     gui->redraw();
     return true;
 }
@@ -472,12 +475,12 @@ do_presets_commit (const SGPropertyNode * arg, SGPropertyNode * root)
 static bool
 do_press_cockpit_button (const SGPropertyNode * arg, SGPropertyNode * root)
 {
-  const string prefix = arg->getStringValue("prefix");
+  const std::string prefix = arg->getStringValue("prefix");
 
   if (arg->getBoolValue("guarded") && fgGetDouble((prefix + "-guard").c_str()) < 1)
     return true;
 
-  string prop = prefix + "-button";
+  std::string prop = prefix + "-button";
   double value;
 
   if (arg->getBoolValue("latching"))
@@ -494,10 +497,10 @@ do_press_cockpit_button (const SGPropertyNode * arg, SGPropertyNode * root)
 static bool
 do_release_cockpit_button (const SGPropertyNode * arg, SGPropertyNode * root)
 {
-  const string prefix = arg->getStringValue("prefix");
+  const std::string prefix = arg->getStringValue("prefix");
 
   if (arg->getBoolValue("guarded")) {
-    string prop = prefix + "-guard";
+    std::string prop = prefix + "-guard";
     if (fgGetDouble(prop.c_str()) < 1) {
       fgSetDouble(prop.c_str(), 1);
       return true;

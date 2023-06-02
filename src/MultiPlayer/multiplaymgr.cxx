@@ -52,6 +52,7 @@
 #include "multiplaymgr.hxx"
 #include "mpmessages.hxx"
 #include "MPServerResolver.hxx"
+#include <FDM/fdm_shell.hxx>
 #include <FDM/flightProperties.hxx>
 #include <Time/TimeManager.hxx>
 #include <Main/sentryIntegration.hxx>
@@ -130,6 +131,7 @@ const int EMESARYBRIDGE_BASE = 12000;
 const int V2018_3_BASE = 13000;
 const int FALLBACK_MODEL_ID = 13000;
 const int V2019_3_BASE = 13001;
+const int V2020_4_BASE = 13003;
 
 /*
  * definition of properties that are to be transmitted.
@@ -303,7 +305,7 @@ static const IdPropertyList sIdPropertyList[] = {
     { 903, "sim/hitches/aerotow/tow/dist",                         simgear::props::FLOAT, TT_ASIS,  V1_1_PROP_ID, NULL, NULL },
     { 904, "sim/hitches/aerotow/tow/connected-to-property-node",   simgear::props::BOOL, TT_ASIS,  V1_1_PROP_ID, NULL, NULL },
     { 905, "sim/hitches/aerotow/tow/connected-to-ai-or-mp-callsign",   simgear::props::STRING, TT_ASIS,  V1_1_2_PROP_ID, NULL, NULL },
-    { 906, "sim/hitches/aerotow/tow/brake-force",                  simgear::props::FLOAT, TT_ASIS,  V1_1_PROP_ID, NULL, NULL },
+    { 906, "sim/hitches/aerotow/tow/break-force",                  simgear::props::FLOAT, TT_ASIS,  V1_1_PROP_ID, NULL, NULL },
     { 907, "sim/hitches/aerotow/tow/end-force-x",                  simgear::props::FLOAT, TT_ASIS,  V1_1_PROP_ID, NULL, NULL },
     { 908, "sim/hitches/aerotow/tow/end-force-y",                  simgear::props::FLOAT, TT_ASIS,  V1_1_PROP_ID, NULL, NULL },
     { 909, "sim/hitches/aerotow/tow/end-force-z",                  simgear::props::FLOAT, TT_ASIS,  V1_1_PROP_ID, NULL, NULL },
@@ -677,6 +679,7 @@ static const IdPropertyList sIdPropertyList[] = {
     { V2019_3_BASE,   "sim/multiplay/comm-transmit-frequency-hz", simgear::props::INT, TT_INT,  V1_1_2_PROP_ID, NULL, NULL },
     { V2019_3_BASE+1, "sim/multiplay/comm-transmit-power-norm", simgear::props::INT, TT_SHORT_FLOAT_NORM ,  V1_1_2_PROP_ID, NULL, NULL },
     // Add new MP properties here
+    { V2020_4_BASE, "instrumentation/transponder/mach-number", simgear::props::FLOAT, TT_SHORT_FLOAT_4, V1_1_2_PROP_ID, NULL, NULL },
 };
 /*
  * For the 2017.x version 2 protocol the properties are sent in two partitions,
@@ -1136,7 +1139,7 @@ FGMultiplayMgr::init (void)
     if (rxPort <= 0)
       rxPort = txPort;
   } else {
-    SG_LOG(SG_NETWORK, SG_INFO, "FGMultiplayMgr - multiplayer mode disabled (no MP server specificed).");
+    SG_LOG(SG_NETWORK, SG_INFO, "FGMultiplayMgr - multiplayer mode disabled (no MP server specified).");
     return;
   }
 
@@ -1438,6 +1441,44 @@ FGMultiplayMgr::SendMyPosition(const FGExternalMotionData& motionInfo)
       struct BoolArrayBuffer boolBuffer[MAX_BOOL_BUFFERS];
       memset(&boolBuffer, 0, sizeof(boolBuffer));
 
+      /* Read BOOLARRAY properties.
+       *
+       * All properties contained in a bool array must be read before adding it to the packet.
+       * Earlier versions of this code read the properties in the main loop below,
+       * and added the bool array at the very end of the packet.
+       * This causes bool arrays to break whenever a new MP property is added:
+       * older client will stop reading the packet when encountering the new property,
+       * and never get to the bool array.
+       *
+       * Instead, read all properties early and send the array in the main loop.
+       */
+
+      std::vector<FGPropertyData*>::const_iterator it = motionInfo.properties.begin();
+      while (it != motionInfo.properties.end()) {
+          switch (mPropertyDefinition[(*it)->id]->TransmitAs) {
+          case TT_BOOLARRAY:
+          {
+              struct BoolArrayBuffer *boolBuf = nullptr;
+              if ((*it)->id >= BOOLARRAY_START_ID && (*it)->id <= BOOLARRAY_END_ID + BOOLARRAY_BLOCKSIZE)
+              {
+                  int buffer_block = ((*it)->id - BOOLARRAY_BASE_1) / BOOLARRAY_BLOCKSIZE;
+                  boolBuf = &boolBuffer[buffer_block];
+                  boolBuf->propertyId = BOOLARRAY_START_ID + buffer_block * BOOLARRAY_BLOCKSIZE;
+              }
+              if (boolBuf)
+              {
+                  int bitidx = (*it)->id - boolBuf->propertyId;
+                  if ((*it)->int_value)
+                      boolBuf->boolValue |= 1 << bitidx;
+              }
+              break;
+          }
+          default:
+              break;
+          }
+          ++it;
+      }
+
       for (int partition = 1; partition <= protocolToUse; partition++)
       {
           std::vector<FGPropertyData*>::const_iterator it = motionInfo.properties.begin();
@@ -1548,19 +1589,28 @@ FGMultiplayMgr::SendMyPosition(const FGExternalMotionData& motionInfo)
                       }
                       case TT_BOOLARRAY:
                       {
-                          struct BoolArrayBuffer *boolBuf = nullptr;
-                          if ((*it)->id >= BOOLARRAY_START_ID && (*it)->id <= BOOLARRAY_END_ID + BOOLARRAY_BLOCKSIZE)
+                          int boolIdx = ((*it)->id - BOOLARRAY_BASE_1) / BOOLARRAY_BLOCKSIZE;
+
+                          if (boolIdx < 0 || boolIdx >= MAX_BOOL_BUFFERS)
                           {
-                              int buffer_block = ((*it)->id - BOOLARRAY_BASE_1) / BOOLARRAY_BLOCKSIZE;
-                              boolBuf = &boolBuffer[buffer_block];
-                              boolBuf->propertyId = BOOLARRAY_START_ID + buffer_block * BOOLARRAY_BLOCKSIZE;
+                              SG_LOG(SG_NETWORK, SG_WARN, "Unexpected prop id with type TT_BOOLARRAY: " << (*it)->id);
+                              break;
                           }
-                          if (boolBuf)
+
+                          if (!boolBuffer[boolIdx].propertyId)
                           {
-                              int bitidx = (*it)->id - boolBuf->propertyId;
-                              if ((*it)->int_value)
-                                  boolBuf->boolValue |= 1 << bitidx;
+                              // propertyId being unset indicates that this block was already written
+                              break;
                           }
+
+                          if (ptr + 2 >= msgEnd)
+                          {
+                              SG_LOG(SG_NETWORK, SG_ALERT, "Multiplayer packet truncated prop id: " << boolBuffer[boolIdx].propertyId << ": multiplay/generic/bools[" << boolIdx * 30 << "]");
+                          }
+                          *ptr++ = XDR_encode_int32(boolBuffer[boolIdx].propertyId);
+                          *ptr++ = XDR_encode_int32(boolBuffer[boolIdx].boolValue);
+
+                          boolBuffer[boolIdx].propertyId = 0;   // mark block as written
                           break;
                       }
                       case simgear::props::INT:
@@ -1708,22 +1758,6 @@ FGMultiplayMgr::SendMyPosition(const FGExternalMotionData& motionInfo)
           }
       }
       escape:
-
-      /*
-      * Send the boolean arrays (if present) as single 32bit integers.
-      */
-      for (int boolIdx = 0; boolIdx < MAX_BOOL_BUFFERS; boolIdx++)
-      {
-          if (boolBuffer[boolIdx].propertyId)
-          {
-              if (ptr + 2 >= msgEnd)
-              {
-                  SG_LOG(SG_NETWORK, SG_ALERT, "Multiplayer packet truncated prop id: " << boolBuffer[boolIdx].propertyId << ": multiplay/generic/bools[" << boolIdx * 30 << "]");
-              }
-              *ptr++ = XDR_encode_int32(boolBuffer[boolIdx].propertyId);
-              *ptr++ = XDR_encode_int32(boolBuffer[boolIdx].boolValue);
-          }
-      }
 
       msgLen = reinterpret_cast<char*>(ptr) - msgBuf.Msg;
       FillMsgHdr(msgBuf.msgHdr(), POS_DATA_ID, msgLen);
@@ -2109,7 +2143,7 @@ void FGMultiplayMgr::Send(double mpTime)
     // The orientation of the vehicle wrt the earth centered frame
     motionInfo.orientation = qEc2Hl*hlOr;
 
-    if (!globals->get_subsystem("flight")->is_suspended()) {
+    if (!globals->get_subsystem<FDMShell>()->is_suspended()) {
         // velocities
         motionInfo.linearVel = SG_FEET_TO_METER*SGVec3f(ifce.get_uBody(),
             ifce.get_vBody(),
@@ -2628,7 +2662,7 @@ FGMultiplayMgr::addMultiplayer(const std::string& callsign,
   mp->setCallSign(callsign);
   mMultiPlayerMap[callsign] = mp;
 
-  FGAIManager *aiMgr = (FGAIManager*)globals->get_subsystem("ai-model");
+  auto aiMgr = globals->get_subsystem<FGAIManager>();
   if (aiMgr) {
     aiMgr->attach(mp);
 

@@ -92,7 +92,7 @@ public:
     FlightPlanRef clone(const std::string& newIdent = {}, bool convertToFlightPlan = false) const;
 
     /**
-     is this flight-pan a route (for planning) or an active flight-plan (which can be flow?)
+     is this flight-pan a route (for planning) or an active flight-plan (which can be flown?)
      Routes can contain Via, and cannot be active:  FlightPlans contain Legs for procedures and
      airways, i.e what the GPS/FMC actally flies.
      */
@@ -131,16 +131,17 @@ public:
     unsigned int index() const;
 
     int altitudeFt() const;
-    int speed() const;
-
+    double speed(RouteUnits units = DEFAULT_UNITS) const;
+    double altitude(RouteUnits units = DEFAULT_UNITS) const;
+          
     int speedKts() const;
     double speedMach() const;
 
     RouteRestriction altitudeRestriction() const;
     RouteRestriction speedRestriction() const;
 
-    void setSpeed(RouteRestriction ty, double speed);
-    void setAltitude(RouteRestriction ty, int altFt);
+    void setSpeed(RouteRestriction ty, double speed, RouteUnits units = DEFAULT_UNITS);
+    void setAltitude(RouteRestriction ty, double alt, RouteUnits units = DEFAULT_UNITS);
 
     double courseDeg() const;
     double distanceNm() const;
@@ -164,8 +165,10 @@ public:
     const FlightPlan* _parent;
     RouteRestriction _speedRestrict = RESTRICT_NONE,
       _altRestrict = RESTRICT_NONE;
-    int _speed = 0;
-    int _altitudeFt = 0;
+    double _speed = 0.0;
+    double _altitude = 0.0;
+    RouteUnits _speedUnits = SPEED_KNOTS;
+    RouteUnits _altitudeUnits = ALTITUDE_FEET;
 
     // if > 0, we will hold at the waypoint using
     // the published hold side/course
@@ -405,11 +408,17 @@ public:
     void setCruiseSpeedMach(double mach);
     double cruiseSpeedMach() const;
     
+    void setCruiseSpeedKPH(int kmh);
+    int cruiseSpeedKPH() const;
+
     void setCruiseFlightLevel(int flightLevel);
     int cruiseFlightLevel() const;
     
     void setCruiseAltitudeFt(int altFt);
     int cruiseAltitudeFt() const;
+
+    void setCruiseAltitudeM(int altM);
+    int cruiseAltitudeM() const;
     
   /**
    * abstract interface for creating delegates automatically when a
@@ -482,8 +491,10 @@ private:
     ICAOFlightRules _flightRules = ICAOFlightRules::VFR;
     int _cruiseAirspeedKnots = 0;
     double _cruiseAirspeedMach = 0.0;
+    int _cruiseAirspeedKph = 0;
     int _cruiseFlightLevel = 0;
     int _cruiseAltitudeFt = 0;
+    int _cruiseAltitudeM = 0;
     int _estimatedDuration = 0;
     double _maxFlyByTurnAngle = 90.0;
 

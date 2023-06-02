@@ -47,6 +47,7 @@
 #include <simgear/props/props.hxx>
 #include <simgear/structure/commands.hxx>
 #include <simgear/structure/event_mgr.hxx>
+#include <simgear/io/sg_mmap.hxx>
 
 #include <simgear/nasal/cppbind/from_nasal.hxx>
 #include <simgear/nasal/cppbind/to_nasal.hxx>
@@ -70,7 +71,6 @@
 #include "NasalUnitTesting.hxx"
 
 #include <Main/globals.hxx>
-#include <Main/util.hxx>
 #include <Main/fg_props.hxx>
 #include <Main/sentryIntegration.hxx>
 
@@ -105,10 +105,18 @@ FGNasalModuleListener::FGNasalModuleListener(SGPropertyNode* node) : _node(node)
 
 void FGNasalModuleListener::valueChanged(SGPropertyNode*)
 {
-    if (_node->getBoolValue("enabled",false)&&
-        !_node->getBoolValue("loaded",true))
-    {
+    const auto enabled = _node->getBoolValue("enabled", false);
+    const auto loaded = _node->getBoolValue("loaded", true);
+    if (enabled && !loaded) {
         nasalSys->loadPropertyScripts(_node);
+    } else if (!enabled && loaded) {
+        // delete the module
+        std::string module = _node->getNameString();
+        if (_node->hasChild("module")) {
+            module = _node->getStringValue("module");
+        }
+
+        nasalSys->deleteModule(module.c_str());
     }
 }
 
@@ -174,9 +182,9 @@ public:
 
     _isRunning = true;
     if (_singleShot) {
-      globals->get_event_mgr()->addEvent(_name, this, &TimerObj::invoke, _interval, _isSimTime);
+      globals->get_event_mgr()->addEvent(_name, [this](){ this->invoke(); }, _interval, _isSimTime);
     } else {
-      globals->get_event_mgr()->addTask(_name, this, &TimerObj::invoke,
+      globals->get_event_mgr()->addTask(_name, [this](){ this->invoke(); },
                                         _interval, _interval /* delay */,
                                         _isSimTime);
     }
@@ -390,7 +398,7 @@ FGNasalScript* FGNasalSys::parseScript(const char* src, const char* name)
 
     char buf[256];
     if(!name) {
-        sprintf(buf, "FGNasalScript@%p", (void *)script);
+        snprintf(buf, 256, "FGNasalScript@%p", (void *)script);
         name = buf;
     }
 
@@ -738,7 +746,7 @@ static naRef f_directory(naContext c, naRef me, int argc, naRef* args)
     if(argc != 1 || !naIsString(args[0]))
         naRuntimeError(c, "bad arguments to directory()");
 
-    SGPath dirname = fgValidatePath(SGPath::fromUtf8(naStr_data(args[0])), false);
+    SGPath dirname = SGPath::fromUtf8(naStr_data(args[0])).validate(false);
     if(dirname.isNull()) {
         SG_LOG(SG_NASAL, SG_ALERT, "directory(): listing '" <<
         naStr_data(args[0]) << "' denied (unauthorized directory - authorization"
@@ -801,7 +809,7 @@ public:
         _sys->gcRelease(_gcRoot);
     }
 
-    virtual bool operator()(const SGPropertyNode* aNode, SGPropertyNode * root)
+    bool operator()(const SGPropertyNode* aNode, SGPropertyNode* root) override
     {
         _sys->setCmdArg(const_cast<SGPropertyNode*>(aNode));
         naRef args[1];
@@ -853,7 +861,7 @@ static naRef f_open(naContext c, naRef me, int argc, naRef* args)
     naRef mode = argc > 1 ? naStringValue(c, args[1]) : naNil();
     if(!naStr_data(file)) naRuntimeError(c, "bad argument to open()");
     const char* modestr = naStr_data(mode) ? naStr_data(mode) : "rb";
-    SGPath filename = fgValidatePath(SGPath::fromUtf8(naStr_data(file)),
+    const SGPath filename = SGPath::fromUtf8(naStr_data(file)).validate(
         strcmp(modestr, "rb") && strcmp(modestr, "r"));
     if(filename.isNull()) {
         SG_LOG(SG_NASAL, SG_ALERT, "open(): reading/writing '" <<
@@ -897,7 +905,7 @@ static naRef f_custom_stat(naContext ctx, naRef me, int argc, naRef* args)
         return naNil();
     }
 
-    const SGPath filename = fgValidatePath(path, false );
+    const SGPath filename = SGPath(path).validate(false);
     if (filename.isNull()) {
         SG_LOG(SG_NASAL, SG_ALERT, "stat(): reading '" <<
         naStr_data(pathArg) << "' denied (unauthorized directory - authorization"
@@ -948,7 +956,7 @@ static naRef f_parsexml(naContext c, naRef me, int argc, naRef* args)
         if(!(naIsNil(args[i]) || naIsFunc(args[i])))
             naRuntimeError(c, "parsexml(): callback argument not a function");
 
-    SGPath file = fgValidatePath(SGPath::fromUtf8(naStr_data(args[0])), false);
+    const SGPath file = SGPath::fromUtf8(naStr_data(args[0])).validate(false);
     if(file.isNull()) {
         SG_LOG(SG_NASAL, SG_ALERT, "parsexml(): reading '" <<
         naStr_data(args[0]) << "' denied (unauthorized directory - authorization"
@@ -1090,6 +1098,7 @@ void FGNasalSys::init()
     hashset(_globals, "io", naInit_io(_context));
     hashset(_globals, "thread", naInit_thread(_context));
     hashset(_globals, "utf8", naInit_utf8(_context));
+    hashset(_globals, "sqlite", naInit_sqlite(_context));
 
     initLogLevelConstants();
 
@@ -1120,7 +1129,12 @@ void FGNasalSys::init()
         initNasalFlightPlan(_globals, _context);
         initNasalPositioned_cppbind(_globals, _context);
         initNasalAircraft(_globals, _context);
+
+#if !defined (BUILDING_TESTSUITE)
+        // on Linux, clipboard init crashes in headless mode (DISPLAY no set)
+        // so don't do this for testing.
         NasalClipboard::init(this);
+#endif
         initNasalCanvas(_globals, _context);
         initNasalCondition(_globals, _context);
         initNasalHTTP(_globals, _context);
@@ -1152,7 +1166,12 @@ void FGNasalSys::init()
 
     // Now load the various source files in the Nasal directory
     simgear::Dir nasalDir(SGPath(globals->get_fg_root(), "Nasal"));
-    loadScriptDirectory(nasalDir, globals->get_props()->getNode("/sim/nasal-load-priority"));
+    
+    // load core Nasal scripts. In GUI startup mode, we restrict to a limited
+    // set of modules deliberately
+    loadScriptDirectory(nasalDir,
+                        globals->get_props()->getNode("/sim/nasal-load-priority"),
+                        fgGetBool("/sim/gui/startup"));
 
     // Add modules in Nasal subdirectories to property tree
     simgear::PathList directories = nasalDir.children(simgear::Dir::TYPE_DIR+
@@ -1298,7 +1317,8 @@ bool pathSortPredicate(const SGPath& p1, const SGPath& p2)
 
 // Loads all scripts in given directory, with an optional partial ordering of
 // files defined in loadorder.
-void FGNasalSys::loadScriptDirectory(simgear::Dir nasalDir, SGPropertyNode* loadorder)
+void FGNasalSys::loadScriptDirectory(simgear::Dir nasalDir, SGPropertyNode* loadorder,
+                                     bool excludeUnspecifiedInLoadOrder)
 {
     simgear::PathList scripts = nasalDir.children(simgear::Dir::TYPE_FILE, ".nas");
 
@@ -1319,6 +1339,10 @@ void FGNasalSys::loadScriptDirectory(simgear::Dir nasalDir, SGPropertyNode* load
       std::for_each(files.begin(), files.end(), loadAndErase);
     }
 
+    if (excludeUnspecifiedInLoadOrder) {
+        return;
+    }
+    
     // Load any remaining scripts.
     // Note: simgear::Dir already reports file entries in a deterministic order,
     // so a fixed loading sequence is guaranteed (same for every user)
@@ -1388,10 +1412,7 @@ void FGNasalSys::loadPropertyScripts(SGPropertyNode* n)
             if (!p.isAbsolute() || !p.exists())
             {
                 p = globals->resolve_maybe_aircraft_path(file);
-                if (p.isNull())
-                {
-                    SG_LOG(SG_NASAL, SG_ALERT, "Cannot find Nasal script '" <<
-                            file << "' for module '" << module << "'.");
+                if (p.isNull()) {
                     simgear::reportFailure(simgear::LoadFailure::NotFound, simgear::ErrorCode::AircraftSystems,
                              string{"Missing nasal file for module:"} + module, sg_location{file});
                 }
@@ -1485,6 +1506,15 @@ bool FGNasalSys::loadModule(SGPath file, const char* module)
         return false;
     }
 
+#if 1
+    // MMap the contents of the file.
+    // This saves an alloc, memcpy and free
+    SGMMapFile mmap(file);
+    mmap.open(SG_IO_IN);
+
+    auto pathStr = file.utf8Str();
+    return createModule(module, pathStr.c_str(), mmap.get(), mmap.get_size());
+#else
     sg_ifstream file_in(file);
     string buf;
     while (!file_in.eof()) {
@@ -1495,6 +1525,7 @@ bool FGNasalSys::loadModule(SGPath file, const char* module)
     file_in.close();
     auto pathStr = file.utf8Str();
     return createModule(module, pathStr.c_str(), buf.data(), buf.length());
+#endif
 }
 
 // Parse and run.  Save the local variables namespace, as it will
@@ -1524,11 +1555,28 @@ bool FGNasalSys::createModule(const char* moduleName, const char* fileName,
     if (naIsNil(_globals))
         return false;
 
-    if (!naHash_get(_globals, modname, &locals))
-        locals = naNewHash(ctx);
+    if (!naHash_get(_globals, modname, &locals)) {
+        // if we are re-creating the module for canvas, ensure the C++
+        // pieces are re-defined first. As far as I can see, Canvas is the only
+        // hybrid module where C++ pieces and Nasal code are combined.
+        const auto isCanvas = strcmp(moduleName, "canvas") == 0;
+        if (isCanvas) {
+            initNasalCanvas(_globals, _context);
+            naHash_get(_globals, modname, &locals);
+        } else {
+            locals = naNewHash(ctx);
+        }
+    }
+
+    // store the filename in the module hash, so we could reload it
+    // this is only needed for 'top-level' single file modules; for
+    // 'directory' modules we use the file path nodes defined by
+    // FGNasalSys::addModule
+    naRef modFilePath = naNewString(ctx);
+    naStr_fromdata(modFilePath, (char*)fileName, strlen(fileName));
+    hashset(locals, "__moduleFilePath", modFilePath);
 
     _cmdArg = (SGPropertyNode*)cmdarg;
-
     callWithContext(ctx, code, argc, args, locals);
     hashset(_globals, moduleName, locals);
 
@@ -1538,17 +1586,77 @@ bool FGNasalSys::createModule(const char* moduleName, const char* fileName,
 
 void FGNasalSys::deleteModule(const char* moduleName)
 {
-    if (!_inited) {
+    if (!_inited || naIsNil(_globals)) {
         // can occur on shutdown due to us being shutdown first, but other
         // subsystems having Nasal objects.
         return;
     }
 
+    auto nasalNode = globals->get_props()->getNode("nasal", true);
+    auto moduleNode = nasalNode->getChild(moduleName, 0);
+    if (moduleNode) {
+        // modules can use this value going false, to trigger unload
+        // behaviours
+        moduleNode->setBoolValue("loaded", false);
+    }
+
     naContext ctx = naNewContext();
     naRef modname = naNewString(ctx);
     naStr_fromdata(modname, (char*)moduleName, strlen(moduleName));
-    naHash_delete(_globals, modname);
+
+    naRef locals;
+    if (naHash_get(_globals, modname, &locals)) {
+        naRef unloadFunc = naHash_cget(locals, (char*)"unload");
+        if (naIsFunc(unloadFunc)) {
+            callWithContext(ctx, unloadFunc, 0, nullptr, locals);
+        }
+
+        // now delete the module hash
+        naHash_delete(_globals, modname);
+    }
+
     naFreeContext(ctx);
+}
+
+bool FGNasalSys::reloadModuleFromFile(const std::string& moduleName)
+{
+    if (!_inited || naIsNil(_globals)) {
+        return false;
+    }
+
+    naRef locals = naHash_cget(_globals, (char*)moduleName.c_str());
+    if (naIsNil(locals)) {
+        // no such module
+        return false;
+    }
+
+    // check if we have a module entry under /nasal/ - if so, use
+    // this to determine the list of files. We don't (yet) re-run
+    // addModule here so adding new .nas files isn't possible, but
+    // in principle it could be done
+    auto nasalNode = globals->get_props()->getNode("nasal", true);
+    auto moduleNode = nasalNode->getChild(moduleName, 0);
+    if (moduleNode) {
+        deleteModule(moduleName.c_str());
+        loadPropertyScripts(moduleNode);
+        return true;
+    } else {
+        // assume it's a single-file module for now
+        naRef filePath = naHash_cget(locals, (char*)"__moduleFilePath");
+        if (naIsNil(filePath)) {
+            return false;
+        }
+
+        SGPath path = SGPath::fromUtf8(naStr_data(filePath));
+        deleteModule(moduleName.c_str());
+        return loadModule(path, moduleName.c_str());
+    }
+}
+
+naRef FGNasalSys::getModule(const std::string& moduleName) const
+{
+    naRef mod = naHash_cget(_globals, (char*)moduleName.c_str());
+    return mod;
 }
 
 naRef FGNasalSys::getModule(const char* moduleName)
@@ -1687,7 +1795,7 @@ void FGNasalSys::setTimer(naContext c, int argc, naRef* args)
     NasalTimer* t = new NasalTimer(handler, this);
     _nasalTimers.push_back(t);
     globals->get_event_mgr()->addEvent(name,
-                                       t, &NasalTimer::timerExpired,
+                                       [t](){ t->timerExpired(); },
                                        delta.num, simtime);
 }
 

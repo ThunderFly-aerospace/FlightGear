@@ -1,3 +1,122 @@
+Version 0.5.1
+-------------
+
+Highlights:
+ * Windows build fix: Fix missing IUnknown.
+
+Documentation:
+ * Settings: Fix typo in doxygen comment.
+
+Version 0.5.0
+-------------
+
+Highlights:
+ * Windows build fixes.
+
+Changed APIs (source incompatible, binary compatible):
+ * Renamed Settings::BlendMode enumerations to fix windows build:
+   * Settings::OPAQUE -> Settings::BLEND\_MODE\_OPAQUE.
+   * Settings::ADDITIVE -> Settings::BLEND\_MODE\_ADDITIVE.
+   * Settings::ALPHA\_BLEND -> Settings::BLEND\_MODE\_ALPHA\_BLEND.
+
+Bug fixes:
+ * Swapchain: Use weak\_ptr::lock() to avoid exception.
+
+Behind the scenes:
+ * XRState: Use OSG defs for GL texture formats.
+
+Version 0.3.9
+-------------
+
+Highlights:
+ * New quad composition layer API.
+ * Improved quirk handling depending on OpenXR runtime.
+
+Bug fixes:
+ * PkgConfig: Fix OpenXR dependency.
+ * XRState: Fix copy error in depth format selection.
+ * Handle releaseGLObjects on window close.
+ * Handle Monado instance loss.
+
+New/expanded APIs:
+ * osgXR/Swapchain: New Swapchain class to represent a chain of images that can
+   be passed to OpenXR for use in composition layers. They can be linked to
+   cameras for rendering, and to state sets to update the texture of mirror
+   objects.
+ * osgXR/SubImage: New simple SubImage class to specify a sub-rectangle of a
+   Swapchain, for use by composition layers.
+ * osgXR/CompositionLayer: New CompositionLayer base class for general
+   composition layer handling.
+ * osgXR/CompositionLayerQuad: New CompositionLayerQuad class for applications
+   to use to implement OpenXR compositor quad layers.
+
+Behind the scenes:
+ * Subaction: Tweak indentation.
+ * Add Quirks infrastructure.
+ * Handle OpenXR GL context mishandling with quirks.
+ * Compositor: Add internal OpenXR::CompositionLayerQuad API.
+ * XRState: Split image format selection into functions for shared use by new
+   public Swapchain API.
+ * XRState::XRSwapchain: Add forced alpha internal API for use by new public
+   APIs.
+
+Build system:
+ * CMake: Explicitly find Threads with old OpenXR loaders.
+
+Version 0.3.8
+-------------
+
+Highlights:
+ * Swapchain format preferences, allowing more formats to be chosen, and using
+   sRGB formats by default.
+ * Handle building as a CMake subproject.
+
+New/expanded APIs:
+ * Settings::preferRGBEncoding(), Settings::allowRGBEncoding() - For choosing
+   preferred and allowed RGB encodings from linear, floating point (linear), and
+   sRGB (non-linear).
+ * Settings::preferDepthEncoding(), Settings::allowDepthEncoding() - For
+   choosing preferred and allowed depth encodings from linear, and floating
+   point.
+ * Settings::getRGBBits(), Settings::setRGBBits() - For choosing preferred
+   number of bits per RGB channel (for linear & float encodings only),
+   overriding the graphics window traits bit depths.
+ * Settings::getAlphaBits(), Settings::setAlphaBits() - For choosing preferred
+   number of alpha channel bits, overriding the graphics window traits bit
+   depths.
+ * Settings::getDepthBits(), Settings::setDepthBits() - For choosing preferred
+   number of depth channel bits, overriding the graphics window traits bit
+   depths.
+ * Settings::getStencilBits(), Settings::setStencilBits() - For choosing
+   preferred number of stencil channel bits, overriding the graphics window
+   traits bit depths.
+ * Settings::getPreferredRGBEncodingMask(),
+   Settings::setPreferredRGBEncodingMask(),
+   Settings::getAllowedRGBEncodingMask(),
+   Settings::setAllowedRGBEncodingMask() - Largely internal for directly
+   accessing the masks of preferred and allowed RGB encodings.
+ * Settings::getPreferredDepthEncodingMask(),
+   Settings::setPreferredDepthEncodingMask(),
+   Settings::getAllowedDepthEncodingMask(),
+   Settings::setAllowedDepthEncodingMask() - Largely internal for directly
+   accessing the masks of preferred and allowed depth encodings.
+
+Documentation:
+ * Settings: Tweak comment wording for consistency.
+
+Behaviour changes:
+ * Determine swapchain formats using new preferences specified in Settings,
+   using sRGB formats by default instead of linear.
+ * Choose a suitable depth/stencil fallback for when a depth swapchain cannot be
+   used.
+ * Enable gamma correction when rendering VR mirror to sRGB framebuffer.
+
+Build system:
+ * Handle building as a subproject.
+ * Reduce minimum CMake version to 3.11.
+ * Add OSGXR\_WARNINGS option to enable compiler warnings (for development use).
+ * Drop osgXR\_INCLUDE\_DIR use since newer CMake handles automatically.
+
 Version 0.3.7
 -------------
 

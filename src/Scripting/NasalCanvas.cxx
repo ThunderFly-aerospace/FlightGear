@@ -18,9 +18,7 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #include "NasalCanvas.hxx"
 #include <Canvas/canvas_mgr.hxx>
@@ -36,11 +34,13 @@
 #include <simgear/canvas/CanvasWindow.hxx>
 #include <simgear/canvas/elements/CanvasElement.hxx>
 #include <simgear/canvas/elements/CanvasText.hxx>
-#include <simgear/canvas/layout/BoxLayout.hxx>
-#include <simgear/canvas/layout/NasalWidget.hxx>
 #include <simgear/canvas/events/CustomEvent.hxx>
 #include <simgear/canvas/events/KeyboardEvent.hxx>
 #include <simgear/canvas/events/MouseEvent.hxx>
+#include <simgear/canvas/layout/BoxLayout.hxx>
+#include <simgear/canvas/layout/GridLayout.hxx>
+#include <simgear/canvas/layout/NasalWidget.hxx>
+#include <simgear/canvas/layout/SpacerItem.hxx>
 
 #include <simgear/nasal/cppbind/from_nasal.hxx>
 #include <simgear/nasal/cppbind/to_nasal.hxx>
@@ -77,6 +77,8 @@ typedef nasal::Ghost<sc::ImagePtr> NasalImage;
 typedef nasal::Ghost<sc::LayoutItemRef> NasalLayoutItem;
 typedef nasal::Ghost<sc::LayoutRef> NasalLayout;
 typedef nasal::Ghost<sc::BoxLayoutRef> NasalBoxLayout;
+typedef nasal::Ghost<sc::GridLayoutRef> NasalGridLayout;
+using NasalSpacerItem = nasal::Ghost<sc::SpacerItemRef>;
 
 typedef nasal::Ghost<sc::WindowPtr> NasalWindow;
 
@@ -102,8 +104,7 @@ SGPropertyNode* from_nasal_helper(naContext c, naRef ref, SGPropertyNode**)
 
 CanvasMgr& requireCanvasMgr(const nasal::ContextWrapper& ctx)
 {
-  CanvasMgr* canvas_mgr =
-    static_cast<CanvasMgr*>(globals->get_subsystem("Canvas"));
+  auto canvas_mgr = globals->get_subsystem<CanvasMgr>();
   if( !canvas_mgr )
     ctx.runtimeError("Failed to get Canvas subsystem");
 
@@ -112,8 +113,7 @@ CanvasMgr& requireCanvasMgr(const nasal::ContextWrapper& ctx)
 
 GUIMgr& requireGUIMgr(const nasal::ContextWrapper& ctx)
 {
-  GUIMgr* mgr =
-    static_cast<GUIMgr*>(globals->get_subsystem("CanvasGUI"));
+  auto mgr = globals->get_subsystem<GUIMgr>();
   if( !mgr )
     ctx.runtimeError("Failed to get CanvasGUI subsystem");
 
@@ -361,21 +361,38 @@ static naRef f_customEventGetDetail( sc::CustomEvent& event,
   );
 }
 
+static naRef f_layoutItemSetVisible(sc::LayoutItem& item,
+                                    const nasal::CallContext& ctx)
+{
+  item.setVisible(ctx.getArg<bool>(0, true));
+  return ctx.me;
+}
+
 static naRef f_boxLayoutAddItem( sc::BoxLayout& box,
                                  const nasal::CallContext& ctx )
 {
-  box.addItem( ctx.requireArg<sc::LayoutItemRef>(0),
-               ctx.getArg<int>(1),
-               ctx.getArg<int>(2, sc::AlignFill) );
+  const auto item = ctx.requireArg<sc::LayoutItemRef>(0);
+  if (!item) {
+    ctx.runtimeError("BoxLayout.addItem: argument 0 is not a layout item");
+  }
+
+  box.addItem(item,
+              ctx.getArg<int>(1),
+              ctx.getArg<int>(2, sc::AlignFill));
   return naNil();
 }
 static naRef f_boxLayoutInsertItem( sc::BoxLayout& box,
                                     const nasal::CallContext& ctx )
 {
-  box.insertItem( ctx.requireArg<int>(0),
-                  ctx.requireArg<sc::LayoutItemRef>(1),
-                  ctx.getArg<int>(2),
-                  ctx.getArg<int>(3, sc::AlignFill) );
+  const auto item = ctx.requireArg<sc::LayoutItemRef>(1);
+  if (!item) {
+    ctx.runtimeError("BoxLayout.insertItem: argument 1 is not a layout item");
+  }
+
+  box.insertItem(ctx.requireArg<int>(0),
+                 item,
+                 ctx.getArg<int>(2),
+                 ctx.getArg<int>(3, sc::AlignFill));
   return naNil();
 }
 
@@ -420,6 +437,45 @@ static naRef f_imageSetPixel(sc::Image& img, const nasal::CallContext& ctx)
         img.setPixel(s, t, ctx.requireArg<osg::Vec4>(2));
     }
     return naNil();
+}
+
+static naRef f_canvasImageSize(sc::Image& img, const nasal::CallContext& ctx)
+{
+    auto osgImage = img.getImage();
+    osg::Vec2f sz{0.0f, 0.0f};
+    if (osgImage) {
+        sz = osg::Vec2f{static_cast<float>(osgImage->s()),
+                        static_cast<float>(osgImage->t())};
+    }
+
+    return ctx.to_nasal(sz);
+}
+
+static naRef f_gridLayoutAddItem(sc::GridLayout& grid,
+                                 const nasal::CallContext& ctx)
+{
+    const auto item = ctx.requireArg<sc::LayoutItemRef>(0);
+    if (!item) {
+        ctx.runtimeError("GridLayout.addItem: argument 0 is not a layout item");
+    }
+
+
+    grid.addItem(item,
+                 ctx.requireArg<int>(1),
+                 ctx.requireArg<int>(2),
+                 ctx.getArg<int>(3, 1),
+                 ctx.getArg<int>(4, 1));
+    return naNil();
+}
+
+static naRef f_newGridLayout(const nasal::CallContext& ctx)
+{
+    return ctx.to_nasal(new sc::GridLayout);
+}
+
+static naRef f_newSpacerItem(const nasal::CallContext& ctx)
+{
+    return ctx.to_nasal(new sc::SpacerItem);
 }
 
 naRef initNasalCanvas(naRef globals, naContext c)
@@ -507,15 +563,19 @@ naRef initNasalCanvas(naRef globals, naContext c)
   canvas_module.set("_getCanvasGhost", f_getCanvas);
 
   NasalElement::init("canvas.Element")
-    .bases<NasalPropertyBasedElement>()
-    .member("_node_ghost", &elementGetNode<sc::Element>)
-    .method("_getParent", &sc::Element::getParent)
-    .method("_getCanvas", &sc::Element::getCanvas)
-    .method("addEventListener", &sc::Element::addEventListener)
-    .method("setFocus", &sc::Element::setFocus)
-    .method("dispatchEvent", &sc::Element::dispatchEvent)
-    .method("getBoundingBox", &sc::Element::getBoundingBox)
-    .method("getTightBoundingBox", &sc::Element::getTightBoundingBox);
+      .bases<NasalPropertyBasedElement>()
+      .member("_node_ghost", &elementGetNode<sc::Element>)
+      .method("_getParent", &sc::Element::getParent)
+      .method("_getCanvas", &sc::Element::getCanvas)
+      .method("addEventListener", &sc::Element::addEventListener)
+      .method("setFocus", &sc::Element::setFocus)
+      .method("dispatchEvent", &sc::Element::dispatchEvent)
+      .method("getBoundingBox", &sc::Element::getBoundingBox)
+      .method("getTightBoundingBox", &sc::Element::getTightBoundingBox)
+      .method("_posToLocal", &sc::Element::posToLocal)
+      .method("_posFromLocal", &sc::Element::posFromLocal)
+      .method("canvasToLocal", &sc::Element::canvasToLocal)
+      .method("localToCanvas", &sc::Element::localToCanvas);
 
   NasalGroup::init("canvas.Group")
     .bases<NasalElement>()
@@ -532,11 +592,12 @@ naRef initNasalCanvas(naRef globals, naContext c)
     .method("getCursorPos", &sc::Text::getCursorPos);
 
   NasalImage::init("canvas.Image")
-    .bases<NasalElement>()
-    .method("fillRect", &f_imageFillRect)
-    .method("setPixel", &f_imageSetPixel)
-    .method("dirtyPixels", &sc::Image::dirtyPixels);
-    
+      .bases<NasalElement>()
+      .method("fillRect", &f_imageFillRect)
+      .method("setPixel", &f_imageSetPixel)
+      .method("dirtyPixels", &sc::Image::dirtyPixels)
+      .method("imageSize", &f_canvasImageSize);
+
   //----------------------------------------------------------------------------
   // Layouting
 
@@ -548,27 +609,30 @@ naRef initNasalCanvas(naRef globals, naContext c)
     = &sc::LayoutItem::setContentsMargins;
 
   NasalLayoutItem::init("canvas.LayoutItem")
-    .method("getCanvas", &sc::LayoutItem::getCanvas)
-    .method("setCanvas", &sc::LayoutItem::setCanvas)
-    .method("getParent", &sc::LayoutItem::getParent)
-    .method("setParent", &sc::LayoutItem::setParent)
-    .method("setContentsMargins", f_layoutItemSetContentsMargins)
-    .method("setContentsMargin", &sc::LayoutItem::setContentsMargin)
-    .method("sizeHint", &sc::LayoutItem::sizeHint)
-    .method("minimumSize", &sc::LayoutItem::minimumSize)
-    .method("maximumSize", &sc::LayoutItem::maximumSize)
-    .method("hasHeightForWidth", &sc::LayoutItem::hasHeightForWidth)
-    .method("heightForWidth", &sc::LayoutItem::heightForWidth)
-    .method("minimumHeightForWidth", &sc::LayoutItem::minimumHeightForWidth)
-    .method("setAlignment", &sc::LayoutItem::setAlignment)
-    .method("alignment", &sc::LayoutItem::alignment)
-    .method("setVisible", &sc::LayoutItem::setVisible)
-    .method("isVisible", &sc::LayoutItem::isVisible)
-    .method("isExplicitlyHidden", &sc::LayoutItem::isExplicitlyHidden)
-    .method("show", &sc::LayoutItem::show)
-    .method("hide", &sc::LayoutItem::hide)
-    .method("setGeometry", &sc::LayoutItem::setGeometry)
-    .method("geometry", &sc::LayoutItem::geometry);
+      .method("getCanvas", &sc::LayoutItem::getCanvas)
+      .method("setCanvas", &sc::LayoutItem::setCanvas)
+      .method("getParent", &sc::LayoutItem::getParent)
+      .method("setParent", &sc::LayoutItem::setParent)
+      .method("setContentsMargins", f_layoutItemSetContentsMargins)
+      .method("setContentsMargin", &sc::LayoutItem::setContentsMargin)
+      .method("sizeHint", &sc::LayoutItem::sizeHint)
+      .method("minimumSize", &sc::LayoutItem::minimumSize)
+      .method("maximumSize", &sc::LayoutItem::maximumSize)
+      .method("hasHeightForWidth", &sc::LayoutItem::hasHeightForWidth)
+      .method("heightForWidth", &sc::LayoutItem::heightForWidth)
+      .method("minimumHeightForWidth", &sc::LayoutItem::minimumHeightForWidth)
+      .method("setAlignment", &sc::LayoutItem::setAlignment)
+      .method("alignment", &sc::LayoutItem::alignment)
+      .method("setVisible", f_layoutItemSetVisible)
+      .method("isVisible", &sc::LayoutItem::isVisible)
+      .method("isExplicitlyHidden", &sc::LayoutItem::isExplicitlyHidden)
+      .method("show", &sc::LayoutItem::show)
+      .method("hide", &sc::LayoutItem::hide)
+      .method("setGeometry", &sc::LayoutItem::setGeometry)
+      .method("geometry", &sc::LayoutItem::geometry)
+      .method("setGridLocation", &sc::LayoutItem::setGridLocation)
+      .method("setGridSpan", &sc::LayoutItem::setGridSpan);
+
   sc::NasalWidget::setupGhost(canvas_module);
 
   NasalLayout::init("canvas.Layout")
@@ -594,26 +658,40 @@ naRef initNasalCanvas(naRef globals, naContext c)
     .method("setStretchFactor", &sc::BoxLayout::setStretchFactor)
     .method("stretch", &sc::BoxLayout::stretch);
 
-  canvas_module.createHash("HBoxLayout")
-               .set("new", &f_newAsBase<sc::HBoxLayout, sc::BoxLayout>);
-  canvas_module.createHash("VBoxLayout")
-               .set("new", &f_newAsBase<sc::VBoxLayout, sc::BoxLayout>);
+  NasalGridLayout::init("canvas.GridLayout")
+      .bases<NasalLayout>()
+      .method("addItem", &f_gridLayoutAddItem)
+      .method("setRowStretch", &sc::GridLayout::setRowStretch)
+      .method("setColumnStretch", &sc::GridLayout::setColumnStretch);
+
+    NasalSpacerItem::init("canvas.SpacerItem")
+        .bases<NasalLayoutItem>();
+    
+    canvas_module.createHash("HBoxLayout")
+                 .set("new", &f_newAsBase<sc::HBoxLayout, sc::BoxLayout>);
+    canvas_module.createHash("VBoxLayout")
+                 .set("new", &f_newAsBase<sc::VBoxLayout, sc::BoxLayout>);
+    canvas_module.createHash("GridLayout")
+                 .set("new", &f_newGridLayout);
+    canvas_module.createHash("Spacer")
+                 .set("new", &f_newSpacerItem);
 
   //----------------------------------------------------------------------------
   // Window
 
-  NasalWindow::init("canvas.Window")
-    .bases<NasalElement>()
-    .bases<NasalLayoutItem>()
-    .member("_node_ghost", &elementGetNode<sc::Window>)
-    .method("_getCanvasDecoration", &sc::Window::getCanvasDecoration)
-    .method("setLayout", &sc::Window::setLayout);
+    NasalWindow::init("canvas.Window")
+        .bases<NasalElement>()
+        .bases<NasalLayoutItem>()
+        .member("_node_ghost", &elementGetNode<sc::Window>)
+        .method("_getCanvasDecoration", &sc::Window::getCanvasDecoration)
+        .method("setLayout", &sc::Window::setLayout)
+        .method("toScreenPosition", &sc::Window::toScreenPosition);
 
-  canvas_module.set("_newWindowGhost", f_createWindow);
-  canvas_module.set("_getDesktopGhost", f_getDesktop);
-  canvas_module.set("setInputFocus", f_setInputFocus);
-  canvas_module.set("grabPointer", f_grabPointer);
-  canvas_module.set("ungrabPointer", f_ungrabPointer);
+    canvas_module.set("_newWindowGhost", f_createWindow);
+    canvas_module.set("_getDesktopGhost", f_getDesktop);
+    canvas_module.set("setInputFocus", f_setInputFocus);
+    canvas_module.set("grabPointer", f_grabPointer);
+    canvas_module.set("ungrabPointer", f_ungrabPointer);
 
-  return naNil();
+    return naNil();
 }

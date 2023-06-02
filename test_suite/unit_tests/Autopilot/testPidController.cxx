@@ -13,8 +13,6 @@
 #include <simgear/math/sg_random.hxx>
 #include <simgear/props/props_io.hxx>
 
-#include <unistd.h>
-
 // Set up function for each test.
 void PidControllerTests::setUp()
 {
@@ -104,7 +102,7 @@ void PidControllerTests::test(bool startup_current)
 
     auto ap = new FGXMLAutopilot::Autopilot(globals->get_props(), config);
 
-    globals->add_subsystem("ap", ap, SGSubsystemMgr::FDM);
+    globals->get_subsystem_mgr()->add("ap", ap);
     ap->bind();
     ap->init();
 

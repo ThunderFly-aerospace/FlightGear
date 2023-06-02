@@ -179,7 +179,7 @@ MK_VIII::PropertiesHandler::init ()
     mk_node(nav0_in_range) = fgGetNode("/instrumentation/nav/in-range", true);
     mk_node(nav0_nav_loc) = fgGetNode("/instrumentation/nav/nav-loc", true);
     mk_node(nav0_serviceable) = fgGetNode("/instrumentation/nav/serviceable", true);
-    mk_node(power) = fgGetNode(("/systems/electrical/outputs/" + mk->name).c_str(), mk->num, true);
+    mk_node(power) = fgGetNode(("/systems/electrical/outputs/" + mk->name), mk->num, true);
     mk_node(replay_state) = fgGetNode("/sim/freeze/replay-state", true);
     mk_node(vs) = fgGetNode("/velocities/vertical-speed-fps", true);
 }
@@ -1129,10 +1129,8 @@ MK_VIII::IOHandler::update_inputs ()
         mk_dinput(glideslope_inhibit) = mk_node(nav0_gs_distance)->getDoubleValue() < 0;
     if (mk_dinput_feed(autopilot_engaged))
     {
-        const char *mode;
-
-        mode = mk_node(autopilot_heading_lock)->getStringValue().c_str();
-        mk_dinput(autopilot_engaged) = mode && *mode;
+        const auto mode = mk_node(autopilot_heading_lock)->getStringValue();
+        mk_dinput(autopilot_engaged) = !mode.empty();
     }
 
     if (mk_ainput_feed(uncorrected_barometric_altitude))
@@ -1880,7 +1878,7 @@ MK_VIII::IOHandler::tie_output (SGPropertyNode *node,
                 const char *name,
                 bool *output)
 {
-    SGPropertyNode *child = node->getNode((string("outputs/discretes/") + name).c_str(), true);
+    SGPropertyNode *child = node->getNode((string("outputs/discretes/") + name), true);
 
     mk->properties_handler.tie(child, SGRawValuePointer<bool>(output));
     child->setAttribute(SGPropertyNode::WRITE, false);
@@ -1891,7 +1889,7 @@ MK_VIII::IOHandler::tie_output (SGPropertyNode *node,
                 const char *name,
                 int *output)
 {
-    SGPropertyNode *child = node->getNode((string("outputs/arinc429/") + name).c_str(), true);
+    SGPropertyNode *child = node->getNode((string("outputs/arinc429/") + name), true);
 
     mk->properties_handler.tie(child, SGRawValuePointer<int>(output));
     child->setAttribute(SGPropertyNode::WRITE, false);
@@ -4651,7 +4649,7 @@ MK_VIII::init ()
 void
 MK_VIII::bind ()
 {
-    SGPropertyNode *node = fgGetNode(("/instrumentation/" + name).c_str(), num, true);
+    SGPropertyNode *node = fgGetNode(("/instrumentation/" + name), num, true);
 
     configuration_module.bind(node);
     power_handler.bind(node);

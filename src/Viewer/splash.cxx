@@ -1,25 +1,9 @@
-// splash.cxx -- draws the initial splash screen
-//
-// Written by Curtis Olson, started July 1998.  (With a little looking
-// at Freidemann's panel code.) :-)
-//
-// Copyright (C) 1997  Michele F. America  - nomimarketing@mail.telepac.pt
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-//
-// $Id$
+/*
+ * SPDX-FileName: splash.cxx
+ * SPDX-FileComment: draws the initial splash screen. Written by Curtis Olson, started July 1998.
+ * SPDX-FileCopyrightText: Copyright (C) 1997  Michele F. America  - nomimarketing@mail.telepac.pt
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
 
 #include <config.h>
 
@@ -47,14 +31,19 @@
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/misc/sg_dir.hxx>
 #include <simgear/scene/util/SGReaderWriterOptions.hxx>
+#include <simgear/structure/OSGUtils.hxx>
+#include <simgear/props/condition.hxx>
 
-#include <Main/globals.hxx>
-#include <Main/fg_props.hxx>
+#include "VRManager.hxx"
+#include "renderer.hxx"
+#include "splash.hxx"
+#include <GUI/gui.h>
 #include <Main/fg_os.hxx>
+#include <Main/fg_props.hxx>
+#include <Main/globals.hxx>
 #include <Main/locale.hxx>
 #include <Main/util.hxx>
-#include "splash.hxx"
-#include "renderer.hxx"
+#include <Viewer/CameraGroup.hxx>
 
 #include <sstream>
 
@@ -77,6 +66,19 @@ public:
 SplashScreen::SplashScreen() :
     _splashAlphaNode(fgGetNode("/sim/startup/splash-alpha", true))
 {
+#ifdef ENABLE_OSGXR
+    uint32_t splashW = 1920, splashH = 1080;
+    float aspect = (float)splashW / splashH;
+    _splashSwapchain = new osgXR::Swapchain(splashW, splashH);
+    _splashSwapchain->setAlphaBits(8);
+    _splashSwapchain->allowRGBEncoding(osgXR::Swapchain::Encoding::ENCODING_SRGB);
+    _splashLayer = new osgXR::CompositionLayerQuad(flightgear::VRManager::instance());
+    _splashLayer->setSubImage(_splashSwapchain);
+    _splashLayer->setSize(osg::Vec2f(aspect, 1.0f));
+    _splashLayer->setPosition(osg::Vec3f(0, 0, -2.0f));
+    _splashLayer->setAlphaMode(osgXR::CompositionLayer::BLEND_ALPHA_UNPREMULT);
+#endif
+
     setName("splashGroup");
     setUpdateCallback(new SplashScreenUpdateCallback);
 }
@@ -87,30 +89,26 @@ SplashScreen::~SplashScreen()
 
 void SplashScreen::createNodes()
 {
-    std::string splashImage = selectSplashImage();
-
-    osg::ref_ptr<SGReaderWriterOptions> staticOptions = SGReaderWriterOptions::copyOrCreate(osgDB::Registry::instance()->getOptions());
-    staticOptions->setLoadOriginHint(SGReaderWriterOptions::LoadOriginHint::ORIGIN_SPLASH_SCREEN);
-    _splashImage = osgDB::readRefImageFile(splashImage, staticOptions);
-
-    if (!_splashImage){
-        SG_LOG(SG_VIEW, SG_INFO, "Splash Image " << splashImage << " failed to load");
-        return;
+    // The splash FBO is rendered as sRGB, but for VR it needs to be in an sRGB
+    // pixel format for it to be handled as such by OpenXR.
+    bool useSRGB = false;
+#if !defined(SG_MAC)
+    // SRGB does detect on macOS, but doesn't actually work, so we
+    // disable the check there.
+    osg::Camera* guiCamera = flightgear::getGUICamera(flightgear::CameraGroup::getDefault());
+    if (guiCamera) {
+        osg::GraphicsContext* gc = guiCamera->getGraphicsContext();
+        osg::GLExtensions* glext = gc->getState()->get<osg::GLExtensions>();
+        if (glext) {
+            useSRGB = osg::isGLExtensionOrVersionSupported(glext->contextID, "GL_EXT_texture_sRGB", 2.1f) &&
+                      osg::isGLExtensionOrVersionSupported(glext->contextID, "GL_EXT_framebuffer_sRGB", 3.0f);
+        }
     }
-    int width               = _splashImage->s();
-    int height = _splashImage->t();
-    _splashImageAspectRatio = static_cast<double>(width) / height;
-
-    osg::TextureRectangle* splashTexture = new osg::TextureRectangle(_splashImage);
-    splashTexture->setTextureSize(width, height);
-    splashTexture->setInternalFormat(GL_RGB);
-    splashTexture->setFilter(osg::Texture::MIN_FILTER, osg::Texture::LINEAR);
-    splashTexture->setFilter(osg::Texture::MAG_FILTER, osg::Texture::LINEAR);
-    splashTexture->setImage(_splashImage);
-
-
+#endif
+    // setup the base geometry 
     _splashFBOTexture = new osg::Texture2D;
-    _splashFBOTexture->setInternalFormat(GL_RGB);
+    _splashFBOTexture->setInternalFormat(useSRGB ? GL_SRGB8 : GL_RGB);
+
     _splashFBOTexture->setResizeNonPowerOfTwoHint(false);
     _splashFBOTexture->setFilter(osg::Texture::MIN_FILTER, osg::Texture::LINEAR);
     _splashFBOTexture->setFilter(osg::Texture::MAG_FILTER, osg::Texture::LINEAR);
@@ -121,101 +119,95 @@ void SplashScreen::createNodes()
     osg::Geometry* geometry = new osg::Geometry;
     geometry->setSupportsDisplayList(false);
 
-    _splashImageVertexArray = new osg::Vec3Array;
-    for (int i=0; i < 4; ++i) {
-        _splashImageVertexArray->push_back(osg::Vec3(0.0, 0.0, 0.0));
-    }
-    geometry->setVertexArray(_splashImageVertexArray);
-
-    osg::Vec2Array* imageTCs = new osg::Vec2Array;
-    imageTCs->push_back(osg::Vec2(0, 0));
-    imageTCs->push_back(osg::Vec2(width, 0));
-    imageTCs->push_back(osg::Vec2(width, height));
-    imageTCs->push_back(osg::Vec2(0, height));
-    geometry->setTexCoordArray(0, imageTCs);
-
-    osg::Vec4Array* colorArray = new osg::Vec4Array;
-    colorArray->push_back(osg::Vec4(1, 1, 1, 1));
-    geometry->setColorArray(colorArray);
-    geometry->setColorBinding(osg::Geometry::BIND_OVERALL);
-    geometry->addPrimitiveSet(new osg::DrawArrays(GL_POLYGON, 0, 4));
-
-    osg::StateSet* stateSet = geometry->getOrCreateStateSet();
-    stateSet->setTextureMode(0, GL_TEXTURE_RECTANGLE, osg::StateAttribute::ON);
-    stateSet->setTextureAttribute(0, splashTexture);
-
     osg::Geode* geode = new osg::Geode;
     _splashFBOCamera->addChild(geode);
     geode->addDrawable(geometry);
 
     // get localized GPL licence text to be displayed at splash screen startup
     std::string licenseUrlText = globals->get_locale()->getLocalizedString("license-url", "sys", LICENSE_URL_TEXT);
+    // add the splash image
+    std::string splashImageName = selectSplashImage();
+    addImage(splashImageName, true, 0, 0, 1, 1, nullptr, true);
 
-    if (_legacySplashScreenMode) {
-        addText(geode, osg::Vec2(0.025f, 0.025f), 0.03,
-                "FlightGear "s + fgGetString("/sim/version/flightgear") +
-                " "s + licenseUrlText,
-                osgText::Text::LEFT_TOP,
-                nullptr,
-                0.9);
-    } else {
-        setupLogoImage();
+    // parse the content from the tree
+    // there can be many <content> <model-content> and <image> nodes
+    // <content> is reserved for use in defaults.xml and is the basic 
+    // text; model-content and images are for use in the model
+    // to present model related information.
+    auto root = globals->get_props()->getNode("/sim/startup");
+    bool legacySplashLogoMode = false;
 
-        // order here is important so we can re-write first item with the
-        // startup tip.
-        addText(geode, osg::Vec2(0.025f, 0.15f), 0.03, licenseUrlText,
-                osgText::Text::LEFT_TOP,
-                nullptr,
-                0.6);
-
-        addText(geode, osg::Vec2(0.025f, 0.025f), 0.10, "FlightGear "s + fgGetString("/sim/version/flightgear"), osgText::Text::LEFT_TOP);
-
-        if (!_aircraftLogoVertexArray) {
-            addText(geode, osg::Vec2(0.025f, 0.935f), 0.10,
-                    fgGetString("/sim/description"),
-                    osgText::Text::LEFT_BOTTOM,
-                    nullptr,
-                    0.6);
-            _items.back().maxLineCount = 1;
+    // firstly add all image nodes.
+    std::vector<SGPropertyNode_ptr> images = root->getChildren("image");
+    if (!images.empty()) {
+        for (const auto& image : images) {
+            addImage(image->getStringValue("path", ""),
+                     false,
+                     image->getDoubleValue("x", 0.025f),
+                     image->getDoubleValue("y", 0.935f),
+                     image->getDoubleValue("width", 0.1),
+                     image->getDoubleValue("height", 0.1), 
+                     image->getNode("condition"),
+                     false);
         }
+    } else {
+        // if there are no image nodes then revert to the legacy (2020.3 or before) way of doing things
+        auto splashLogoImage = fgGetString("/sim/startup/splash-logo-image");
+        if (!splashLogoImage.empty())
+        {
+            float logoX = fgGetDouble("/sim/startup/splash-logo-x-norm", 0.0);
+            float logoY = 1.0 - fgGetDouble("/sim/startup/splash-logo-y-norm", 0.065);
 
-        const auto authors = flightgear::getAircraftAuthorsText();
-        addText(geode, osg::Vec2(0.025f, 0.940f), 0.03,
-                authors,
-                osgText::Text::LEFT_TOP,
-                nullptr,
-                0.6);
-        _items.back().maxLineCount = 3;
-        _items.back().maxHeightFraction = 0.055;
+            float logoWidth = fgGetDouble("/sim/startup/splash-logo-width", 0.6);
+
+            auto img = addImage(splashLogoImage, false, logoX, logoY, logoWidth, 0, nullptr, false);
+            if (img != nullptr)
+                legacySplashLogoMode = true;
+        }
     }
 
-    addText(geode, osg::Vec2(0.975f, 0.935f), 0.03,
-            "loading status",
-            osgText::Text::RIGHT_BOTTOM,
-            fgGetNode("/sim/startup/splash-progress-text", true),
-            0.4);
-
-    addText(geode, osg::Vec2(0.975f, 0.975f), 0.03,
-            "spinner",
-            osgText::Text::RIGHT_BOTTOM,
-            fgGetNode("/sim/startup/splash-progress-spinner", true));
+    // put this information into the property tree so the defaults or model can pull it in.
+    fgSetString("/sim/startup/splash-authors", flightgear::getAircraftAuthorsText());
+    fgSetString("/sim/startup/description", fgGetString("/sim/description"));
+    fgSetString("/sim/startup/title", "FlightGear "s + fgGetString("/sim/version/flightgear"));
 
     if (!strcmp(FG_BUILD_TYPE, "Nightly")) {
-        std::string unstableWarningText = globals->get_locale()->getLocalizedString("unstable-warning", "sys", "unstable!");
-        addText(geode, osg::Vec2(0.5, 0.5), 0.03,
-              unstableWarningText,
-              osgText::Text::CENTER_CENTER,
-              nullptr, -1.0, osg::Vec4(1.0, 0.0, 0.0, 1.0));
+        fgSetString("sim/build-warning", globals->get_locale()->getLocalizedString("unstable-warning", "sys", "unstable!"));
+        fgSetBool("sim/build-warning-active", true);
     }
 
-    #ifndef NDEBUG
-    addText(geode, osg::Vec2(0.5f, 0.75f), 0.03,
-            "Debug build",
-            osgText::Text::CENTER_CENTER,
-            nullptr, -1.0, osg::Vec4(1.0, 0.0, 0.0, 1.0));
-    #endif
+    // the licence node serves a dual purpose; both the licence URL and then after a delay
+    // (currently 5 seconds) it will display helpful information.
+    fgSetString("/sim/startup/licence", licenseUrlText);
+    fgSetString("/sim/startup/tip", licenseUrlText);
 
-    ///////////
+#ifndef NDEBUG
+    fgSetBool("/sim/startup/build-type-debug", true);
+#else
+    fgSetBool("/sim/startup/build-type-debug", false);
+#endif
+
+    fgSetBool("/sim/startup/legacy-splash-screen", _legacySplashScreenMode);
+    fgSetBool("/sim/startup/legacy-splash-logo", legacySplashLogoMode);
+
+    // load all model content first.
+    for (const auto& content : root->getChildren("model-content")) {
+        CreateTextFromNode(content, geode, true);
+    }
+
+    // default content comes in second; and has the ability to be overriden by the model
+    for (const auto& content : root->getChildren("content")) {
+        if (content->getIndex()) { // Skip 0 element - reserved for future usage.
+            // default content can be hidden by the model. By hidden it will never be
+            // added (there is also the possibility to use a condition to dynamically hide content)
+            if (!content->getBoolValue("hide"))
+                CreateTextFromNode(content, geode, false);
+        }
+    }
+    // add main title last so it is atop all.
+    addText(geode, osg::Vec2(0.025f, 0.02f), 0.08, "FlightGear "s + fgGetString("/sim/version/flightgear"), osgText::Text::LEFT_TOP);
+
+   ///////////
 
     geometry = new osg::Geometry;
     geometry->setSupportsDisplayList(false);
@@ -227,7 +219,7 @@ void SplashScreen::createNodes()
     geometry->setVertexArray(_splashSpinnerVertexArray);
 
     // QColor buttonColor(27, 122, 211);
-    colorArray = new osg::Vec4Array;
+    osg::Vec4Array* colorArray = new osg::Vec4Array;
     colorArray->push_back(osg::Vec4(27 / 255.0f, 122 / 255.0f, 211 / 255.0f, 0.75f));
     geometry->setColorArray(colorArray);
     geometry->setColorBinding(osg::Geometry::BIND_OVERALL);
@@ -245,13 +237,17 @@ void SplashScreen::createNodes()
     _splashQuadCamera->setCullingActive(false);
     _splashQuadCamera->setRenderOrder(osg::Camera::NESTED_RENDER);
     
-    stateSet = _splashQuadCamera->getOrCreateStateSet();
+    osg::StateSet* stateSet = _splashQuadCamera->getOrCreateStateSet();
     stateSet->setMode(GL_BLEND, osg::StateAttribute::ON);
     stateSet->setAttribute(new osg::BlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA), osg::StateAttribute::ON);
     stateSet->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
     stateSet->setRenderBinDetails(1000, "RenderBin");
     stateSet->setMode(GL_DEPTH_TEST, osg::StateAttribute::OFF);
-    
+
+    if (useSRGB) {
+        stateSet->setMode(GL_FRAMEBUFFER_SRGB, osg::StateAttribute::ON);
+    }
+
     geometry = osg::createTexturedQuadGeometry(osg::Vec3(0.0, 0.0, 0.0),
                                                osg::Vec3(1.0, 0.0, 0.0),
                                                osg::Vec3(0.0, 1.0, 0.0));
@@ -269,8 +265,76 @@ void SplashScreen::createNodes()
     geode = new osg::Geode;
     geode->addDrawable(geometry);
 
+#ifdef ENABLE_OSGXR
+    _splashSwapchain->attachToMirror(stateSet);
+#endif
     _splashQuadCamera->addChild(geode);
     addChild(_splashQuadCamera);
+}
+
+// creates a text element from a property node;
+// <text> defines the text
+// <text-prop> overrides the text with the contents of a property
+// <dynamic-text> will link to a property and update the screen when the property changes
+// <condition> Visibility Expression
+// <color> <r><g><b> </color> define colour to be used
+// <font> specifies the font alignment, size and typeface
+// <max-width>  [optional] the max normalized width of the element
+// <max-height> [optional] the max normalized height of the element. 
+// <max-lines> [optional] the max number of lines this text can be wrapped over
+//              wrapping takes place at max-width
+// 
+void SplashScreen::CreateTextFromNode(const SGPropertyNode_ptr& content, osg::Geode* geode, bool modelContent)
+{
+    auto text = content->getStringValue("text", "");
+    std::string textFromProperty = content->getStringValue("text-prop", "");
+    if (!textFromProperty.empty())
+        text = fgGetString(textFromProperty);
+
+    SGPropertyNode* dynamicValueNode = nullptr;
+    std::string dynamicProperty = content->getStringValue("dynamic-text");
+    if (!dynamicProperty.empty())
+        dynamicValueNode = fgGetNode(dynamicProperty, true);
+    
+    auto conditionNode = content->getChild("condition");
+    SGCondition* condition = nullptr;
+
+    if (conditionNode != nullptr) {
+        condition = sgReadCondition(fgGetNode("/"), conditionNode);
+    }
+    auto x = content->getDoubleValue("x", 0.5);
+    auto y = content->getDoubleValue("y", 0.5);
+
+    if (modelContent) {
+        // the top 0.2 of the screen is for system usage
+        if (y < 0.2) {
+            SG_LOG(SG_VIEW, SG_ALERT, "model content cannot be above 0.2 y");
+            y = 0.2;
+        }
+    }
+
+    auto textItem = addText(geode, osg::Vec2(x, y),
+        content->getDoubleValue("font/size", 0.06),
+        text,
+        osgutils::mapAlignment(content->getStringValue("font/alignment", "left-top")),
+        dynamicValueNode,
+        content->getDoubleValue("max-width", -1.0),
+        osg::Vec4(content->getDoubleValue("color/r", 1), content->getDoubleValue("color/g", 1), content->getDoubleValue("color/b", 1), content->getDoubleValue("color/a", 1)),
+        content->getStringValue("font/face", "Fonts/LiberationFonts/LiberationSans-BoldItalic.ttf"));
+
+    textItem->condition = condition;
+
+    if (textItem->condition != nullptr && !textItem->condition->test())
+        textItem->textNode->setDrawMode(0);
+
+
+    auto maxHeight = content->getDoubleValue("max-height", -1.0);
+    auto maxLineCount = content->getIntValue("max-line-count", -1);
+
+    if (maxLineCount > 0)
+        textItem->maxLineCount = maxLineCount;
+    if (maxHeight > 0)
+        textItem->maxHeightFraction = maxHeight;
 }
 
 osg::ref_ptr<osg::Camera> SplashScreen::createFBOCamera()
@@ -285,6 +349,9 @@ osg::ref_ptr<osg::Camera> SplashScreen::createFBOCamera()
     c->setRenderTargetImplementation( osg::Camera::FRAME_BUFFER_OBJECT );
     c->setRenderOrder(osg::Camera::PRE_RENDER);
     c->attach(osg::Camera::COLOR_BUFFER, _splashFBOTexture);
+#ifdef ENABLE_OSGXR
+    _splashSwapchain->attachToCamera(c);
+#endif
 
     osg::StateSet* stateSet = c->getOrCreateStateSet();
     stateSet->setMode(GL_ALPHA_TEST, osg::StateAttribute::OFF);
@@ -296,70 +363,113 @@ osg::ref_ptr<osg::Camera> SplashScreen::createFBOCamera()
     return c;
 }
 
-void SplashScreen::setupLogoImage()
+// Load an image for display
+// - path
+// - x,y,width,height (normalized coordinates)
+// - isBackground flag to indicate that this image is the background image. Only set during one call to this method when loading the splash image
+//
+const SplashScreen::ImageItem *SplashScreen::addImage(const std::string &path, bool isAbsolutePath, double x, double y, double width, double height, SGPropertyNode*
+ conditionNode, bool isBackground)
 {
-    // check for a logo image, add underneath other text
-    SGPath logoPath = globals->resolve_maybe_aircraft_path(fgGetString("/sim/startup/splash-logo-image"));
-    if (!logoPath.exists() || !logoPath.isFile()) {
-        return;
+    if (path.empty())
+        return nullptr;
+
+    SGPath imagePath;
+
+    if (!isAbsolutePath)
+        imagePath = globals->resolve_maybe_aircraft_path(path);
+    else
+        imagePath = path;
+
+    if (!imagePath.exists() || !imagePath.isFile()) {
+        SG_LOG(SG_VIEW, SG_INFO, "Splash Image " << path << " not be found");
+        return nullptr;
     }
+
+    ImageItem item;
+    item.name = path;
+    item.x = x;
+    item.y = y;
+    item.height = height;
+    item.width = width;
+    item.isBackground = isBackground;
+
+    if (conditionNode != nullptr)
+        item.condition = sgReadCondition(fgGetNode("/"), conditionNode);
+    else
+        item.condition = nullptr;
 
     osg::ref_ptr<simgear::SGReaderWriterOptions> staticOptions = simgear::SGReaderWriterOptions::copyOrCreate(osgDB::Registry::instance()->getOptions());
     staticOptions->setLoadOriginHint(simgear::SGReaderWriterOptions::LoadOriginHint::ORIGIN_SPLASH_SCREEN);
 
-    _logoImage = osgDB::readRefImageFile(logoPath.utf8Str(), staticOptions);
-    if (!_logoImage) {
-        SG_LOG(SG_VIEW, SG_INFO, "Splash logo image " << logoPath << " failed to load");
-        return;
+    item.Image = osgDB::readRefImageFile(imagePath.utf8Str(), staticOptions);
+    if (!item.Image) {
+        SG_LOG(SG_VIEW, SG_INFO, "Splash Image " << imagePath << " failed to load");
+        return nullptr;
     }
 
-    osg::Texture2D* logoTexture = new osg::Texture2D(_logoImage);
-    logoTexture->setResizeNonPowerOfTwoHint(false);
-    logoTexture->setInternalFormat(GL_RGBA);
-    logoTexture->setFilter(osg::Texture::MIN_FILTER, osg::Texture::LINEAR);
-    logoTexture->setFilter(osg::Texture::MAG_FILTER, osg::Texture::LINEAR);
+    item.imageWidth = item.Image->s();
+    item.imageHeight = item.Image->t();
+    item.aspectRatio = static_cast<double>(item.imageWidth) / item.imageHeight;
+    if (item.height == 0 && item.imageWidth != 0)
+        item.height = item.imageHeight * (item.width / item.imageWidth);
+    
+    osg::Texture2D* imageTexture = new osg::Texture2D(item.Image);
+    imageTexture->setResizeNonPowerOfTwoHint(false);
+    imageTexture->setInternalFormat(GL_RGBA);
+    imageTexture->setFilter(osg::Texture::MIN_FILTER, osg::Texture::LINEAR);
+    imageTexture->setFilter(osg::Texture::MAG_FILTER, osg::Texture::LINEAR);
 
     osg::Geometry* geometry = new osg::Geometry;
     geometry->setSupportsDisplayList(false);
 
-    _aircraftLogoVertexArray = new osg::Vec3Array;
+    item.vertexArray = new osg::Vec3Array;
     for (int i=0; i < 4; ++i) {
-        _aircraftLogoVertexArray->push_back(osg::Vec3(0.0, 0.0, 0.0));
+        item.vertexArray->push_back(osg::Vec3(0.0, 0.0, 0.0));
     }
-    geometry->setVertexArray(_aircraftLogoVertexArray);
+    geometry->setVertexArray(item.vertexArray);
 
-    osg::Vec2Array* logoTCs = new osg::Vec2Array;
-    logoTCs->push_back(osg::Vec2(0, 0));
-    logoTCs->push_back(osg::Vec2(1.0, 0));
-    logoTCs->push_back(osg::Vec2(1.0, 1.0));
-    logoTCs->push_back(osg::Vec2(0, 1.0));
-    geometry->setTexCoordArray(0, logoTCs);
+    osg::Vec2Array* imageTextureCoordinates = new osg::Vec2Array;
+    imageTextureCoordinates->push_back(osg::Vec2(0, 0));
+    imageTextureCoordinates->push_back(osg::Vec2(1.0, 0));
+    imageTextureCoordinates->push_back(osg::Vec2(1.0, 1.0));
+    imageTextureCoordinates->push_back(osg::Vec2(0, 1.0));
+    geometry->setTexCoordArray(0, imageTextureCoordinates);
 
-    osg::Vec4Array* colorArray = new osg::Vec4Array;
-    colorArray->push_back(osg::Vec4(1, 1, 1, 1));
-    geometry->setColorArray(colorArray);
+    osg::Vec4Array* imageColorArray = new osg::Vec4Array;
+    imageColorArray->push_back(osg::Vec4(1, 1, 1, 1));
+    geometry->setColorArray(imageColorArray);
     geometry->setColorBinding(osg::Geometry::BIND_OVERALL);
     geometry->addPrimitiveSet(new osg::DrawArrays(GL_POLYGON, 0, 4));
 
     osg::StateSet* stateSet = geometry->getOrCreateStateSet();
     stateSet->setTextureMode(0, GL_TEXTURE_2D, osg::StateAttribute::ON);
-    stateSet->setTextureAttribute(0, logoTexture);
+    stateSet->setTextureAttribute(0, imageTexture);
     stateSet->setMode(GL_BLEND, osg::StateAttribute::ON);
-
+    
     osg::Geode* geode = new osg::Geode;
     _splashFBOCamera->addChild(geode);
     geode->addDrawable(geometry);
 
+    item.geode = geode;
+    item.nodeMask = geode->getNodeMask();
+
+    if (item.condition != nullptr && !item.condition->test())
+        item.geode->setNodeMask(0);
+
+    _imageItems.push_back(item);
+    return &_imageItems.back();
 }
 
-void SplashScreen::addText(osg::Geode* geode ,
+SplashScreen::TextItem *SplashScreen::addText(osg::Geode* geode ,
                            const osg::Vec2& pos, double size, const std::string& text,
                            const osgText::Text::AlignmentType alignment,
                            SGPropertyNode* dynamicValue,
                            double maxWidthFraction,
-                           const osg::Vec4& textColor)
+                           const osg::Vec4& textColor,
+                           const std::string &fontFace )
 {
-    SGPath path = globals->resolve_resource_path("Fonts/LiberationFonts/LiberationSans-BoldItalic.ttf");
+    SGPath path = globals->resolve_maybe_aircraft_path(fontFace);
 
     TextItem item;
     osg::ref_ptr<osgText::Text> t = new osgText::Text;
@@ -377,9 +487,12 @@ void SplashScreen::addText(osg::Geode* geode ,
     item.dynamicContent = dynamicValue;
     item.textNode->setAlignment(alignment);
     item.maxWidthFraction = maxWidthFraction;
+    item.condition = nullptr; // default to always display.
+    item.drawMode = t->getDrawMode();
     geode->addDrawable(item.textNode);
 
     _items.push_back(item);
+    return &_items.back();
 }
 
 void SplashScreen::TextItem::reposition(int width, int height) const
@@ -478,31 +591,60 @@ std::string SplashScreen::selectSplashImage()
 
 void SplashScreen::doUpdate()
 {
+    if (!guiInit()) {
+        // don't createNodes until OSG init operations have completed
+        return;
+    }
+
     double alpha = _splashAlphaNode->getDoubleValue();
 
     if (alpha <= 0 || !fgGetBool("/sim/startup/splash-screen")) {
         removeChild(0, getNumChildren());
         _splashFBOCamera = nullptr;
         _splashQuadCamera = nullptr;
+#ifdef ENABLE_OSGXR
+        _splashLayer->setVisible(false);
+#endif
     } else if (getNumChildren() == 0) {
         createNodes();
         _splashStartTime.stamp();
         resize(fgGetInt("/sim/startup/xsize"),
                fgGetInt("/sim/startup/ysize"));
+#ifdef ENABLE_OSGXR
+        _splashLayer->setVisible(true);
+        _splashSwapchain->setForcedAlpha(alpha);
+#endif
     } else {
         (*_splashFSQuadColor)[0] = osg::Vec4(1.0, 1.0, 1.0, _splashAlphaNode->getFloatValue());
         _splashFSQuadColor->dirty();
 
         for (const TextItem& item : _items) {
+            if (item.condition != nullptr) {
+
+                if (item.condition->test())
+                    item.textNode->setDrawMode(item.drawMode);
+                else
+                    item.textNode->setDrawMode(0);
+            }
             if (item.dynamicContent) {
                 item.textNode->setText(
                   item.dynamicContent->getStringValue(),
                   osgText::String::Encoding::ENCODING_UTF8);
             }
         }
-
+        for (const ImageItem& image : _imageItems) {
+            if (image.condition) {
+                if (!image.condition->test())
+                    image.geode->setNodeMask(0);
+                else
+                    image.geode->setNodeMask(image.nodeMask);
+            }
+        }
         updateSplashSpinner();
-        updateText();
+        updateTipText();
+#ifdef ENABLE_OSGXR
+        _splashSwapchain->setForcedAlpha(alpha);
+#endif
     }
 }
 
@@ -552,39 +694,24 @@ void SplashScreen::updateSplashSpinner()
     _splashSpinnerVertexArray->dirty();
 }
 
-void SplashScreen::updateText()
+void SplashScreen::updateTipText()
 {
+    // after 5 seconds change the tip; but only do this once.
+    // the tip will be set into a property and this in turn will be 
+    // displayed by the content using a dynamic-text element
     if (!_haveSetStartupTip && (_splashStartTime.elapsedMSec() > 5000)) {
-        // switch to show tooltip
         _haveSetStartupTip = true;
         FGLocale* locale = globals->get_locale();
         const int tipCount = locale->getLocalizedStringCount("tip", "tips");
+        if (tipCount == 0) {
+            return;
+        }
+        
         int tipIndex = globals->get_props()->getIntValue("/sim/session",0) % tipCount;
 
         std::string tipText = locale->getLocalizedStringWithIndex("tip", "tips", tipIndex);
-
-        // find the item to switch
-        _items.front().textNode->setText(
-          tipText, osgText::String::Encoding::ENCODING_UTF8);
+        fgSetString("/sim/startup/tip", tipText);
     }
-}
-
-// remove once we require OSG 3.4
-void SplashScreen::manuallyResizeFBO(int width, int height)
-{
-    _splashFBOTexture->setTextureSize(width, height);
-    _splashFBOTexture->dirtyTextureObject();
-
-    osg::ref_ptr<osg::Camera> newCam = createFBOCamera();
-
-    // swap everything around
-    for (unsigned int i=0; i < _splashFBOCamera->getNumChildren(); ++i) {
-        newCam->addChild(_splashFBOCamera->getChild(i));
-    }
-
-    addChild(newCam);
-    removeChild(_splashFBOCamera);
-    _splashFBOCamera = newCam;
 }
 
 void SplashScreen::resize( int width, int height )
@@ -601,71 +728,75 @@ void SplashScreen::resize( int width, int height )
     _splashFBOCamera->setViewport(0, 0, width, height);
     _splashFBOCamera->setProjectionMatrixAsOrtho2D(-width * 0.5, width * 0.5,
                                                    -height * 0.5, height * 0.5);
+#ifdef ENABLE_OSGXR
+    float aspect = (float)width / height;
+    _splashSwapchain->setSize(width, height);
+    _splashLayer->setSize(osg::Vec2f(aspect, 1.0f));
+#endif
 
-    double halfWidth = width * 0.5;
-    double halfHeight = height * 0.5;
     const double screenAspectRatio = static_cast<double>(width) / height;
+ 
+    // resize all of the images on the splash screen (including the background)
+    for (const auto& _imageItem : _imageItems) {
+     
+         if (_imageItem.isBackground) {
+             // background is based around the centre of the screen 
+             // and adjusted so that the largest of width,height is used
+             // to fill the screen so that the image fits without distortion 
+             double halfWidth = width * 0.5;
+             double halfHeight = height * 0.5;
 
-    if (_legacySplashScreenMode) {
-        halfWidth = width * 0.4;
-        halfHeight = height * 0.4;
+             // if this is the background image and we are in legacy mode then
+             // resize to keep the image scaled to fit in the centre
+             if (_legacySplashScreenMode) {
+                 halfWidth = width * 0.35;
+                 halfHeight = height * 0.35;
 
-        if (screenAspectRatio > _splashImageAspectRatio) {
-            // screen is wider than our image
-            halfWidth = halfHeight;
-        } else {
-            // screen is taller than our image
-            halfHeight = halfWidth;
+                 if (screenAspectRatio > _imageItem.aspectRatio) {
+                     // screen is wider than our image
+                     halfWidth = halfHeight;
+                 }
+                 else {
+                     // screen is taller than our image
+                     halfHeight = halfWidth;
+                 }
+             }
+             else {
+                 // adjust vertex positions; image covers entire area
+                 if (screenAspectRatio > _imageItem.aspectRatio) {
+                     // screen is wider than our image
+                     halfHeight = halfWidth / _imageItem.aspectRatio;
+                 }
+                 else {
+                     // screen is taller than our image
+                     halfWidth = halfHeight * _imageItem.aspectRatio;
+                 }
+             }
+            (*_imageItem.vertexArray)[0] = osg::Vec3(-halfWidth, -halfHeight, 0.0);
+            (*_imageItem.vertexArray)[1] = osg::Vec3(halfWidth, -halfHeight, 0.0);
+            (*_imageItem.vertexArray)[2] = osg::Vec3(halfWidth, halfHeight, 0.0);
+            (*_imageItem.vertexArray)[3] = osg::Vec3(-halfWidth, halfHeight, 0.0);
         }
-    } else {
-        // adjust vertex positions; image covers entire area
-        if (screenAspectRatio > _splashImageAspectRatio) {
-            // screen is wider than our image
-            halfHeight = halfWidth / _splashImageAspectRatio;
-        } else {
-            // screen is taller than our image
-            halfWidth = halfHeight * _splashImageAspectRatio;
+        else {
+
+             float imageWidth = _imageItem.width * width;
+             float imageHeight = _imageItem.imageHeight * (imageWidth / _imageItem.imageWidth);
+
+             float imageX = _imageItem.x * (width - imageWidth);
+             float imageY = (1.0 - _imageItem.y) * (height - imageHeight);
+
+             float originX = imageX - (width * 0.5);
+             float originY = imageY - (height * 0.5);
+
+            (*_imageItem.vertexArray)[0] = osg::Vec3(originX, originY, 0.0);
+            (*_imageItem.vertexArray)[1] = osg::Vec3(originX + imageWidth, originY, 0.0);
+            (*_imageItem.vertexArray)[2] = osg::Vec3(originX + imageWidth, originY + imageHeight, 0.0);
+            (*_imageItem.vertexArray)[3] = osg::Vec3(originX, originY + imageHeight, 0.0);
         }
+        _imageItem.vertexArray->dirty();
     }
 
-    // adjust vertex positions and mark as dirty
-    osg::Vec3 positions[4] = {
-        osg::Vec3(-halfWidth, -halfHeight, 0.0),
-        osg::Vec3(halfWidth, -halfHeight, 0.0),
-        osg::Vec3(halfWidth, halfHeight, 0.0),
-        osg::Vec3(-halfWidth, halfHeight, 0.0)
-    };
-
-    for (int i=0; i<4; ++i) {
-        (*_splashImageVertexArray)[i] = positions[i];
-    }
-
-    _splashImageVertexArray->dirty();
-
-    if (_aircraftLogoVertexArray) {
-        float logoWidth = fgGetDouble("/sim/startup/splash-logo-width", 0.6) * width;
-        float logoHeight = _logoImage->t() * (logoWidth / _logoImage->s());
-
-        float logoX = fgGetDouble("/sim/startup/splash-logo-x-norm", 0.0) * (width - logoWidth);
-        float logoY = fgGetDouble("/sim/startup/splash-logo-y-norm", 1.0 - 0.935) * (height - logoHeight);
-
-        float originX = logoX - (width * 0.5);
-        float originY = logoY - (height * 0.5);
-
-        osg::Vec3 positions[4] = {
-            osg::Vec3(originX, originY, 0.0),
-            osg::Vec3(originX + logoWidth, originY, 0.0),
-            osg::Vec3(originX + logoWidth, originY + logoHeight, 0.0),
-            osg::Vec3(originX, originY + logoHeight, 0.0)
-        };
-
-        for (int i=0; i<4; ++i) {
-            (*_aircraftLogoVertexArray)[i] = positions[i];
-        }
-
-        _aircraftLogoVertexArray->dirty();
-    }
-
+    // adjust all text positions.
     for (const TextItem& item : _items) {
         item.reposition(width, height);
     }
@@ -711,7 +842,7 @@ void fgSplashProgress( const char *identifier, unsigned int percent )
         } else if (kbytesPerSec > 0) {
             oss << " - " << kbytesPerSec << " "s << kbytesPerSecUnitText;
         } else if (kbytesPendingExtract > 0) {
-            const string extractText = globals->get_locale()->getLocalizedString("scenery-extract", "sys");
+            const std::string extractText = globals->get_locale()->getLocalizedString("scenery-extract", "sys");
             std::ostringstream os2;
 
             if (kbytesPendingExtract > 1024) {
@@ -734,7 +865,7 @@ void fgSplashProgress( const char *identifier, unsigned int percent )
 
         unsigned int kbytesPendingExtract = fgGetInt("/sim/terrasync/extract-pending-kbytes");
         if (kbytesPendingExtract > 0) {
-            const string extractText = globals->get_locale()->getLocalizedString("scenery-extract", "sys");
+            const std::string extractText = globals->get_locale()->getLocalizedString("scenery-extract", "sys");
             std::ostringstream oss;
             if (kbytesPendingExtract > 1024) {
                 int mBytesPendingExtract = kbytesPendingExtract >> 10;
@@ -752,8 +883,8 @@ void fgSplashProgress( const char *identifier, unsigned int percent )
 
     // over-write the spinner
     if (!strncmp(identifier, "navdata-", 8)) {
-        const string percentText = globals->get_locale()->getLocalizedString("navdata-load-percent", "sys");
-        auto finalText = simgear::strutils::replace(percentText, "[VALUE]", to_string(percent));
+        const std::string percentText = globals->get_locale()->getLocalizedString("navdata-load-percent", "sys");
+        auto finalText = simgear::strutils::replace(percentText, "[VALUE]", std::to_string(percent));
         fgSetString("/sim/startup/splash-progress-spinner", finalText);
     }
 

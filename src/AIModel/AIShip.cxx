@@ -1,43 +1,31 @@
-// FGAIShip - FGAIBase-derived class creates an AI ship
-//
-// Written by David Culp, started October 2003.
-// with major amendments and additions by Vivian Meazza, 2004 - 2007
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+/*
+ * SPDX-FileName: AIShip.cxx
+ * SPDX-FileComment: AIBase-derived class creates an AI ship
+ * SPDX-FileCopyrightText: Copyright (C) 2003  David P. Culp - davidculp2@comcast.net
+ * SPDX-FileContributor: with major amendments and additions by Vivian Meazza, 2004 - 2007
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
 
 #include <cmath>
 
 #ifdef _MSC_VER
-#  include <float.h>
-    double fgIsFinite(double x) { return _finite(x); }
+#include <float.h>
+double fgIsFinite(double x) { return _finite(x); }
 #else
-    double fgIsFinite(double x) { return std::isfinite(x); }
+double fgIsFinite(double x) { return std::isfinite(x); }
 #endif
 
-#include <simgear/sg_inlines.h>
 #include <simgear/math/sg_geodesy.hxx>
-#include <simgear/timing/sg_time.hxx>
 #include <simgear/math/sg_random.hxx>
+#include <simgear/sg_inlines.h>
+#include <simgear/timing/sg_time.hxx>
 
-#include <simgear/scene/util/SGNodeMasks.hxx>
-#include <Scenery/scenery.hxx>
 #include <Main/globals.hxx>
+#include <Scenery/scenery.hxx>
+#include <simgear/scene/util/SGNodeMasks.hxx>
 
 #include "AIShip.hxx"
 
-using std::string;
 
 FGAIShip::FGAIShip(object_type ot) : // allow HOT to be enabled
                                      FGAIBase(ot, true),
@@ -72,7 +60,8 @@ FGAIShip::FGAIShip(object_type ot) : // allow HOT to be enabled
     invisible = false;
 }
 
-void FGAIShip::readFromScenario(SGPropertyNode* scFileNode) {
+void FGAIShip::readFromScenario(SGPropertyNode* scFileNode)
+{
     if (!scFileNode)
         return;
 
@@ -100,7 +89,8 @@ void FGAIShip::readFromScenario(SGPropertyNode* scFileNode) {
     }
 }
 
-bool FGAIShip::init(ModelSearchOrder searchOrder) {
+bool FGAIShip::init(ModelSearchOrder searchOrder)
+{
     reinit();
     return FGAIBase::init(searchOrder);
 }
@@ -131,7 +121,8 @@ void FGAIShip::reinit()
     FGAIBase::reinit();
 }
 
-void FGAIShip::bind() {
+void FGAIShip::bind()
+{
     FGAIBase::bind();
 
     tie("surface-positions/rudder-pos-deg",
@@ -205,10 +196,9 @@ void FGAIShip::bind() {
 }
 
 
-void FGAIShip::update(double dt) {
-    if (replay_time->getDoubleValue() <= 0)
-    {
-
+void FGAIShip::update(double dt)
+{
+    if (replay_time->getDoubleValue() <= 0) {
         //SG_LOG(SG_AI, SG_ALERT, "updating Ship: " << _name <<hdg<<pitch<<roll);
         // For computation of rotation speeds we just use finite differences here.
         // That is perfectly valid since this thing is not driven by accelerations
@@ -220,7 +210,7 @@ void FGAIShip::update(double dt) {
         SGQuatd hl2body = SGQuatd::fromYawPitchRollDeg(hdg, pitch, roll);
         // and postrotate the orientation of the AIModel wrt the horizontal
         // local frame
-        SGQuatd ec2body = ec2hl*hl2body;
+        SGQuatd ec2body = ec2hl * hl2body;
         // The cartesian position of the ship in the wgs84 world
         //SGVec3d cartPos = SGVec3d::fromGeod(pos);
 
@@ -253,7 +243,7 @@ void FGAIShip::update(double dt) {
             // compute the new orientation
             SGQuatd hl2bodyNew = SGQuatd::fromYawPitchRollDeg(hdg, pitch, roll);
             // The rotation difference
-            SGQuatd dOr = inverse(ec2body)*ec2hlNew*hl2bodyNew;
+            SGQuatd dOr = inverse(ec2body) * ec2hlNew * hl2bodyNew;
             SGVec3d dOrAngleAxis;
             dOr.getAngleAxis(dOrAngleAxis);
             // divided by the time difference provides a rotation speed vector
@@ -261,14 +251,13 @@ void FGAIShip::update(double dt) {
 
             aip.setBodyAngularVelocity(dOrAngleAxis);
         }
-    }
-    else
-    {
+    } else {
         Transform();
     }
 }
 
-void FGAIShip::Run(double dt) {
+void FGAIShip::Run(double dt)
+{
     if (_fp_init)
         ProcessFlightPlan(dt);
 
@@ -281,7 +270,6 @@ void FGAIShip::Run(double dt) {
     double speed_diff = tgt_speed - speed;
 
     if (fabs(speed_diff) > 0.1) {
-
         if (speed_diff > 0.0)
             speed += _speed_constant * dt;
 
@@ -296,33 +284,33 @@ void FGAIShip::Run(double dt) {
     SG_CLAMP_RANGE(speed, -_limit * 0.75, _limit);
 
     {
-        /* The rotation rotating from the earth centerd frame to the horizontal
+        /* The rotation rotating from the earth centered frame to the horizontal
         local frame. */
         SGQuatd hlOr = SGQuatd::fromLonLat(pos);
-        
+
         /* The rotation from the horizontal local frame to the basic view
         orientation. */
         SGQuatd hlToBody = SGQuatd::fromYawPitchRollDeg(hdg, pitch, roll);
-        
+
         /* Compute the eyepoints orientation and position wrt the earth
-        centered frame - that is global coorinates. */
+        centered frame - that is global coordinates. */
         SGQuatd ec2body = hlOr * hlToBody;
-        
+
         /* The cartesian position of the basic view coordinate. */
         SGVec3d position = SGVec3d::fromGeod(pos);
-        
+
         /* This is rotates the x-forward, y-right, z-down coordinate system the
         where simulation runs into the OpenGL camera system with x-right, y-up,
         z-back. */
         SGQuatd q(-0.5, -0.5, 0.5, 0.5);
-        
+
         SGVec3d offset(0, 0, -speed * SG_KT_TO_MPS * dt);
         position += (ec2body * q).backTransform(offset);
         pos = SGGeod::fromCart(position);
-        
+
         pitch = tgt_pitch;
     }
-    
+
     // adjust heading based on current _rudder angle
     if (turn_radius_ft <= 0)
         turn_radius_ft = 0; // don't allow nonsense values
@@ -334,24 +322,23 @@ void FGAIShip::Run(double dt) {
         _rudder = -45;
 
 
-    // we assume that at slow speed ships will manoeuvre using engines/bow thruster
-	if (type == "ship" || type == "carrier" || type == "escort") {  // TODO: fragile code... should this be an enum???
-		if (fabs(speed)<=5)
-			_sp_turn_radius_ft = _fixed_turn_radius;
-		else {
-			// adjust turn radius for speed. The equation is very approximate.
-			// we need to allow for negative speeds
-			_sp_turn_radius_ft = 10 * pow ((fabs(speed) - 15), 2) + turn_radius_ft;
-		}
-	} else {
-
-		if (fabs(speed) <= 40)
-           _sp_turn_radius_ft = _fixed_turn_radius;
-		else {
-			// adjust turn radius for speed.
-			_sp_turn_radius_ft = turn_radius_ft;
-		}
-	}
+    // we assume that at slow speed ships will manoeuver using engines/bow thruster
+    if (type == "ship" || type == "carrier" || type == "escort") { // TODO: fragile code... should this be an enum???
+        if (fabs(speed) <= 5)
+            _sp_turn_radius_ft = _fixed_turn_radius;
+        else {
+            // adjust turn radius for speed. The equation is very approximate.
+            // we need to allow for negative speeds
+            _sp_turn_radius_ft = 10 * pow((fabs(speed) - 15), 2) + turn_radius_ft;
+        }
+    } else {
+        if (fabs(speed) <= 40)
+            _sp_turn_radius_ft = _fixed_turn_radius;
+        else {
+            // adjust turn radius for speed.
+            _sp_turn_radius_ft = turn_radius_ft;
+        }
+    }
 
     if (_rudder <= -0.25 || _rudder >= 0.25) {
         // adjust turn radius for _rudder angle. The equation is even more approximate.
@@ -396,7 +383,7 @@ void FGAIShip::Run(double dt) {
         if (sum > 360.0)
             sum -= 360.0;
 
-        if (fabs(sum - tgt_heading)< 1.0)
+        if (fabs(sum - tgt_heading) < 1.0)
             rudder_sense = 1.0;
         else
             rudder_sense = -1.0;
@@ -413,7 +400,7 @@ void FGAIShip::Run(double dt) {
     }
 
     // set the _rudder limit by speed
-    if (type == "ship" || type == "carrier" || type == "escort") {  // TODO: fragile code... should this be an enum???
+    if (type == "ship" || type == "carrier" || type == "escort") { // TODO: fragile code... should this be an enum???
         if (speed <= 40)
             rudder_limit = (-0.825 * speed) + 35;
         else
@@ -421,7 +408,7 @@ void FGAIShip::Run(double dt) {
     } else
         rudder_limit = 20;
 
-    if (fabs(rudder_diff)> 0.1) { // apply dead zone
+    if (fabs(rudder_diff) > 0.1) { // apply dead zone
 
         if (rudder_diff > 0.0) {
             _rudder += _rudder_constant * dt;
@@ -434,23 +421,25 @@ void FGAIShip::Run(double dt) {
 
             if (_rudder < -rudder_limit)
                 _rudder = -rudder_limit;
-
         }
 
         // do calculations for radar
         UpdateRadar(manager);
     }
-}//end function
+} //end function
 
-void FGAIShip::AccelTo(double speed) {
+void FGAIShip::AccelTo(double speed)
+{
     tgt_speed = speed;
 }
 
-void FGAIShip::PitchTo(double angle) {
+void FGAIShip::PitchTo(double angle)
+{
     tgt_pitch = angle;
 }
 
-void FGAIShip::RollTo(double angle) {
+void FGAIShip::RollTo(double angle)
+{
     tgt_roll = angle;
 }
 
@@ -459,108 +448,130 @@ void FGAIShip::YawTo(double angle) {
 }
 #endif
 
-void FGAIShip::ClimbTo(double altitude) {
+void FGAIShip::ClimbTo(double altitude)
+{
     tgt_altitude_ft = altitude;
     _setAltitude(altitude);
 }
 
-void FGAIShip::TurnTo(double heading) {
+void FGAIShip::TurnTo(double heading)
+{
     tgt_heading = heading - _lead_angle + _tow_angle;
     SG_NORMALIZE_RANGE(tgt_heading, 0.0, 360.0);
     _hdg_lock = true;
 }
 
-double FGAIShip::sign(double x) {
+double FGAIShip::sign(double x)
+{
     if (x < 0.0)
         return -1.0;
     else
         return 1.0;
 }
 
-void FGAIShip::setStartTime(const string& st) {
+void FGAIShip::setStartTime(const std::string& st)
+{
     _start_time = st;
 }
 
-void FGAIShip::setUntilTime(const string& ut) {
+void FGAIShip::setUntilTime(const std::string& ut)
+{
     _until_time = ut;
     props->setStringValue("waypoint/wait-until-time", _until_time.c_str());
 }
 
-void FGAIShip::setCurrName(const string& c) {
+void FGAIShip::setCurrName(const std::string& c)
+{
     _curr_name = c;
     props->setStringValue("waypoint/name-curr", _curr_name.c_str());
 }
 
-void FGAIShip::setNextName(const string& n) {
+void FGAIShip::setNextName(const std::string& n)
+{
     _next_name = n;
     props->setStringValue("waypoint/name-next", _next_name.c_str());
 }
 
-void FGAIShip::setPrevName(const string& p) {
+void FGAIShip::setPrevName(const std::string& p)
+{
     _prev_name = p;
     props->setStringValue("waypoint/name-prev", _prev_name.c_str());
 }
 
-void FGAIShip::setRepeat(bool r) {
+void FGAIShip::setRepeat(bool r)
+{
     _repeat = r;
 }
 
-void FGAIShip::setRestart(bool r) {
+void FGAIShip::setRestart(bool r)
+{
     _restart = r;
 }
 
-void FGAIShip::setMissed(bool m) {
+void FGAIShip::setMissed(bool m)
+{
     _missed = m;
     props->setBoolValue("waypoint/missed", _missed);
 }
 
-void FGAIShip::setRudder(float r) {
+void FGAIShip::setRudder(float r)
+{
     _rudder = r;
 }
 
-void FGAIShip::setRoll(double rl) {
+void FGAIShip::setRoll(double rl)
+{
     roll = rl;
 }
 
-void FGAIShip::setLeadAngleGain(double g) {
+void FGAIShip::setLeadAngleGain(double g)
+{
     _lead_angle_gain = g;
 }
 
-void FGAIShip::setLeadAngleLimit(double l) {
+void FGAIShip::setLeadAngleLimit(double l)
+{
     _lead_angle_limit = l;
 }
 
-void FGAIShip::setLeadAngleProp(double p) {
+void FGAIShip::setLeadAngleProp(double p)
+{
     _proportion = p;
 }
 
-void FGAIShip::setRudderConstant(double rc) {
+void FGAIShip::setRudderConstant(double rc)
+{
     _rudder_constant = rc;
 }
 
-void FGAIShip::setSpeedConstant(double sc) {
+void FGAIShip::setSpeedConstant(double sc)
+{
     _speed_constant = sc;
 }
 
-void FGAIShip::setFixedTurnRadius(double ftr) {
+void FGAIShip::setFixedTurnRadius(double ftr)
+{
     _fixed_turn_radius = ftr;
 }
 
-void FGAIShip::setRollFactor(double rf) {
+void FGAIShip::setRollFactor(double rf)
+{
     _roll_factor = rf * -0.0083335;
 }
 
-void FGAIShip::setInitialTunnel(bool t) {
+void FGAIShip::setInitialTunnel(bool t)
+{
     _initial_tunnel = t;
     setTunnel(_initial_tunnel);
 }
 
-void FGAIShip::setTunnel(bool t) {
+void FGAIShip::setTunnel(bool t)
+{
     _tunnel = t;
 }
 
-void FGAIShip::setWPNames() {
-
+void FGAIShip::setWPNames()
+{
     if (prev != 0)
         setPrevName(prev->getName());
     else
@@ -568,9 +579,9 @@ void FGAIShip::setWPNames() {
 
     if (curr != 0)
         setCurrName(curr->getName());
-    else{
+    else {
         setCurrName("");
-        SG_LOG(SG_AI, SG_ALERT, "AIShip: current wp name error" );
+        SG_LOG(SG_AI, SG_ALERT, "AIShip: current wp name error");
     }
 
     if (next != 0)
@@ -581,24 +592,23 @@ void FGAIShip::setWPNames() {
     SG_LOG(SG_AI, SG_DEBUG, "AIShip: prev wp name " << prev->getName());
     SG_LOG(SG_AI, SG_DEBUG, "AIShip: current wp name " << curr->getName());
     SG_LOG(SG_AI, SG_DEBUG, "AIShip: next wp name " << next->getName());
-
 }
 
-double FGAIShip::getRange(double lat, double lon, double lat2, double lon2) const {
-
+double FGAIShip::getRange(double lat, double lon, double lat2, double lon2) const
+{
     double course, distance, az2;
 
-    //calculate the bearing and range of the second pos from the first
+    // calculate the bearing and range of the second pos from the first
     geo_inverse_wgs_84(lat, lon, lat2, lon2, &course, &az2, &distance);
     distance *= SG_METER_TO_NM;
     return distance;
 }
 
-double FGAIShip::getCourse(double lat, double lon, double lat2, double lon2) const {
-
+double FGAIShip::getCourse(double lat, double lon, double lat2, double lon2) const
+{
     double course, distance, recip;
 
-    //calculate the bearing and range of the second pos from the first
+    // calculate the bearing and range of the second pos from the first
     geo_inverse_wgs_84(lat, lon, lat2, lon2, &course, &recip, &distance);
     if (tgt_speed >= 0) {
         SG_LOG(SG_AI, SG_DEBUG, "AIShip: course " << course);
@@ -609,10 +619,10 @@ double FGAIShip::getCourse(double lat, double lon, double lat2, double lon2) con
     }
 }
 
-void FGAIShip::ProcessFlightPlan(double dt) {
-
-    if ( dt < 0.00001 ) {
-	return;
+void FGAIShip::ProcessFlightPlan(double dt)
+{
+    if (dt < 0.00001) {
+        return;
     }
 
     double time_sec = getDaySeconds();
@@ -652,7 +662,7 @@ void FGAIShip::ProcessFlightPlan(double dt) {
 
     //cout << _name << " range_rate " << _range_rate << " " << _new_waypoint<< endl ;
     //if ((_range_rate > 0) && !_new_waypoint){
-    if (_range_rate > 0 && _wp_range < _missed_range && !_new_waypoint){
+    if (_range_rate > 0 && _wp_range < _missed_range && !_new_waypoint) {
         _missed_count += _dt_count;
     }
 
@@ -667,17 +677,15 @@ void FGAIShip::ProcessFlightPlan(double dt) {
     setWPNames();
 
     if ((_wp_range < (sp_turn_radius_nm * 1.25)) || _missed || (_waiting && !_new_waypoint)) {
-
-        if (_next_name == "TUNNEL"){
+        if (_next_name == "TUNNEL") {
             _tunnel = !_tunnel;
 
-            SG_LOG(SG_AI, SG_DEBUG, "AIShip: " << _name << " " << sp_turn_radius_nm );
+            SG_LOG(SG_AI, SG_DEBUG, "AIShip: " << _name << " " << sp_turn_radius_nm);
 
             fp->IncrementWaypoint(false);
             next = fp->getNextWaypoint();
 
-            if (next->getName() == "WAITUNTIL" || next->getName() == "WAIT"
-                || next->getName() == "END" || next->getName() == "TUNNEL")
+            if (next->getName() == "WAITUNTIL" || next->getName() == "WAIT" || next->getName() == "END" || next->getName() == "TUNNEL")
                 return;
 
             prev = curr;
@@ -685,10 +693,9 @@ void FGAIShip::ProcessFlightPlan(double dt) {
             curr = fp->getCurrentWaypoint();
             next = fp->getNextWaypoint();
 
-        } else if(_next_name == "END" || fp->getNextWaypoint() == 0) {
-
+        } else if (_next_name == "END" || fp->getNextWaypoint() == 0) {
             if (_repeat) {
-                SG_LOG(SG_AI, SG_INFO, "AIShip: "<< _name << " Flightplan repeating ");
+                SG_LOG(SG_AI, SG_INFO, "AIShip: " << _name << " Flightplan repeating ");
                 fp->restart();
                 prev = curr;
                 curr = fp->getCurrentWaypoint();
@@ -713,7 +720,6 @@ void FGAIShip::ProcessFlightPlan(double dt) {
             }
 
         } else if (_next_name == "WAIT") {
-
             if (_wait_count < next->getTime_sec()) {
                 SG_LOG(SG_AI, SG_DEBUG, "AIShip: " << _name << " waiting ");
                 setSpeed(0);
@@ -723,15 +729,13 @@ void FGAIShip::ProcessFlightPlan(double dt) {
                 _lead_angle = 0;
                 return;
             } else {
-                SG_LOG(SG_AI, SG_DEBUG, "AIShip: " << _name
-                    << " wait done: getting new waypoints ");
+                SG_LOG(SG_AI, SG_DEBUG, "AIShip: " << _name << " wait done: getting new waypoints ");
                 _waiting = false;
                 _wait_count = 0;
                 fp->IncrementWaypoint(false);
                 next = fp->getNextWaypoint();
 
-                if (next->getName() == "WAITUNTIL" || next->getName() == "WAIT"
-                    || next->getName() == "END" || next->getName() == "TUNNEL")
+                if (next->getName() == "WAITUNTIL" || next->getName() == "WAIT" || next->getName() == "END" || next->getName() == "TUNNEL")
                     return;
 
                 prev = curr;
@@ -746,16 +750,13 @@ void FGAIShip::ProcessFlightPlan(double dt) {
             _until_time = next->getTime();
             setUntilTime(next->getTime());
             if (until_time_sec > time_sec) {
-                SG_LOG(SG_AI, SG_INFO, "AIShip: " << _name << " "
-                    << curr->getName() << " waiting until: "
-                    << _until_time << " " << until_time_sec << " now " << time_sec );
+                SG_LOG(SG_AI, SG_INFO, "AIShip: " << _name << " " << curr->getName() << " waiting until: " << _until_time << " " << until_time_sec << " now " << time_sec);
                 setSpeed(0);
                 _lead_angle = 0;
                 _waiting = true;
                 return;
             } else {
-                SG_LOG(SG_AI, SG_INFO, "AIShip: "
-                    << _name << " wait until done: getting new waypoints ");
+                SG_LOG(SG_AI, SG_INFO, "AIShip: " << _name << " wait until done: getting new waypoints ");
                 setUntilTime("");
                 fp->IncrementWaypoint(false);
 
@@ -775,7 +776,7 @@ void FGAIShip::ProcessFlightPlan(double dt) {
             }
 
         } else {
-            //now reorganise the waypoints, so that next becomes current and so on
+            //now reorganize the waypoints, so that next becomes current and so on
             SG_LOG(SG_AI, SG_DEBUG, "AIShip: " << _name << " getting new waypoints ");
             fp->IncrementWaypoint(false);
             prev = fp->getPreviousWaypoint(); //first waypoint
@@ -793,7 +794,7 @@ void FGAIShip::ProcessFlightPlan(double dt) {
         setWPPos();
         object_type type = getType();
 
-        if (type != object_type::otGroundVehicle)   // is this correct???
+        if (type != object_type::otGroundVehicle) // is this correct???
             AccelTo(prev->getSpeed());
 
         _curr_alt = curr->getAltitude();
@@ -814,11 +815,11 @@ void FGAIShip::ProcessFlightPlan(double dt) {
     _dt_count = 0;
 } // end Processing FlightPlan
 
-bool FGAIShip::initFlightPlan() {
-
+bool FGAIShip::initFlightPlan()
+{
     SG_LOG(SG_AI, SG_ALERT, "AIShip: " << _name << " initializing waypoints ");
 
-    bool init = false;
+    bool doInit = false;
     _start_sec = 0;
     _tunnel = _initial_tunnel;
 
@@ -829,29 +830,29 @@ bool FGAIShip::initFlightPlan() {
     curr = fp->getCurrentWaypoint();  //second waypoint
     next = fp->getNextWaypoint();     //third waypoint (might not exist!)
 
-    while (curr && (curr->getName() == "WAIT" || curr->getName() == "WAITUNTIL")) {  // don't wait when initialising
+    while (curr && (curr->getName() == "WAIT" || curr->getName() == "WAITUNTIL")) { // don't wait when initialising
         SG_LOG(SG_AI, SG_DEBUG, "AIShip: " << _name << " re-initializing waypoints ");
         fp->IncrementWaypoint(false);
         curr = fp->getCurrentWaypoint();
         next = fp->getNextWaypoint();
     }
 
-    if (!_start_time.empty()){
+    if (!_start_time.empty()) {
         _start_sec = processTimeString(_start_time);
         double day_sec = getDaySeconds();
 
-        if (_start_sec < day_sec){
+        if (_start_sec < day_sec) {
             //cout << "flight plan has already started " << _start_time << endl;
-            init = advanceFlightPlan(_start_sec, day_sec);
+            doInit = advanceFlightPlan(_start_sec, day_sec);
 
         } else if (_start_sec > day_sec && _repeat) {
             //cout << "flight plan has not started, " << _start_time;
             //cout << "offsetting start time by -24 hrs" << endl;
             _start_sec -= _day;
-            init = advanceFlightPlan(_start_sec, day_sec);
+            doInit = advanceFlightPlan(_start_sec, day_sec);
         }
 
-        if (init)
+        if (doInit)
             _start_sec = 0; // set to zero for an immediate start of the Flight Plan
         else {
             fp->restart();
@@ -871,9 +872,9 @@ bool FGAIShip::initFlightPlan() {
     setWPNames();
 
     if (prev && curr) {
-    setHeading(getCourse(prev->getLatitude(), prev->getLongitude(), curr->getLatitude(), curr->getLongitude()));
-    _wp_range = getRange(prev->getLatitude(), prev->getLongitude(), curr->getLatitude(), curr->getLongitude());
-    _old_range = _wp_range;
+        setHeading(getCourse(prev->getLatitude(), prev->getLongitude(), curr->getLatitude(), curr->getLongitude()));
+        _wp_range = getRange(prev->getLatitude(), prev->getLongitude(), curr->getLatitude(), curr->getLongitude());
+        _old_range = _wp_range;
     }
 
     _range_rate = 0;
@@ -885,58 +886,53 @@ bool FGAIShip::initFlightPlan() {
     SG_LOG(SG_AI, SG_ALERT, "AIShip: " << _name << " done initialising waypoints " << _tunnel);
 
     if (prev)
-        init = true;
+        doInit = true;
 
-    if (init)
+    if (doInit)
         return true;
     else
         return false;
 } // end of initialization
 
 
-double FGAIShip::processTimeString(const string& theTime) {
-
+double FGAIShip::processTimeString(const std::string& theTime)
+{
     int Hour;
     int Minute;
     int Second;
 
     // first split theTime string into
     //  hour, minute, second and convert to int;
-    Hour   = atoi(theTime.substr(0,2).c_str());
-    Minute = atoi(theTime.substr(3,5).c_str());
-    Second = atoi(theTime.substr(6,8).c_str());
+    Hour = atoi(theTime.substr(0, 2).c_str());
+    Minute = atoi(theTime.substr(3, 5).c_str());
+    Second = atoi(theTime.substr(6, 8).c_str());
 
     // offset by a day-sec to allow for starting a day earlier
-    double time_seconds = Hour * 3600
-        + Minute * 60
-        + Second;
+    double time_seconds = Hour * 3600 + Minute * 60 + Second;
 
     return time_seconds;
 }
 
-double FGAIShip::getDaySeconds () {
+double FGAIShip::getDaySeconds()
+{
     // Date and time
-    struct tm *t = globals->get_time_params()->getGmt();
+    struct tm* t = globals->get_time_params()->getGmt();
 
-    double day_seconds = t->tm_hour * 3600
-        + t->tm_min * 60
-        + t->tm_sec;
+    double day_seconds = t->tm_hour * 3600 + t->tm_min * 60 + t->tm_sec;
 
     return day_seconds;
 }
 
-bool FGAIShip::advanceFlightPlan (double start_sec, double day_sec) {
-
+bool FGAIShip::advanceFlightPlan(double start_sec, double day_sec)
+{
     double elapsed_sec = start_sec;
     double distance_nm = 0;
 
     //cout << "advancing flight plan start_sec: " << start_sec << " " << day_sec << endl;
 
-    while ( elapsed_sec < day_sec ) {
-
+    while (elapsed_sec < day_sec) {
         if (next->getName() == "END" || fp->getNextWaypoint() == 0) {
-
-            if (_repeat ) {
+            if (_repeat) {
                 //cout << _name << ": " << "restarting flightplan" << endl;
                 fp->restart();
                 curr = fp->getCurrentWaypoint();
@@ -953,18 +949,17 @@ bool FGAIShip::advanceFlightPlan (double start_sec, double day_sec) {
 
             elapsed_sec += next->getTime_sec();
 
-            if ( elapsed_sec >= day_sec)
+            if (elapsed_sec >= day_sec)
                 continue;
 
             fp->IncrementWaypoint(false);
             next = fp->getNextWaypoint();
 
-            if (next->getName() != "WAITUNTIL" && next->getName() != "WAIT"
-                && next->getName() != "END") {
-                    prev = curr;
-                    fp->IncrementWaypoint(false);
-                    curr = fp->getCurrentWaypoint();
-                    next = fp->getNextWaypoint();
+            if (next->getName() != "WAITUNTIL" && next->getName() != "WAIT" && next->getName() != "END") {
+                prev = curr;
+                fp->IncrementWaypoint(false);
+                curr = fp->getCurrentWaypoint();
+                next = fp->getNextWaypoint();
             }
 
         } else if (next->getName() == "WAITUNTIL") {
@@ -976,7 +971,7 @@ bool FGAIShip::advanceFlightPlan (double start_sec, double day_sec) {
             if (elapsed_sec < until_sec)
                 elapsed_sec = until_sec;
 
-            if (elapsed_sec >= day_sec )
+            if (elapsed_sec >= day_sec)
                 break;
 
             fp->IncrementWaypoint(false);
@@ -1005,7 +1000,7 @@ bool FGAIShip::advanceFlightPlan (double start_sec, double day_sec) {
             next = fp->getNextWaypoint();
         }
 
-    }   // end while
+    } // end while
 
     // the required position lies between the previous and current waypoints
     // so we will calculate the distance back up the track from the current waypoint
@@ -1019,11 +1014,11 @@ bool FGAIShip::advanceFlightPlan (double start_sec, double day_sec) {
 
     //cout << " time diff " << time_diff << endl;
 
-    if (next->getName() == "WAIT" ){
+    if (next->getName() == "WAIT") {
         setSpeed(0);
         lat = curr->getLatitude();
         lon = curr->getLongitude();
-        _wait_count= time_diff;
+        _wait_count = time_diff;
         _waiting = true;
     } else if (next->getName() == "WAITUNTIL") {
         setSpeed(0);
@@ -1039,12 +1034,12 @@ bool FGAIShip::advanceFlightPlan (double start_sec, double day_sec) {
         //    << " lat "  << curr->latitude << " lon " << curr->longitude
         //    << " distance m " << distance_nm * SG_NM_TO_METER << endl;
 
-        lat = geo_direct_wgs_84 (curr->getLatitude(), curr->getLongitude(), brg,
-            distance_nm * SG_NM_TO_METER, &lat, &lon, &recip );
-        lon = geo_direct_wgs_84 (curr->getLatitude(), curr->getLongitude(), brg,
-            distance_nm * SG_NM_TO_METER, &lat, &lon, &recip );
-        recip = geo_direct_wgs_84 (curr->getLatitude(), curr->getLongitude(), brg,
-            distance_nm * SG_NM_TO_METER, &lat, &lon, &recip );
+        lat = geo_direct_wgs_84(curr->getLatitude(), curr->getLongitude(), brg,
+                                distance_nm * SG_NM_TO_METER, &lat, &lon, &recip);
+        lon = geo_direct_wgs_84(curr->getLatitude(), curr->getLongitude(), brg,
+                                distance_nm * SG_NM_TO_METER, &lat, &lon, &recip);
+        recip = geo_direct_wgs_84(curr->getLatitude(), curr->getLongitude(), brg,
+                                  distance_nm * SG_NM_TO_METER, &lat, &lon, &recip);
     }
 
     setLatitude(lat);
@@ -1053,19 +1048,18 @@ bool FGAIShip::advanceFlightPlan (double start_sec, double day_sec) {
     return true;
 }
 
-void FGAIShip::setWPPos() {
-
-    if (curr->getName() == "END" || curr->getName() == "WAIT"
-        || curr->getName() == "WAITUNTIL" || curr->getName() == "TUNNEL"){
-            //cout << curr->name << " returning" << endl;
-            return;
+void FGAIShip::setWPPos()
+{
+    if (curr->getName() == "END" || curr->getName() == "WAIT" || curr->getName() == "WAITUNTIL" || curr->getName() == "TUNNEL") {
+        //cout << curr->name << " returning" << endl;
+        return;
     }
 
     wppos.setLatitudeDeg(curr->getLatitude());
     wppos.setLongitudeDeg(curr->getLongitude());
     wppos.setElevationM(0);
 
-    if (curr->getOn_ground()){
+    if (curr->getOn_ground()) {
         double elevation_m = 0;
         if (globals->get_scenery()->get_elevation_m(
                 SGGeod::fromGeodM(wppos, 3000), elevation_m, NULL, 0)) {
@@ -1076,21 +1070,20 @@ void FGAIShip::setWPPos() {
     }
 
     curr->setAltitude(wppos.getElevationM());
-
 }
 
-void FGAIShip::setXTrackError() {
-
+void FGAIShip::setXTrackError()
+{
     double course = getCourse(prev->getLatitude(), prev->getLongitude(),
-        curr->getLatitude(), curr->getLongitude());
+                              curr->getLatitude(), curr->getLongitude());
     double brg = getCourse(pos.getLatitudeDeg(), pos.getLongitudeDeg(),
-        curr->getLatitude(), curr->getLongitude());
-    double xtrack_error_nm = sin((course - brg)* SG_DEGREES_TO_RADIANS) * _wp_range;
+                           curr->getLatitude(), curr->getLongitude());
+    double xtrack_error_nm = sin((course - brg) * SG_DEGREES_TO_RADIANS) * _wp_range;
     double factor = -0.0045 * speed + 1;
     double limit = _lead_angle_limit * factor;
 
-    if (_wp_range > 0){
-        _lead_angle = atan2(xtrack_error_nm,(_wp_range * _proportion)) * SG_RADIANS_TO_DEGREES;
+    if (_wp_range > 0) {
+        _lead_angle = atan2(xtrack_error_nm, (_wp_range * _proportion)) * SG_RADIANS_TO_DEGREES;
     } else
         _lead_angle = 0;
 
@@ -1098,5 +1091,4 @@ void FGAIShip::setXTrackError() {
     _xtrack_error = xtrack_error_nm * 6076.1155;
 
     SG_CLAMP_RANGE(_lead_angle, -limit, limit);
-
 }

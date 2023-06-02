@@ -1,24 +1,9 @@
-// Köppen-Geiger climate interface class
-//
-// Written by Erik Hofman, started October 2020
-//
-// Copyright (C) 2020-2021 by Erik Hofman <erik@ehofman.com>
-//
-//  This program is free software; you can redistribute it and/or modify
-//  it under the terms of the GNU General Public License as published by
-//  the Free Software Foundation; either version 2 of the License, or
-//  (at your option) any later version.
-//
-//  This program is distributed in the hope that it will be useful,
-//  but WITHOUT ANY WARRANTY; without even the implied warranty of
-//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-//  GNU General Public License for more details.
-//
-//  You should have received a copy of the GNU General Public License along
-//  with this program; if not, write to the Free Software Foundation, Inc.,
-//  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
-//
-// $Id$
+/*
+ * SPDX-FileName: climate.cxx
+ * SPDX-FileComment: Köppen-Geiger climate interface class
+ * SPDX-FileCopyrightText: Copyright (C) 2020-2021 by Erik Hofman <erik@ehofman.com>
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
 
 #include <cstring>
 
@@ -145,7 +130,7 @@ void FGClimate::reinit()
 // http://vectormap.si.edu/Climate.htm
 void FGClimate::update(double dt)
 {
-    FGLight *l = globals->get_subsystem<FGLight>();
+    auto l = globals->get_subsystem<FGLight>();
     if (l)
     {
         _sun_longitude_deg = l->get_sun_lon()*SGD_RADIANS_TO_DEGREES;
@@ -685,7 +670,7 @@ void FGClimate::set_continetal()
         relative_humidity = sinusoidal(humidity, 70.0, 88.0);
         _wind_speed = 3.0;
         break;
-    case 21: // Dfd: snow, fully humid, extremely continetal
+    case 21: // Dfd: snow, fully humid, extremely continental
         temp_night = sinusoidal(season(summer, MONTH), -45.0, 4.0);
         temp_day = sinusoidal(season(summer, MONTH), -35.0, 10.0);
         temp_water = sinusoidal(season(summer, 2.0*MONTH), -15.0, 8.5);
@@ -713,7 +698,7 @@ void FGClimate::set_continetal()
         precipitation = long_low(season(summer, MONTH), 32.5, 45.0);
         relative_humidity = sinusoidal(humidity, 50.0, 60.0);
         break;
-    case 25: // Dsd: snow, summer dry, extremely continetal
+    case 25: // Dsd: snow, summer dry, extremely continental
         temp_night = sinusoidal(season(summer, MONTH), -11.5, -6.5);
         temp_day = sinusoidal(season(summer, MONTH), 14.0, 27.0);
         temp_water = sinusoidal(season(summer, 2.0*MONTH), 8.0, 20.5);
@@ -741,7 +726,7 @@ void FGClimate::set_continetal()
         precipitation = long_low(season(summer, 1.5*MONTH), 10.0, 110.0);
         relative_humidity = sinusoidal(humidity, 60.0, 78.0);
         break;
-    case 29: // Dwd: snow, winter dry, extremely continetal
+    case 29: // Dwd: snow, winter dry, extremely continental
         temp_night = sinusoidal(season(summer, MONTH), -57.5, 0.0);
         temp_day = sinusoidal(season(summer, MONTH), -43.0, 15.0);
         temp_water = sinusoidal(season(summer, 2.0*MONTH), -28.0, 11.5);
@@ -837,7 +822,7 @@ void FGClimate::set_environment()
         snow_fact *= precipitation;
     }
 
-    // Sea water will start to freeze at -2° water temperaure.
+    // Sea water will start to freeze at -2° water temperature.
     if (_is_autumn < 0.95 || _sl.temperature_mean > -2.0) {
         _set(_ice_cover, 0.0);
     } else {
@@ -875,10 +860,10 @@ void FGClimate::set_environment()
         if (_gl.temperature_mean > 0.0)
         {
             // https://weatherins.com/rain-guidelines/
-            _wetness = 12.0*std::max(_gl.precipitation-50.0, 0.0)/990.0;
+            _wetness = 9.0*std::max(_gl.precipitation-50.0, 0.0)/990.0;
 
-            // clamping term, see https://sourceforge.net/p/flightgear/codetickets/2604/
-            _wetness = pow(sin(atan(SGD_PI*_wetness)), 2.0);
+            double diff = std::max(_gl.temperature - _gl.dewpoint, 1.0);
+            _wetness = std::min(_wetness/diff, 1.0);
         } else {
             _wetness = 0.0;
         }
@@ -923,7 +908,7 @@ void FGClimate::set_environment()
         {
             if (_is_autumn > 0.01) {	// autumn
                 fgSetDouble("/environment/season", _is_autumn*season);
-            } else { 			// sping
+            } else { 			// spring
                 fgSetDouble("/environment/season", 1.5+0.25*season);
             }
         }
@@ -970,26 +955,26 @@ const char* FGClimate::get_metar() const
     m << std::fixed << std::setprecision(0);
     m << "XXXX ";
 
-    m << setw(2) << std::setfill('0') << fgGetInt("/sim/time/utc/day");
-    m << setw(2) << std::setfill('0') << fgGetInt("/sim/time/utc/hour");
-    m << setw(2) << std::setfill('0') << fgGetInt("/sim/time/utc/minute");
+    m << std::setw(2) << std::setfill('0') << fgGetInt("/sim/time/utc/day");
+    m << std::setw(2) << std::setfill('0') << fgGetInt("/sim/time/utc/hour");
+    m << std::setw(2) << std::setfill('0') << fgGetInt("/sim/time/utc/minute");
     m << "Z AUTO ";
 
-    m << setw(3) << std::setfill('0') << _wind_direction;
-    m << setw(2) << std::setfill('0') << _wind_speed << "MPS ";
+    m << std::setw(3) << std::setfill('0') << _wind_direction;
+    m << std::setw(2) << std::setfill('0') << _wind_speed << "MPS ";
 
     if (_gl.temperature < 0.0) {
-        m << "M" << setw(2) << std::setfill('0') << fabs(_gl.temperature);
+        m << "M" << std::setw(2) << std::setfill('0') << fabs(_gl.temperature);
     } else {
-        m << setw(2) << std::setfill('0') << _gl.temperature;
+        m << std::setw(2) << std::setfill('0') << _gl.temperature;
     }
 
     m << "/";
 
     if (_gl.dewpoint < 0.0) {
-        m << "M" << setw(2) << std::setfill('0') << fabs(_gl.dewpoint);
+        m << "M" << std::setw(2) << std::setfill('0') << fabs(_gl.dewpoint);
     } else {
-        m << setw(2) << std::setfill('0') << _gl.dewpoint;
+        m << std::setw(2) << std::setfill('0') << _gl.dewpoint;
     }
 
     m << " Q" << _sl.pressure;

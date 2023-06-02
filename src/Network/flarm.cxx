@@ -1,24 +1,9 @@
-// flarm.cxx -- Flarm protocol class
-//
-// Written by Thorsten Brehm, started November 2017.
-//
-// Copyright (C) 2017 Thorsten Brehm - brehmt (at) gmail com
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-//
-// $Id$
+/*
+ * SPDX-FileName: flarm.cxx
+ * SPDX-FileComment: Flarm protocol class
+ * SPDX-FileCopyrightText: Copyright (C) 2017 Thorsten Brehm - brehmt (at) gmail com
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
 
 #include "config.h"
 
@@ -312,7 +297,7 @@ void FGFlarm::parse_message(const std::vector<std::string>& tokens)
             return;
 
         // #1: request
-        const string& request = tokens[1];
+        const std::string& request = tokens[1];
         SG_LOG( SG_IO, SG_DEBUG, "  PFLAE request = " << request );
         if (request == "R")
         {
@@ -329,7 +314,7 @@ void FGFlarm::parse_message(const std::vector<std::string>& tokens)
             return;
 
         // #1: request
-        const string& request = tokens[1];
+        const std::string& request = tokens[1];
         SG_LOG( SG_IO, SG_DEBUG, "  PFLAV version request = " << request );
         if (request == "R")
         {
@@ -348,7 +333,7 @@ void FGFlarm::parse_message(const std::vector<std::string>& tokens)
             return;
 
         // #1: request
-        const string& request = tokens[1];
+        const std::string& request = tokens[1];
         SG_LOG( SG_IO, SG_DEBUG, "  PFLAS status/debug request = " << request );
         if (request == "R")
         {
@@ -374,12 +359,12 @@ void FGFlarm::parse_message(const std::vector<std::string>& tokens)
         bool Error = true;
 
         // #1: request
-        const string& request = tokens[1];
+        const std::string& request = tokens[1];
 
         SG_LOG( SG_IO, SG_DEBUG, "  PFLAC config request = " << request );
 
         // #2: keyword
-        const string& keyword = tokens[2];
+        const std::string& keyword = tokens[2];
         SG_LOG( SG_IO, SG_DEBUG, "  PFLAC config request = " << keyword );
 
         // check if the config element is supported

@@ -67,49 +67,28 @@ using std::string;
 /***************************************************************************
  * FGGroundController()
  **************************************************************************/
-FGGroundController::FGGroundController() :
-    parent(NULL)
+FGGroundController::FGGroundController(FGAirportDynamics *par)
 {
     hasNetwork = false;
     count = 0;
-    currTraffic = activeTraffic.begin();
     group = 0;
     version = 0;
     networkInitialized = false;
+    FGATCController::init();
+
+    parent = par;
+    hasNetwork = true;
+    networkInitialized = true;
 
 }
 
 FGGroundController::~FGGroundController()
 {
-    _isDestroying = true;
-}
-
-void FGGroundController::init(FGAirportDynamics* aDynamics)
-{
-    FGATCController::init();
-
-    dynamics = aDynamics;
-    parent = dynamics->parent();
-    hasNetwork = true;
-    networkInitialized = true;
 }
 
 bool compare_trafficrecords(FGTrafficRecord a, FGTrafficRecord b)
 {
     return (a.getIntentions().size() < b.getIntentions().size());
-}
-
-/* 
-* Search activeTraffic vector to find matching id
-* @param id integer to search for in the vector
-* @return the matching item OR activeTraffic.end()
-*/
-TrafficVectorIterator FGGroundController::searchActiveTraffic(int id)
-{
-    return std::find_if(activeTraffic.begin(), activeTraffic.end(),
-                        [id] (const FGTrafficRecord& rec)
-                        { return rec.getId() == id; }
-                        );
 }
 
 void FGGroundController::announcePosition(int id,
@@ -126,8 +105,8 @@ void FGGroundController::announcePosition(int id,
     }
 
     // Search the activeTraffic vector to find a traffic vector with our id
-    TrafficVectorIterator i = searchActiveTraffic(id);
-    
+    TrafficVectorIterator i = FGATCController::searchActiveTraffic(id);
+
     // Add a new TrafficRecord if none exists for this aircraft
     // otherwise set the information for the TrafficRecord
     if (i == activeTraffic.end() || (activeTraffic.empty())) {
@@ -137,6 +116,7 @@ void FGGroundController::announcePosition(int id,
         rec.setPositionAndIntentions(currentPosition, intendedRoute);
         rec.setPositionAndHeading(lat, lon, heading, speed, alt);
         rec.setRadius(radius);  // only need to do this when creating the record.
+        rec.setCallsign(aircraft->getCallSign());
         rec.setAircraft(aircraft);
         // add to the front of the list of activeTraffic if the aircraft is already taxiing
         if (leg == 2) {
@@ -150,27 +130,7 @@ void FGGroundController::announcePosition(int id,
     }
 }
 
-/*
-Search for and erase an aircraft with a certain id from the activeTraffic vector
-*/
-void FGGroundController::signOff(int id)
-{
-    if (_isDestroying)
-        return;
-
-    // Search the activeTraffic vector to find a traffic vector with our id
-    TrafficVectorIterator i = searchActiveTraffic(id);
-    
-    // If one is found erase the record, else give an error message
-    if (i == activeTraffic.end() || (activeTraffic.size() == 0)) {
-        SG_LOG(SG_GENERAL, SG_ALERT,
-               "AI error: Aircraft without traffic record is signing off at " << SG_ORIGIN);
-    } else {
-        i = activeTraffic.erase(i);
-    }
-}
-
-/*
+/**
 * The ground network can deal with the following states:
 * 0 =  Normal; no action required
 * 1 = "Acknowledge "Hold position
@@ -183,37 +143,8 @@ void FGGroundController::signOff(int id)
 * 8 = Switch tower frequency
 * 9 = Acknowledge switch tower frequency
 */
-bool FGGroundController::checkTransmissionState(int minState, int maxState, TrafficVectorIterator i, time_t now, AtcMsgId msgId,
-        AtcMsgDir msgDir)
-{
-    int state = i->getState();
-    if ((state >= minState) && (state <= maxState) && available) {
-        if ((msgDir == ATC_AIR_TO_GROUND) && isUserAircraft(i->getAircraft())) {
-            SG_LOG(SG_ATC, SG_DEBUG, "Checking state " << state << " for " << i->getAircraft()->getCallSign());
-            SGPropertyNode_ptr trans_num = globals->get_props()->getNode("/sim/atc/transmission-num", true);
-            int n = trans_num->getIntValue();
-            if (n == 0) {
-                trans_num->setIntValue(-1);
-                // PopupCallback(n);
-                SG_LOG(SG_ATC, SG_DEBUG, "Selected transmission message " << n);
-                //FGATCManager *atc = (FGATCManager*) globals->get_subsystem("atc");
-                //FGATCDialogNew::instance()->removeEntry(1);
-            } else {
-                SG_LOG(SG_ATC, SG_DEBUG, "creating message for " << i->getAircraft()->getCallSign());
-                transmit(&(*i), dynamics, msgId, msgDir, false);
-                return false;
-            }
-        }
-        transmit(&(*i), dynamics, msgId, msgDir, true);
-        i->updateState();
-        lastTransmission = now;
-        available = false;
-        return true;
-    }
-    return false;
-}
 
-void FGGroundController::updateAircraftInformation(int id, double lat, double lon,
+void FGGroundController::updateAircraftInformation(int id, SGGeod geod,
         double heading, double speed, double alt,
         double dt)
 {
@@ -224,18 +155,18 @@ void FGGroundController::updateAircraftInformation(int id, double lat, double lo
     // Probably use a status mechanism similar to the Engine start procedure in the startup controller.
 
     // Search the activeTraffic vector to find a traffic vector with our id
-    TrafficVectorIterator i = searchActiveTraffic(id);
-   
+    TrafficVectorIterator i = FGATCController::searchActiveTraffic(id);
+
     // update position of the current aircraft
     if (i == activeTraffic.end() || activeTraffic.empty()) {
         SG_LOG(SG_GENERAL, SG_DEV_WARN,
                "AI error: updating aircraft without traffic record at " << SG_ORIGIN << ", id=" << id);
         return;
     }
-    
-    i->setPositionAndHeading(lat, lon, heading, speed, alt);
+
+    i->setPositionAndHeading(geod.getLatitudeDeg(), geod.getLongitudeDeg(), heading, speed, alt);
     TrafficVectorIterator current = i;
-    
+
     setDt(getDt() + dt);
 
     // Update every three secs, but add some randomness
@@ -246,10 +177,10 @@ void FGGroundController::updateAircraftInformation(int id, double lat, double lo
     //  setDt(0);
     current->clearResolveCircularWait();
     current->setWaitsForId(0);
-    checkSpeedAdjustment(id, lat, lon, heading, speed, alt);
+    checkSpeedAdjustment(id, geod.getLatitudeDeg(), geod.getLongitudeDeg(), heading, speed, alt);
     bool needsTaxiClearance = current->getAircraft()->getTaxiClearanceRequest();
     if (!needsTaxiClearance) {
-        checkHoldPosition(id, lat, lon, heading, speed, alt);
+        checkHoldPosition(id, geod.getLatitudeDeg(), geod.getLongitudeDeg(), heading, speed, alt);
         //if (checkForCircularWaits(id)) {
         //    i->setResolveCircularWait();
         //}
@@ -261,26 +192,25 @@ void FGGroundController::updateAircraftInformation(int id, double lat, double lo
         if ((now - lastTransmission) > 15) {
             available = true;
         }
-        if (checkTransmissionState(0,2, current, now, MSG_REQUEST_TAXI_CLEARANCE, ATC_AIR_TO_GROUND)) {
-            current->setState(3);
+        if (checkTransmissionState(ATCMessageState::NORMAL,ATCMessageState::ACK_RESUME_TAXI, current, now, MSG_REQUEST_TAXI_CLEARANCE, ATC_AIR_TO_GROUND)) {
+            current->setState(ATCMessageState::TAXI_CLEARED);
         }
-        if (checkTransmissionState(3,3, current, now, MSG_ISSUE_TAXI_CLEARANCE, ATC_GROUND_TO_AIR)) {
-            current->setState(4);
+        if (checkTransmissionState(ATCMessageState::TAXI_CLEARED,ATCMessageState::TAXI_CLEARED, current, now, MSG_ISSUE_TAXI_CLEARANCE, ATC_GROUND_TO_AIR)) {
+            current->setState(ATCMessageState::ACK_TAXI_CLEARED);
         }
-        if (checkTransmissionState(4,4, current, now, MSG_ACKNOWLEDGE_TAXI_CLEARANCE, ATC_AIR_TO_GROUND)) {
-            current->setState(5);
+        if (checkTransmissionState(ATCMessageState::ACK_TAXI_CLEARED,ATCMessageState::ACK_TAXI_CLEARED, current, now, MSG_ACKNOWLEDGE_TAXI_CLEARANCE, ATC_AIR_TO_GROUND)) {
+            current->setState(ATCMessageState::START_TAXI);
         }
-        if ((state == 5) && available) {
-            current->setState(0);
+        if ((state == ATCMessageState::START_TAXI) && available) {
+            current->setState(ATCMessageState::NORMAL);
             current->getAircraft()->setTaxiClearanceRequest(false);
             current->setHoldPosition(false);
             available = false;
         }
-
     }
 }
 
-/*
+/**
 * Scan for a speed adjustment change. Find the nearest aircraft that is in front
 * and adjust speed when we get too close. Only do this when current position and/or
 * intentions of the current aircraft match current taxiroute position of the proximate
@@ -300,9 +230,8 @@ void FGGroundController::checkSpeedAdjustment(int id, double lat,
 {
 
     TrafficVectorIterator current, closest, closestOnNetwork;
-    bool otherReasonToSlowDown = false;
     // bool previousInstruction;
-	TrafficVectorIterator i = searchActiveTraffic(id);
+	TrafficVectorIterator i = FGATCController::searchActiveTraffic(id);
     if (!activeTraffic.size()) {
         return;
 	}
@@ -315,62 +244,62 @@ void FGGroundController::checkSpeedAdjustment(int id, double lat,
 
     // previousInstruction = current->getSpeedAdjustment();
     double mindist = HUGE_VAL;
-    
+
     // First check all our activeTraffic
     if (activeTraffic.size()) {
+        bool otherReasonToSlowDown = false;
         double course, dist, bearing, az2; // minbearing,
         SGGeod curr(SGGeod::fromDegM(lon, lat, alt));
-        //TrafficVector iterator closest;
         closest = current;
         closestOnNetwork = current;
-        for (TrafficVectorIterator i = activeTraffic.begin();
-                i != activeTraffic.end(); i++) {
-            if (i == current) {
+
+        for (TrafficVectorIterator iter = activeTraffic.begin();
+                iter != activeTraffic.end(); ++iter) {
+            if (iter == current) {
                 continue;
             }
 
-            SGGeod other(SGGeod::fromDegM(i->getLongitude(),
-                                          i->getLatitude(),
-                                          i->getAltitude()));
+            SGGeod other = iter->getPos();
             SGGeodesy::inverse(curr, other, course, az2, dist);
             bearing = fabs(heading - course);
             if (bearing > 180)
                 bearing = 360 - bearing;
             if ((dist < mindist) && (bearing < 60.0)) {
                 mindist = dist;
-                closest = i;
-                closestOnNetwork = i;
+                closest = iter;
+                closestOnNetwork = iter;
                 // minbearing = bearing;
             }
         }
-        
+
         // Next check with the tower controller
         if (towerController->hasActiveTraffic()) {
-            for (TrafficVectorIterator i =
+            for (TrafficVectorIterator iter =
                         towerController->getActiveTraffic().begin();
-                    i != towerController->getActiveTraffic().end(); i++) {
-                SG_LOG(SG_ATC, SG_BULK, "Comparing " << current->getId() << " and " << i->getId());
-                SGGeod other(SGGeod::fromDegM(i->getLongitude(),
-                                              i->getLatitude(),
-                                              i->getAltitude()));
+                    iter != towerController->getActiveTraffic().end(); ++iter) {
+                if( current->getId() == iter->getId()) {
+                    continue;
+                }
+                SG_LOG(SG_ATC, SG_BULK, current->getCallsign() << "| Comparing with " << iter->getCallsign() << " Id: " << iter->getId());
+                SGGeod other = iter->getPos();
                 SGGeodesy::inverse(curr, other, course, az2, dist);
                 bearing = fabs(heading - course);
                 if (bearing > 180)
                     bearing = 360 - bearing;
                 if ((dist < mindist) && (bearing < 60.0)) {
                     //SG_LOG(SG_ATC, SG_BULK, "Current aircraft " << current->getAircraft()->getTrafficRef()->getCallSign()
-                    //   << " is closest to " << i->getAircraft()->getTrafficRef()->getCallSign()
-                    //   << ", which has status " << i->getAircraft()->isScheduledForTakeoff());
+                    //   << " is closest to " << iter->getAircraft()->getTrafficRef()->getCallSign()
+                    //   << ", which has status " << iter->getAircraft()->isScheduledForTakeoff());
                     mindist = dist;
-                    closest = i;
+                    closest = iter;
                     // minbearing = bearing;
                     otherReasonToSlowDown = true;
                 }
             }
         }
-        
+
         // Finally, check UserPosition
-        // Note, as of 2011-08-01, this should no longer be necessecary.
+        // Note, as of 2011-08-01, this should no longer be necessary.
         /*
         double userLatitude = fgGetDouble("/position/latitude-deg");
         double userLongitude = fgGetDouble("/position/longitude-deg");
@@ -387,11 +316,11 @@ void FGGroundController::checkSpeedAdjustment(int id, double lat,
             otherReasonToSlowDown = true;
         }
         */
-        
+
         // Clear any active speed adjustment, check if the aircraft needs to brake
         current->clearSpeedAdjustment();
         bool needBraking = false;
-        
+
         if (current->checkPositionAndIntentions(*closest)
                 || otherReasonToSlowDown) {
             double maxAllowableDistance =
@@ -402,7 +331,7 @@ void FGGroundController::checkSpeedAdjustment(int id, double lat,
                     return;
                 else
                     current->setWaitsForId(closest->getId());
-                
+
                 if (closest->getId() != current->getId()) {
                     current->setSpeedAdjustment(closest->getSpeed() *
                                                 (mindist / 100));
@@ -417,7 +346,7 @@ void FGGroundController::checkSpeedAdjustment(int id, double lat,
                 } else {
                     current->setSpeedAdjustment(0);     // This can only happen when the user aircraft is the one closest
                 }
-                
+
                 if (mindist < maxAllowableDistance) {
                     //double newSpeed = (maxAllowableDistance-mindist);
                     //current->setSpeedAdjustment(newSpeed);
@@ -428,14 +357,14 @@ void FGGroundController::checkSpeedAdjustment(int id, double lat,
                 }
             }
         }
-        
+
         if ((closest->getId() == closestOnNetwork->getId()) && (current->getPriority() < closest->getPriority()) && needBraking) {
             swap(current, closest);
         }
     }
 }
 
-/*
+/**
 * Check for "Hold position instruction".
 * The hold position should be issued under the following conditions:
 * 1) For aircraft entering or crossing a runway with active traffic on it, or landing aircraft near it
@@ -447,7 +376,7 @@ void FGGroundController::checkHoldPosition(int id, double lat,
                                         double lon, double heading,
                                         double speed, double alt)
 {
-    FGGroundNetwork* network = dynamics->parent()->groundNetwork();
+    FGGroundNetwork* network = parent->parent()->groundNetwork();
     TrafficVectorIterator current;
     TrafficVectorIterator i = activeTraffic.begin();
     if (activeTraffic.size()) {
@@ -468,12 +397,15 @@ void FGGroundController::checkHoldPosition(int id, double lat,
                "AI error: Trying to access non-existing aircraft in FGGroundNetwork::checkHoldPosition at " << SG_ORIGIN);
     }
     current = i;
-    if (current->getAircraft()->getTakeOffStatus() == 1) {
+    if (current->getAircraft()->getTakeOffStatus() == AITakeOffStatus::QUEUED) {
         current->setHoldPosition(true);
         return;
     }
-    if (current->getAircraft()->getTakeOffStatus() == 2) {
-        SG_LOG(SG_ATC, SG_DEBUG, current->getAircraft()->getCallSign() << ". Taxi in position and hold");
+    if ((now - lastTransmission) > 15) {
+        available = true;
+    }
+
+    if (current->getAircraft()->getTakeOffStatus() == AITakeOffStatus::CLEARED_FOR_TAKEOFF) {
         current->setHoldPosition(false);
         current->clearSpeedAdjustment();
         return;
@@ -499,7 +431,7 @@ void FGGroundController::checkHoldPosition(int id, double lat,
         //if (tx->hasBlock(now) || nx->hasBlock(now) ) {
         //   current->setHoldPosition(true);
         //}
-        SGGeod start(SGGeod::fromDeg((i->getLongitude()), (i->getLatitude())));
+        SGGeod start = i->getPos();
         SGGeod end  (nx->getStart()->geod());
 
         double distance = SGGeodesy::distanceM(start, end);
@@ -526,17 +458,17 @@ void FGGroundController::checkHoldPosition(int id, double lat,
     if ((now - lastTransmission) > 2) {
         available = true;
     }
-    if (current->getState() == 0) {
+    if (current->getState() == ATCMessageState::NORMAL) {
         if ((origStatus != currStatus) && available) {
             SG_LOG(SG_ATC, SG_DEBUG, "Issuing hold short instruction " << currStatus << " " << available);
             if (currStatus == true) { // No has a hold short instruction
-                transmit(&(*current), dynamics, MSG_HOLD_POSITION, ATC_GROUND_TO_AIR, true);
+                transmit(&(*current), parent, MSG_HOLD_POSITION, ATC_GROUND_TO_AIR, true);
                 SG_LOG(SG_ATC, SG_DEBUG, "Transmitting hold short instruction " << currStatus << " " << available);
-                current->setState(1);
+                current->setState(ATCMessageState::ACK_HOLD);
             } else {
-                transmit(&(*current), dynamics, MSG_RESUME_TAXI, ATC_GROUND_TO_AIR, true);
+                transmit(&(*current), parent, MSG_RESUME_TAXI, ATC_GROUND_TO_AIR, true);
                 SG_LOG(SG_ATC, SG_DEBUG, "Transmitting resume instruction " << currStatus << " " << available);
-                current->setState(2);
+                current->setState(ATCMessageState::ACK_RESUME_TAXI);
             }
             lastTransmission = now;
             available = false;
@@ -552,28 +484,26 @@ void FGGroundController::checkHoldPosition(int id, double lat,
     //9 = Acknowledge switch tower frequency
 
     //int state = current->getState();
-    if (checkTransmissionState(1,1, current, now, MSG_ACKNOWLEDGE_HOLD_POSITION, ATC_AIR_TO_GROUND)) {
-        current->setState(0);
+    if (checkTransmissionState(ATCMessageState::ACK_HOLD, ATCMessageState::ACK_HOLD, current, now, MSG_ACKNOWLEDGE_HOLD_POSITION, ATC_AIR_TO_GROUND)) {
+        current->setState(ATCMessageState::NORMAL);
         current->setHoldPosition(true);
     }
-    if (checkTransmissionState(2,2, current, now, MSG_ACKNOWLEDGE_RESUME_TAXI, ATC_AIR_TO_GROUND)) {
-        current->setState(0);
+    if (checkTransmissionState(ATCMessageState::ACK_RESUME_TAXI, ATCMessageState::ACK_RESUME_TAXI, current, now, MSG_ACKNOWLEDGE_RESUME_TAXI, ATC_AIR_TO_GROUND)) {
+        current->setState(ATCMessageState::NORMAL);
         current->setHoldPosition(false);
     }
     if (current->getAircraft()->getTakeOffStatus() && (current->getState() == 0)) {
         SG_LOG(SG_ATC, SG_DEBUG, "Scheduling " << current->getAircraft()->getCallSign() << " for hold short");
-        current->setState(6);
+        current->setState(ATCMessageState::REPORT_RUNWAY);
     }
-    if (checkTransmissionState(6,6, current, now, MSG_REPORT_RUNWAY_HOLD_SHORT, ATC_AIR_TO_GROUND)) {
+    if (checkTransmissionState(ATCMessageState::REPORT_RUNWAY ,ATCMessageState::REPORT_RUNWAY , current, now, MSG_REPORT_RUNWAY_HOLD_SHORT, ATC_AIR_TO_GROUND)) {
     }
-    if (checkTransmissionState(7,7, current, now, MSG_ACKNOWLEDGE_REPORT_RUNWAY_HOLD_SHORT, ATC_GROUND_TO_AIR)) {
+    if (checkTransmissionState(ATCMessageState::ACK_REPORT_RUNWAY, ATCMessageState::ACK_REPORT_RUNWAY, current, now, MSG_ACKNOWLEDGE_REPORT_RUNWAY_HOLD_SHORT, ATC_GROUND_TO_AIR)) {
     }
-    if (checkTransmissionState(8,8, current, now, MSG_SWITCH_TOWER_FREQUENCY, ATC_GROUND_TO_AIR)) {
+    if (checkTransmissionState(ATCMessageState::SWITCH_GROUND_TOWER, ATCMessageState::SWITCH_GROUND_TOWER, current, now, MSG_SWITCH_TOWER_FREQUENCY, ATC_GROUND_TO_AIR)) {
     }
-    if (checkTransmissionState(9,9, current, now, MSG_ACKNOWLEDGE_SWITCH_TOWER_FREQUENCY, ATC_AIR_TO_GROUND)) {
+    if (checkTransmissionState(ATCMessageState::ACK_SWITCH_GROUND_TOWER, ATCMessageState::ACK_SWITCH_GROUND_TOWER, current, now, MSG_ACKNOWLEDGE_SWITCH_TOWER_FREQUENCY, ATC_AIR_TO_GROUND)) {
     }
-
-
 
     //current->setState(0);
 }
@@ -621,32 +551,32 @@ bool FGGroundController::checkForCircularWaits(int id)
     int counter = 0;
 
     if (id == target) {
-        SG_LOG(SG_ATC, SG_DEBUG, "aircraft waits for user");
+        SG_LOG(SG_ATC, SG_DEBUG, "aircraft is waiting for user");
         return false;
     }
 
     while ((target > 0) && (target != id) && counter++ < trafficSize) {
         //printed = true;
-        TrafficVectorIterator i = activeTraffic.begin();
+        TrafficVectorIterator iter = activeTraffic.begin();
         if (trafficSize) {
-            while (i != activeTraffic.end()) {
-                if (i->getId() == target) {
+            while (iter != activeTraffic.end()) {
+                if (iter->getId() == target) {
                     break;
                 }
-                i++;
+                ++iter;
             }
         } else {
             return false;
         }
 
-        if (i == activeTraffic.end()) {
+        if (iter == activeTraffic.end()) {
             SG_LOG(SG_ATC, SG_DEBUG, "[Waiting for traffic at Runway: DONE] ");
             // The target id is not found on the current network, which means it's at the tower
             SG_LOG(SG_ATC, SG_ALERT, "AI error: Trying to access non-existing aircraft in FGGroundNetwork::checkForCircularWaits");
             return false;
         }
 
-        other = i;
+        other = iter;
         target = other->getWaitsForId();
 
         // actually this trap isn't as impossible as it first seemed:
@@ -668,35 +598,6 @@ bool FGGroundController::checkForCircularWaits(int id)
     }
 }
 
-// Note that this function is probably obsolete...
-bool FGGroundController::hasInstruction(int id)
-{
-    // Search the activeTraffic vector to find a traffic vector with our id
-    TrafficVectorIterator i = searchActiveTraffic(id);
-    
-    if (i == activeTraffic.end() || (activeTraffic.size() == 0)) {
-        SG_LOG(SG_GENERAL, SG_ALERT,
-               "AI error: checking ATC instruction for aircraft without traffic record at " << SG_ORIGIN);
-    } else {
-        return i->hasInstruction();
-    }
-    return false;
-}
-
-FGATCInstruction FGGroundController::getInstruction(int id)
-{
-    // Search the activeTraffic vector to find a traffic vector with our id
-    TrafficVectorIterator i = searchActiveTraffic(id);
-    
-    if (i == activeTraffic.end() || (activeTraffic.size() == 0)) {
-        SG_LOG(SG_GENERAL, SG_ALERT,
-               "AI error: requesting ATC instruction for aircraft without traffic record at " << SG_ORIGIN);
-    } else {
-        return i->getInstruction();
-    }
-    return FGATCInstruction();
-}
-
 // Note that this function is copied from simgear. for maintanance purposes, it's probabtl better to make a general function out of that.
 static void WorldCoordinate(osg::Matrix& obj_pos, double lat,
                             double lon, double elev, double hdg, double slope)
@@ -711,11 +612,11 @@ static void WorldCoordinate(osg::Matrix& obj_pos, double lat,
                                         0.0, 1.0, 0.0));
 }
 
-/* Draw visible taxi routes */
+/** Draw visible taxi routes */
 void FGGroundController::render(bool visible)
 {
     SGMaterialLib *matlib = globals->get_matlib();
-    FGGroundNetwork* network = dynamics->parent()->groundNetwork();
+    FGGroundNetwork* network = parent->parent()->groundNetwork();
 
     if (group) {
         //int nr = ;
@@ -745,7 +646,7 @@ void FGGroundController::render(bool visible)
             const int pos = i->getCurrentPosition();
             if (pos > 0) {
                 FGTaxiSegment* segment = network->findSegment(pos);
-                SGGeod start(SGGeod::fromDeg((i->getLongitude()), (i->getLatitude())));
+                SGGeod start = i->getPos();
                 SGGeod end  (segment->getEnd()->geod());
 
                 double length = SGGeodesy::distanceM(start, end);
@@ -903,17 +804,17 @@ void FGGroundController::render(bool visible)
 }
 
 string FGGroundController::getName() {
-    return string(parent->getId() + "-ground");
+    return string(parent->parent()->getName() + "-ground");
 }
 
 void FGGroundController::update(double dt)
 {
     time_t now = globals->get_time_params()->get_cur_time();
-    FGGroundNetwork* network = dynamics->parent()->groundNetwork();
+    FGGroundNetwork* network = parent->parent()->groundNetwork();
     network->unblockAllSegments(now);
     int priority = 1;
 
-    TrafficVector& startupTraffic(dynamics->getStartupController()->getActiveTraffic());
+    TrafficVector& startupTraffic(parent->getStartupController()->getActiveTraffic());
     TrafficVectorIterator i;
 
     //sort(activeTraffic.begin(), activeTraffic.end(), compare_trafficrecords);
@@ -927,8 +828,9 @@ void FGGroundController::update(double dt)
         updateActiveTraffic(i, priority, now);
     }
 
-    FGATCController::eraseDeadTraffic(startupTraffic);
-    FGATCController::eraseDeadTraffic(activeTraffic);
+    //FIXME
+    //FGATCController::eraseDeadTraffic(startupTraffic);
+    FGATCController::eraseDeadTraffic();
 }
 
 void FGGroundController::updateStartupTraffic(TrafficVectorIterator i,
@@ -953,7 +855,7 @@ void FGGroundController::updateStartupTraffic(TrafficVectorIterator i,
         return;
     }
 
-    FGGroundNetwork* network = dynamics->parent()->groundNetwork();
+    FGGroundNetwork* network = parent->parent()->groundNetwork();
 
     if (!network) {
         SG_LOG(SG_ATC, SG_ALERT, "updateStartupTraffic: missing ground network");
@@ -989,8 +891,9 @@ void FGGroundController::updateStartupTraffic(TrafficVectorIterator i,
         length = seg->getLength();
         network->blockSegmentsEndingAt(seg, i->getId(), now, now);
     }
+
     for (intVecIterator j = i->getIntentions().begin(); j != i->getIntentions().end(); j++) {
-        int pos = (*j);
+        pos = (*j);
         if (pos > 0) {
             FGTaxiSegment *seg = network->findSegment(pos);
             length += seg->getLength();
@@ -1021,7 +924,7 @@ bool FGGroundController::updateActiveTraffic(TrafficVectorIterator i,
 
     double length = 0;
     double vTaxi = (i->getAircraft()->getPerformance()->vTaxi() * SG_NM_TO_METER) / 3600;
-    FGGroundNetwork* network = dynamics->parent()->groundNetwork();
+    FGGroundNetwork* network = parent->parent()->groundNetwork();
 
     if (!network) {
         SG_LOG(SG_ATC, SG_ALERT, "updateActiveTraffic: missing ground network");
@@ -1038,7 +941,7 @@ bool FGGroundController::updateActiveTraffic(TrafficVectorIterator i,
         }
 
     }
-	
+
     intVecIterator ivi;
     for (ivi = i->getIntentions().begin(); ivi != i->getIntentions().end(); ivi++) {
         int segIndex = (*ivi);
@@ -1049,10 +952,10 @@ bool FGGroundController::updateActiveTraffic(TrafficVectorIterator i,
             }
         }
     }
-	
+
     //after this, ivi points just behind the last valid unblocked taxi segment.
     for (intVecIterator j = i->getIntentions().begin(); j != ivi; j++) {
-        int pos = (*j);
+        pos = (*j);
         if (pos > 0) {
             FGTaxiSegment *seg = network->findSegment(pos);
             length += seg->getLength();
@@ -1062,4 +965,10 @@ bool FGGroundController::updateActiveTraffic(TrafficVectorIterator i,
     }
 
     return true;
+}
+
+int FGGroundController::getFrequency() {
+    int groundFreq = parent->getGroundFrequency(2);
+    int towerFreq = parent->getTowerFrequency(2);
+    return groundFreq>0?groundFreq:towerFreq;
 }

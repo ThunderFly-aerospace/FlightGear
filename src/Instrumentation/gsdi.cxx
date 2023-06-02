@@ -51,13 +51,13 @@ void GSDI::init()
 {
   std::string branch;
 	branch = "/instrumentation/" + _name;
-	SGPropertyNode *n = fgGetNode(branch.c_str(), _num, true);
+	SGPropertyNode *n = fgGetNode(branch, _num, true);
 	_serviceableN = n->getNode("serviceable", true);
 
 	// input
 	_ubodyN = fgGetNode("/velocities/uBody-fps", true);
 	_vbodyN = fgGetNode("/velocities/vBody-fps", true);
-	
+
 	// output
 	_drift_uN = n->getNode("drift-u-kt", true);
 	_drift_vN = n->getNode("drift-v-kt", true);

@@ -118,7 +118,7 @@ GPS::GPS ( SGPropertyNode *node, bool defaultGPSMode) :
                                                         fgGetNode("/autopilot/route-manager/active", true)))
 {
   string branch = "/instrumentation/" + _name;
-  _gpsNode = fgGetNode(branch.c_str(), _num, true );
+  _gpsNode = fgGetNode(branch, _num, true );
   _scratchNode = _gpsNode->getChild("scratch", 0, true);
   
   SGPropertyNode *wp_node = _gpsNode->getChild("wp", 0, true);
@@ -358,7 +358,7 @@ GPS::update (double delta_time_sec)
   if (_dataValid && (_mode == "init")) {
     // will select LEG mode if the route is active
     routeManagerFlightPlanChanged(nullptr);
-    FGRouteMgr* routeMgr = globals->get_subsystem<FGRouteMgr>();
+    auto routeMgr = globals->get_subsystem<FGRouteMgr>();
       
     if (!routeMgr || !routeMgr->isRouteActive()) {
       // initialise in OBS mode, with waypt set to the nearest airport.
@@ -397,7 +397,7 @@ void GPS::routeManagerFlightPlanChanged(SGPropertyNode*)
   }
   
   SG_LOG(SG_INSTR, SG_DEBUG, "GPS saw route-manager flight-plan replaced.");
-  FGRouteMgr* routeMgr = globals->get_subsystem<FGRouteMgr>();
+  auto routeMgr = globals->get_subsystem<FGRouteMgr>();
   if (!routeMgr) {
     return;
   }
@@ -1451,7 +1451,7 @@ void GPS::addAirportToScratch(FGAirport* aAirport)
     for (unsigned int r=0; r<aAirport->numRunways(); ++r) {
         SGPropertyNode* rwyNd = _scratchNode->getChild("runways", r, true);
         FGRunway* rwy = aAirport->getRunwayByIndex(r);
-        // TODO - filter out unsuitable runways in the future
+        // TODO: filter out unsuitable runways in the future
         // based on config again
         
         rwyNd->setStringValue("id", rwy->ident().c_str());
@@ -1459,7 +1459,7 @@ void GPS::addAirportToScratch(FGAirport* aAirport)
         rwyNd->setIntValue("width-ft", rwy->widthFt());
         rwyNd->setIntValue("heading-deg", rwy->headingDeg());
         // map surface code to a string
-        // TODO - lighting information
+        // TODO: lighting information
         
         if (rwy->ILS()) {
             rwyNd->setDoubleValue("ils-frequency-mhz", rwy->ILS()->get_freq() / 100.0);

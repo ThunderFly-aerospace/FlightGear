@@ -1,11 +1,12 @@
-// attitude_indicator.hxx - a vacuum-powered attitude indicator.
-// Written by David Megginson, started 2002.
-//
-// This file is in the Public Domain and comes with no warranty.
-
-
-#ifndef __INSTRUMENTS_ATTITUDE_INDICATOR_HXX
-#define __INSTRUMENTS_ATTITUDE_INDICATOR_HXX 1
+/*
+ * SPDX-License-Identifier: CC0-1.0
+ * 
+ * attitude_indicator.hxx - a vacuum-powered attitude indicator.
+ * Written by David Megginson, started 2002.
+ * 
+ * This file is in the Public Domain and comes with no warranty.
+*/
+#pragma once
 
 #ifndef __cplusplus
 # error This library requires C++
@@ -74,5 +75,3 @@ private:
     double max_roll_error;
     double max_pitch_error;
 };
-
-#endif // __INSTRUMENTS_ATTITUDE_INDICATOR_HXX

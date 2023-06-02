@@ -1,13 +1,11 @@
+/*
+ * SPDX-FileName: uiuc_recorder.cpp
+ * SPDX-FileComment: outputs variables specified in input file to recorder file
+ * SPDX-FileCopyrightText: (C) 2000 by Michael Selig
+ * SPDX-License-Identifier: GPL-1.0
+ */
+
 /**********************************************************************
- 
- FILENAME:     uiuc_recorder.cpp
-
-----------------------------------------------------------------------
-
- DESCRIPTION:  outputs variables specified in input file to recorder 
-               file
-
-----------------------------------------------------------------------
 
  STATUS:       alpha version
 
@@ -68,24 +66,6 @@
 ----------------------------------------------------------------------
 
  CALLS TO:     none
-
-----------------------------------------------------------------------
-
- COPYRIGHT:    (C) 2000 by Michael Selig
-
- This program is free software; you can redistribute it and/or
- modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation.
-
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License
- along with this program; if not, write to the Free Software
- Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-
 **********************************************************************/
 
 #ifdef HAVE_CONFIG_H
@@ -103,10 +83,10 @@ using std::endl;                // -dw
 void uiuc_recorder( double dt )
 {
   ::stack command_list;
-  string linetoken;
+  std::string linetoken;
   // static int init = 0;
   static int recordStep = 0;
-  string record_variables = "# ";
+  std::string record_variables = "# ";
 
   // int modulus = recordStep % recordRate;
 

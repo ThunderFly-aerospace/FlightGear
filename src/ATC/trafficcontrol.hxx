@@ -64,6 +64,7 @@ class FGATCInstruction
 {
 private:
     bool holdPattern;
+    int  requestedArrivalTime{0};
     bool holdPosition;
     bool changeSpeed;
     bool changeHeading;
@@ -75,10 +76,16 @@ private:
     double alt;
 public:
     FGATCInstruction();
-	
+
     bool hasInstruction   () const;
     bool getHoldPattern   () const {
         return holdPattern;
+    };
+    void setRunwaySlot (int val) {
+        requestedArrivalTime = val;
+    };
+    int getRunwaySlot () const {
+        return requestedArrivalTime;
     };
     bool getHoldPosition  () const {
         return holdPosition;
@@ -95,7 +102,7 @@ public:
     bool getCheckForCircularWait() const {
         return resolveCircularWait;
     };
-	
+
     double getSpeed       () const {
         return speed;
     };
@@ -124,7 +131,7 @@ public:
     void setResolveCircularWait (bool val) {
         resolveCircularWait = val;
     };
-	
+
     void setSpeed       (double val) {
         speed   = val;
     };
@@ -137,16 +144,14 @@ public:
 };
 
 
-
-
-
 /**************************************************************************************
  * class FGTrafficRecord
+ * Represents the interaction of an AI Aircraft and ATC
  *************************************************************************************/
 class FGTrafficRecord
 {
 private:
-    int id; 
+    int id;
     int waitsForId;
     int currentPos;
     int leg;
@@ -155,10 +160,13 @@ private:
     bool allowTransmission;
     bool allowPushback;
     int priority;
+    int  plannedArrivalTime{0};
     time_t timer;
     intVec intentions;
     FGATCInstruction instruction;
-    double latitude, longitude, heading, speed, altitude, radius;
+    SGGeod pos;
+    double heading, speed, altitude, radius;
+    std::string callsign;
     std::string runway;
     SGSharedPtr<FGAIAircraft> aircraft;
 
@@ -183,44 +191,65 @@ public:
     int getId() const {
         return id;
     };
+    /**
+     * Return the current ATC State of type @see ATCMessageState
+    */
     int getState() const {
         return state;
     };
+    /**
+     * Set the current ATC State of type @see ATCMessageState
+    */
     void setState(int s) {
         state = s;
     }
     FGATCInstruction getInstruction() const {
         return instruction;
     };
-    bool hasInstruction() {
+    bool hasInstruction() const {
         return instruction.hasInstruction();
     };
     void setPositionAndHeading(double lat, double lon, double hdg, double spd, double alt);
     bool checkPositionAndIntentions(FGTrafficRecord &other);
     int  crosses                   (FGGroundNetwork *, FGTrafficRecord &other);
     bool isOpposing                (FGGroundNetwork *, FGTrafficRecord &other, int node);
-    
+
     bool isActive(int margin) const;
+    bool isDead() const;
+    void clearATCController() const;
 
     bool onRoute(FGGroundNetwork *, FGTrafficRecord &other);
 
     bool getSpeedAdjustment() const {
         return instruction.getChangeSpeed();
     };
-
-    double getLatitude () const {
-        return latitude ;
+    void setPlannedArrivalTime   (int val) {
+        plannedArrivalTime    = val;
     };
-    double getLongitude() const {
-        return longitude;
+    /**Arrival time planned by aircraft.*/
+    int getPlannedArrivalTime () const {
+        return plannedArrivalTime;
     };
+    void setRunwaySlot( int val ) {
+        if (plannedArrivalTime) {
+            SG_LOG(SG_ATC, SG_BULK, callsign << "| Runwayslot " << (val-plannedArrivalTime));
+        }
+        instruction.setRunwaySlot(val);
+    };
+    /**Arrival time requested by ATC.*/
+    int getRunwaySlot() {
+        return instruction.getRunwaySlot();
+    };
+    SGGeod getPos() {
+        return pos;
+    }
     double getHeading  () const {
         return heading  ;
     };
     double getSpeed    () const {
         return speed    ;
     };
-    double getAltitude () const {
+    double getFAltitude () const {
         return altitude ;
     };
     double getRadius   () const {
@@ -249,7 +278,6 @@ public:
     void setHoldPosition (bool inst) {
         instruction.setHoldPosition(inst);
     };
-
     void setWaitsForId(int id) {
         waitsForId = id;
     };
@@ -261,17 +289,22 @@ public:
         instruction.setResolveCircularWait(false);
     };
 
+    void setCallsign(const std::string& clsgn) { callsign = clsgn; };
+    const std::string& getCallsign() const {
+        return callsign;
+    };
+
     const std::string& getRunway() const {
         return runway;
     };
-    //void setCallSign(string clsgn) { callsign = clsgn; };
+
     void setAircraft(FGAIAircraft *ref);
 
     void updateState() {
         state++;
         allowTransmission=true;
     };
-    //string getCallSign() { return callsign; };
+
     FGAIAircraft *getAircraft() const;
 
     int getTime() const {
@@ -323,7 +356,7 @@ private:
     int currentlyCleared;
     double distanceToFinal;
     TimeVector estimatedArrivalTimes;
-    
+
     using AircraftRefVec = std::vector<SGSharedPtr<FGAIAircraft>>;
     AircraftRefVec departureQueue;
 
@@ -356,13 +389,15 @@ public:
     int getdepartureQueueSize() {
         return departureQueue.size();
     };
-    
+
     SGSharedPtr<FGAIAircraft> getFirstAircraftInDepartureQueue() const;
-    
+
     SGSharedPtr<FGAIAircraft> getFirstOfStatus(int stat) const;
-    
+
+    void removeFromDepartureQueue(int id);
+
     void updateDepartureQueue();
-    
+
     void printDepartureQueue();
 };
 

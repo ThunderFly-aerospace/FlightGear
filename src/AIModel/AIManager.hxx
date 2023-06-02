@@ -1,32 +1,20 @@
-// AIManager.hxx - David Culp - based on:
-// AIMgr.hxx - definition of FGAIMgr
-// - a global management class for FlightGear generated AI traffic
-//
-// Written by David Luff, started March 2002.
-//
-// Copyright (C) 2002  David C Luff - david.luff@nottingham.ac.uk
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+/*
+ * SPDX-FileName: AIManager.hxx
+ * SPDX-FileComment: a global management type for AI objects, based on David Luff's AIMgr
+ * SPDX-FileCopyrightText: Copyright (C) 2002  David C Luff - david.luff@nottingham.ac.uk
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
 
 #pragma once
 
 #include <list>
 #include <map>
 
-#include <simgear/structure/subsystem_mgr.hxx>
+#include <simgear/math/SGVec3.hxx>
+#include <simgear/misc/sg_path.hxx>
+#include <simgear/props/props.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>
+#include <simgear/structure/subsystem_mgr.hxx>
 
 class FGAIBase;
 class FGAIThermal;
@@ -53,19 +41,19 @@ public:
     static const char* staticSubsystemClassId() { return "ai-model"; }
 
     void updateLOD(SGPropertyNode* node);
-    void attach(const SGSharedPtr<FGAIBase> &model);
+    void attach(const SGSharedPtr<FGAIBase>& model);
 
-    const FGAIBase *calcCollision(double alt, double lat, double lon, double fuse_range);
+    const FGAIBase* calcCollision(double alt, double lat, double lon, double fuse_range);
 
     inline double get_user_heading() const { return user_heading; }
     inline double get_user_pitch() const { return user_pitch; }
-    inline double get_user_speed() const {return user_speed; }
-    inline double get_wind_from_east() const {return wind_from_east; }
-    inline double get_wind_from_north() const {return wind_from_north; }
+    inline double get_user_speed() const { return user_speed; }
+    inline double get_wind_from_east() const { return wind_from_east; }
+    inline double get_wind_from_north() const { return wind_from_north; }
     inline double get_user_roll() const { return user_roll; }
     inline double get_user_agl() const { return user_altitude_agl; }
 
-    bool loadScenario( const std::string &id );
+    bool loadScenario(const std::string& id);
 
     /**
      * Static helper to register scenarios. This has to happen very early because
@@ -85,8 +73,9 @@ public:
      */
     FGAIBasePtr getObjectFromProperty(const SGPropertyNode* aProp) const;
 
-    typedef std::vector <FGAIBasePtr> ai_list_type;
-    const ai_list_type& get_ai_list() const {
+    typedef std::vector<FGAIBasePtr> ai_list_type;
+    const ai_list_type& get_ai_list() const
+    {
         return ai_list;
     }
 
@@ -101,13 +90,19 @@ public:
     FGAIAircraft* getUserAircraft() const;
 
     bool isRadarEnabled() const
-    { return _radarEnabled; }
+    {
+        return _radarEnabled;
+    }
 
     bool enableRadarDebug() const
-    { return _radarDebugMode; }
+    {
+        return _radarDebugMode;
+    }
 
     double radarRangeM() const
-    { return _radarRangeM; }
+    {
+        return _radarRangeM;
+    }
 
 private:
     // FGSubmodelMgr is a friend for access to the AI_list
@@ -123,13 +118,13 @@ private:
 
     // Returns true on success, e.g. returns false if scenario is already loaded.
     bool loadScenarioCommand(const SGPropertyNode* args, SGPropertyNode* root);
-    
+
     bool unloadScenarioCommand(const SGPropertyNode* args, SGPropertyNode* root);
     bool addObjectCommand(const SGPropertyNode* arg, const SGPropertyNode* root);
     bool removeObjectCommand(const SGPropertyNode* arg, const SGPropertyNode* root);
 
     bool removeObject(const SGPropertyNode* args);
-    bool unloadScenario( const std::string &filename );
+    bool unloadScenario(const std::string& filename);
     void unloadAllScenarios();
 
     SGPropertyNode_ptr root;
@@ -141,7 +136,7 @@ private:
     SGPropertyNode_ptr wind_from_north_node;
     SGPropertyNode_ptr _environmentVisiblity;
     SGPropertyNode_ptr _groundSpeedKts_node;
-    
+
     ai_list_type ai_list;
 
     double user_altitude_agl = 0.0;
@@ -152,12 +147,12 @@ private:
     double wind_from_east = 0.0;
     double wind_from_north = 0.0;
 
-    void fetchUserState( double dt );
+    void fetchUserState(double dt);
 
     // used by thermals
     double range_nearest = 0.0;
     double strength = 0.0;
-    void processThermal( double dt, FGAIThermal* thermal );
+    void processThermal(double dt, FGAIThermal* thermal);
 
     SGPropertyChangeCallback<FGAIManager> cb_ai_bare;
     SGPropertyChangeCallback<FGAIManager> cb_ai_detailed;
@@ -168,10 +163,10 @@ private:
     ScenarioDict _scenarios;
 
     SGSharedPtr<FGAIAircraft> _userAircraft;
-    
+
     SGPropertyNode_ptr _simRadarControl,
         _radarRangeNode, _radarDebugNode;
     bool _radarEnabled = true,
-        _radarDebugMode = false;
+         _radarDebugMode = false;
     double _radarRangeM = 0.0;
 };

@@ -1,24 +1,10 @@
-// metarproperties.cxx -- Parse a METAR and write properties
-//
-// Written by David Megginson, started May 2002.
-// Rewritten by Torsten Dreyer, August 2010
-//
-// Copyright (C) 2002  David Megginson - david@megginson.com
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-//
+/*
+ * SPDX-FileName: metarproperties.cxx
+ * SPDX-FileComment: Parse a METAR and write properties
+ * SPDX-FileCopyrightText: Copyright (C) 2002  David Megginson - david@megginson.com
+ * SPDX-FileContributor: Rewritten by Torsten Dreyer, August 2010
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
 
 #ifdef HAVE_CONFIG_H
 #  include <config.h>
@@ -42,7 +28,7 @@ using std::string;
 
 namespace Environment {
 
-static vector<string> coverage_string;
+static std::vector<string> coverage_string;
 
 /**
  * @brief Helper class to wrap SGMagVar functionality and cache the variation and dip for
@@ -247,8 +233,8 @@ void MetarProperties::setMetar( SGSharedPtr<FGMetar> m )
     // copy the string so we have guranteed storage for get_metar tied property API
     _metarData = _metar->getDataString();
     
-    const vector<string> weather = m->getWeather();
-    for( vector<string>::const_iterator it = weather.begin(); it != weather.end(); ++it ) {
+    const std::vector<string> weather = m->getWeather();
+    for( std::vector<string>::const_iterator it = weather.begin(); it != weather.end(); ++it ) {
         if( !_decoded.empty() ) _decoded.append(", ");
         _decoded.append(*it);
     }
@@ -325,7 +311,7 @@ void MetarProperties::setMetar( SGSharedPtr<FGMetar> m )
     {
         for( unsigned i = 0; i < 3; i++ ) {
             SGPropertyNode_ptr n = _rootNode->getChild("weather", i, true );
-            vector<struct SGMetar::Weather> weather = m->getWeather2();
+            std::vector<struct SGMetar::Weather> weather = m->getWeather2();
             struct SGMetar::Weather * w = i < weather.size() ? &weather[i] : NULL;
             n->getNode("intensity",true)->setIntValue( w != NULL ? w->intensity : 0 );
             n->getNode("vincinity",true)->setBoolValue( w != NULL ? w->vincinity : false );
@@ -351,12 +337,17 @@ void MetarProperties::setMetar( SGSharedPtr<FGMetar> m )
     {
         static const char * LAYER = "layer";
         SGPropertyNode_ptr cloudsNode = _rootNode->getNode("clouds", true );
-        const vector<SGMetarCloud> & metarClouds = m->getClouds();
+        const std::vector<SGMetarCloud> & metarClouds = m->getClouds();
         unsigned layerOffset = 0; // Oh, this is ugly!
 
         // fog/mist/haze cloud layer does not work with 3d clouds yet :-(
         bool setGroundCloudLayer = _rootNode->getBoolValue("set-ground-cloud-layer", false ) &&
               !fgGetBool("/sim/rendering/clouds3d-enable", false);
+
+        // track the coverage of the previous layer, so we can use it
+        // for higher layers which don't have coverage set
+        // see: https://sourceforge.net/p/flightgear/codetickets/2765/
+        SGMetarCloud::Coverage coverageBelow = SGMetarCloud::COVERAGE_NIL;
 
         if( setGroundCloudLayer ) {
             // create a cloud layer #0 starting at the ground if its fog, mist or haze
@@ -406,12 +397,25 @@ void MetarProperties::setMetar( SGSharedPtr<FGMetar> m )
                 _min_visibility = _max_visibility =
                   fgGetDouble("/environment/params/fog-mist-haze-layer/visibility-above-layer-m",20000.0); // assume good visibility above the fog
                 layerOffset = 1;  // shudder
+                
+                coverageBelow = coverage;
             }
         } 
 
         for( unsigned i = 0; i < 5-layerOffset; i++ ) {
             SGPropertyNode_ptr layerNode = cloudsNode->getChild(LAYER, i+layerOffset, true );
             SGMetarCloud::Coverage coverage = i < metarClouds.size() ? metarClouds[i].getCoverage() : SGMetarCloud::COVERAGE_CLEAR;
+            if (coverage == SGMetarCloud::COVERAGE_NIL) {
+                coverage = coverageBelow; // invalid coverage, use value of layer below
+            } else {
+                coverageBelow = coverage; // valid coverage, save for future layers
+            }
+            
+            if (coverage == SGMetarCloud::COVERAGE_NIL) {
+                SG_LOG(SG_ENVIRONMENT, SG_WARN, "METAR: skipping cloud layer " << i << " because no coverage is set");
+                continue;
+            }
+            
             double elevation = 
                 i >= metarClouds.size() || coverage == SGMetarCloud::COVERAGE_CLEAR ? 
                 -9999.0 : 

@@ -1,24 +1,9 @@
-// ExternalNet.hxx -- an net interface to an external flight dynamics model
-//
-// Written by Curtis Olson, started November 2001.
-//
-// Copyright (C) 2001  Curtis L. Olson  - http://www.flightgear.org/~curt
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-//
-// $Id$
+/*
+ * SPDX-FileName: ExternalNet.cxx
+ * SPDX-FileComment: an net interface to an external flight dynamics model
+ * SPDX-FileCopyrightText: Copyright (C) 2001  Curtis L. Olson  - http://www.flightgear.org/~curt
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -89,7 +74,7 @@ public:
     }
 };
 
-FGExternalNet::FGExternalNet(double dt, string host, int dop, int dip, int cp)
+FGExternalNet::FGExternalNet(double dt, std::string host, int dop, int dip, int cp)
 {
     //     set_delta_t( dt );
 
@@ -166,32 +151,32 @@ void FGExternalNet::init()
     char cmd[256];
 
     HTTPClient* http;
-    sprintf(cmd, "/longitude-deg?value=%.8f", lon);
+    snprintf(cmd, 256, "/longitude-deg?value=%.8f", lon);
     http = new HTTPClient(fdm_host.c_str(), cmd_port, cmd);
     while (!http->isDone(1000000)) http->poll(0);
     delete http;
 
-    sprintf(cmd, "/latitude-deg?value=%.8f", lat);
+    snprintf(cmd, 256, "/latitude-deg?value=%.8f", lat);
     http = new HTTPClient(fdm_host.c_str(), cmd_port, cmd);
     while (!http->isDone(1000000)) http->poll(0);
     delete http;
 
-    sprintf(cmd, "/altitude-ft?value=%.8f", alt);
+    snprintf(cmd, 256, "/altitude-ft?value=%.8f", alt);
     http = new HTTPClient(fdm_host.c_str(), cmd_port, cmd);
     while (!http->isDone(1000000)) http->poll(0);
     delete http;
 
-    sprintf(cmd, "/ground-m?value=%.8f", ground);
+    snprintf(cmd, 256, "/ground-m?value=%.8f", ground);
     http = new HTTPClient(fdm_host.c_str(), cmd_port, cmd);
     while (!http->isDone(1000000)) http->poll(0);
     delete http;
 
-    sprintf(cmd, "/speed-kts?value=%.8f", speed);
+    snprintf(cmd, 256, "/speed-kts?value=%.8f", speed);
     http = new HTTPClient(fdm_host.c_str(), cmd_port, cmd);
     while (!http->isDone(1000000)) http->poll(0);
     delete http;
 
-    sprintf(cmd, "/heading-deg?value=%.8f", heading);
+    snprintf(cmd, 256, "/heading-deg?value=%.8f", heading);
     http = new HTTPClient(fdm_host.c_str(), cmd_port, cmd);
     while (!http->isDone(1000000)) http->poll(0);
     delete http;
@@ -199,9 +184,9 @@ void FGExternalNet::init()
     SG_LOG(SG_IO, SG_INFO, "before sending reset command.");
 
     if (fgGetBool("/sim/presets/onground")) {
-        sprintf(cmd, "/reset?value=ground");
+        snprintf(cmd, 256, "/reset?value=ground");
     } else {
-        sprintf(cmd, "/reset?value=air");
+        snprintf(cmd, 256, "/reset?value=air");
     }
     http = new HTTPClient(fdm_host.c_str(), cmd_port, cmd);
     while (!http->isDone(1000000)) http->poll(0);

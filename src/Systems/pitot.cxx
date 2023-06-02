@@ -1,8 +1,10 @@
-// pitot.cxx - the pitot air system.
-// Written by David Megginson, started 2002.
-//
-// Last modified by Eric van den Berg, 01 Nov 2013
-// This file is in the Public Domain and comes with no warranty.
+/*
+ * SPDX-FileName: pitot.cxx
+ * SPDX-FileComment: the pitot air system
+ * SPDX-FileCopyrightText: Written by David Megginson, started 2002.
+ * SPDX-FileContributor: modified by Eric van den Berg, 01 Nov 2013
+ * SPDX-License-Identifier: This file is in the Public Domain and comes with no warranty.
+ */
 
 #ifdef HAVE_CONFIG_H
 #  include <config.h>
@@ -32,7 +34,7 @@ PitotSystem::~PitotSystem ()
 void
 PitotSystem::init ()
 {
-    string branch;
+    std::string branch;
     branch = "/systems/" + _name;
 
     SGPropertyNode *node = fgGetNode(branch.c_str(), _num, true );

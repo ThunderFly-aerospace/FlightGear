@@ -1,21 +1,9 @@
-// soundmanager.cxx -- Wraps the SimGear OpenAl sound manager class
-//
-// Copyright (C) 2001  Curtis L. Olson - http://www.flightgear.org/~curt
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-//
+/*
+ * SPDX-FileName: soundmanager.cxx
+ * SPDX-FileComment: Wraps the SimGear OpenAl sound manager class
+ * SPDX-FileCopyrightText: Copyright (C) 2001  Curtis L. Olson - http://www.flightgear.org/~curt
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
 
 #include <config.h>
 
@@ -201,40 +189,62 @@ void FGSoundManager::update(double dt)
 
 /**
  * Built-in command: play an audio message (i.e. a wav file) This is
- * fire and forget.  Call this once per message and it will get dumped
- * into a queue.  Messages are played sequentially so they do not
- * overlap.
+ * fire and forget. Call this once per message and it will get dumped
+ * into a queue. Except for the special 'instant' queue, messages within
+ * a given queue are played sequentially so they do not overlap.
  */
 bool FGSoundManager::playAudioSampleCommand(const SGPropertyNode * arg, SGPropertyNode * root)
 {
-    string qname = arg->getStringValue("queue", "");
-    string name = !qname.empty() ? qname : "chatter";
-    string path = arg->getStringValue("path");
-    string file = arg->getStringValue("file");
+    std::string qname = arg->getStringValue("queue", "");
+    std::string name = !qname.empty() ? qname : "chatter";
+    std::string path = arg->getStringValue("path");
+    std::string file = arg->getStringValue("file");
     float volume = arg->getFloatValue("volume");
 
-    SGPath foundPath = globals->resolve_maybe_aircraft_path(path);
+    const auto fullPath = SGPath(path) / file;
+    const auto foundPath = globals->resolve_maybe_aircraft_path(
+        fullPath.utf8Str());
     if (!foundPath.exists()) {
-        SG_LOG(SG_GENERAL, SG_ALERT, "play-audio-sample: no such file:'" << path << "'");
+        SG_LOG(SG_GENERAL, SG_ALERT, "play-audio-sample: no such file: '" <<
+               fullPath.utf8Str() << "'");
         return false;
     }
 
-    // cout << "playing " << path << " / " << file << endl;
+    // SG_LOG(SG_GENERAL, SG_ALERT, "Playing '" << foundPath.utf8Str() << "'");
     try {
-        if ( !_queue[name] ) {
-            _queue[name] = new FGSampleQueue(this, name);
-            _queue[name]->tie_to_listener();
-        }
-
-        SGSoundSample *msg = new SGSoundSample(file.c_str(), path);
+        SGSoundSample *msg = new SGSoundSample(foundPath);
         msg->set_volume( volume );
-        _queue[name]->add( msg );
+
+        if (name == "instant")
+        {
+            static const char *r = "0123456789abcdefghijklmnopqrstuvwxyz"
+                                   "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+           std::string rstr = "NASAL: ";
+           for (int i=0; i<10; i++) {
+               rstr.push_back( r[rand() % strlen(r)] );
+           }
+
+            // Add a special queue-name 'instant' which does not put samples
+            // into a sample queue but plays them instantly.
+            SGSampleGroup* sgr = find("NASAL instant queue", true);
+            sgr->tie_to_listener();
+            sgr->add(msg, rstr);
+            sgr->play_once(rstr);
+        }
+        else
+        {
+            if ( !_queue[name] ) {
+                _queue[name] = new FGSampleQueue(this, name);
+                _queue[name]->tie_to_listener();
+            }
+            _queue[name]->add( msg );
+         }
 
         return true;
 
     } catch (const sg_io_exception&) {
         SG_LOG(SG_GENERAL, SG_ALERT, "play-audio-sample: "
-               "failed to load" << path << '/' << file);
+               "failed to load '" << foundPath.utf8Str() << "'");
         return false;
     }
 }

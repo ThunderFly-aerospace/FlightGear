@@ -1,25 +1,9 @@
-// JSBsim.cxx -- interface to the JSBsim flight model
-//
-// Written by Curtis Olson, started February 1999.
-//
-// Copyright (C) 1999  Curtis L. Olson  - curt@flightgear.org
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// Lesser General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA.
-//
-// $Id: FlightGear.cxx,v 1.15 2014/01/28 09:42:20 ehofman Exp $
-
+/*
+ * SPDX-FileName: JSBsim.cxx
+ * SPDX-FileComment: interface to the JSBsim flight model
+ * SPDX-FileCopyrightText: Copyright (C) 1999  Curtis L. Olson  - curt@flightgear.org
+ * SPDX-License-Identifier: LGPL-2.0-or-later
+ */
 
 #ifdef HAVE_CONFIG_H
 #  include <config.h>
@@ -39,6 +23,7 @@
 #include <simgear/bvh/BVHMaterial.hxx>
 
 #include <FDM/flight.hxx>
+#include <FDM/groundreactions.hxx>
 
 #include <Aircraft/controls.hxx>
 #include <Main/globals.hxx>
@@ -367,14 +352,15 @@ FGJSBsim::FGJSBsim( double dt )
     crashed = false;
 
     mesh = new AircraftMesh(fgGetDouble("/fdm/jsbsim/metrics/bw-ft"),
-                            fgGetDouble("/fdm/jsbsim/metrics/cbarw-ft"));
+                            fgGetDouble("/fdm/jsbsim/metrics/cbarw-ft"),
+                            fdmex->GetModelName());
 
     // Trim once to initialize all output parameters
     FGTrim *fgtrim = new FGTrim(fdmex,tFull);
     fgtrim->DoTrim();
     delete fgtrim;
 
-    string directive_file = fgGetString("/sim/jsbsim/output-directive-file");
+    std::string directive_file = fgGetString("/sim/jsbsim/output-directive-file");
     if (!directive_file.empty())
       fdmex->SetOutputDirectives(directive_file);
 }
@@ -1245,6 +1231,7 @@ void FGJSBsim::init_gear(void )
 {
     FGGroundReactions* gr=fdmex->GetGroundReactions();
     int Ngear=GroundReactions->GetNumGearUnits();
+    double max = 1.0;
     for (int i=0;i<Ngear;i++) {
       FGLGear *gear = gr->GetGearUnit(i);
       SGPropertyNode * node = fgGetNode("gear/gear", i, true);
@@ -1253,16 +1240,23 @@ void FGJSBsim::init_gear(void )
       node->setDoubleValue("yoffset-in", gear->GetBodyLocation()(2) * 12);
       node->setDoubleValue("zoffset-in", gear->GetBodyLocation()(3) * 12);
 
-      node->setDoubleValue("xoffset-m", gear->GetBodyLocation()(1) * 0.08333333);
-      node->setDoubleValue("yoffset-m", gear->GetBodyLocation()(2) * 0.08333333);
-      node->setDoubleValue("zoffset-m", gear->GetBodyLocation()(3) * 0.08333333);
+      node->setDoubleValue("xoffset-m", gear->GetBodyLocation()(1) * SG_FEET_TO_METER);
+      node->setDoubleValue("yoffset-m", gear->GetBodyLocation()(2) * SG_FEET_TO_METER);
+      node->setDoubleValue("zoffset-m", gear->GetBodyLocation()(3) * SG_FEET_TO_METER);
 
       node->setBoolValue("wow", gear->GetWOW());
-      node->setDoubleValue("rollspeed-ms", gear->GetWheelRollVel()*0.3043);
+      node->setDoubleValue("rollspeed-ms", gear->GetWheelRollVel() * SG_FEET_TO_METER);
       node->setBoolValue("has-brake", gear->GetBrakeGroup() > 0);
       node->setDoubleValue("position-norm", gear->GetGearUnitPos());
 //    node->setDoubleValue("tire-pressure-norm", gear->GetTirePressure());
-      node->setDoubleValue("compression-norm", gear->GetCompLen());
+      max = node->getDoubleValue("max-compression-ft");
+      if (max < 0.00001) {
+        max = node->getDoubleValue("max-compression-m");
+        if (max < 0.00001) max = 1.0;
+        else max /= SG_FEET_TO_METER;
+      }
+      node->setDoubleValue("compression-norm", gear->GetCompLen() / max);
+      node->setDoubleValue("compression-m", gear->GetCompLen() * SG_FEET_TO_METER);
       node->setDoubleValue("compression-ft", gear->GetCompLen());
       if ( gear->GetSteerable() )
         node->setDoubleValue("steering-norm", gear->GetSteerNorm());
@@ -1273,14 +1267,22 @@ void FGJSBsim::update_gear(void)
 {
     FGGroundReactions* gr=fdmex->GetGroundReactions();
     int Ngear=GroundReactions->GetNumGearUnits();
+    double max = 1.0;
     for (int i=0;i<Ngear;i++) {
       FGLGear *gear = gr->GetGearUnit(i);
       SGPropertyNode * node = fgGetNode("gear/gear", i, true);
       node->getChild("wow", 0, true)->setBoolValue( gear->GetWOW());
-      node->getChild("rollspeed-ms", 0, true)->setDoubleValue(gear->GetWheelRollVel()*0.3043);
+      node->getChild("rollspeed-ms", 0, true)->setDoubleValue(gear->GetWheelRollVel() * SG_FEET_TO_METER);
       node->getChild("position-norm", 0, true)->setDoubleValue(gear->GetGearUnitPos());
 //    gear->SetTirePressure(node->getDoubleValue("tire-pressure-norm"));
-      node->setDoubleValue("compression-norm", gear->GetCompLen());
+      max = node->getDoubleValue("max-compression-ft");
+      if (max < 0.00001) {
+        max = node->getDoubleValue("max-compression-m");
+        if (max < 0.00001) max = 1.0;
+        else max /= SG_FEET_TO_METER;
+      }
+      node->setDoubleValue("compression-norm", gear->GetCompLen() / max);
+      node->setDoubleValue("compression-m", gear->GetCompLen() * SG_FEET_TO_METER);
       node->setDoubleValue("compression-ft", gear->GetCompLen());
       if ( gear->GetSteerable() )
         node->setDoubleValue("steering-norm", gear->GetSteerNorm());
@@ -1386,39 +1388,15 @@ FGJSBsim::get_agl_ft(double t, const FGColumnVector3& loc, double alt_off,
   if (terrain_active)
   {
     static bool material_valid = false;
-    if (material) {
-      // Traction Coefficient factors for Tires vs Dry Asphalt:
-      // Dry Asphalt   1.0             Wet Asphalt     0.75
-      // Dry Ice/Snow  0.375           Wet Ice         0.125
-      bool rain = (precipitation->getDoubleValue() > 0.0);
-      bool is_lake = (*material).solid_is_prop();
-      bool solid = (*material).get_solid();
-      double friction_fact, pressure;
-      if (is_lake && solid) { // on ice
-        GroundReactions->SetBumpiness(0.1);
-        if (rain) {
-          if (temperature->getDoubleValue() > 0.0) { // Wet Ice
-            GroundReactions->SetRollingFFactor(0.05);
-            friction_fact = 0.125*(*material).get_friction_factor();
-          } else { // Snow
-            GroundReactions->SetRollingFFactor(0.15);
-            friction_fact = 0.375*(*material).get_friction_factor();
-          }
-        } else { // Dry Ice
-          GroundReactions->SetRollingFFactor(0.05);
-          friction_fact = 0.375*(*material).get_friction_factor();
-        }
-        pressure = (*material).get_load_resistance()*1000;
-      } else { // not on ice
-        GroundReactions->SetRollingFFactor((*material).get_rolling_friction()/0.02);
-        GroundReactions->SetBumpiness((*material).get_bumpiness());
-        friction_fact = (*material).get_friction_factor();
-        if (rain) friction_fact *= 0.75;
-        pressure = (*material).get_load_resistance();
-      }
-      GroundReactions->SetStaticFFactor(friction_fact);
-      GroundReactions->SetMaximumForce(pressure*0.00014503773800721815);
-      GroundReactions->SetSolid(solid);
+
+    if (updateGroundReactions(material)) {
+      setPosition(pt);
+      setHeading(Propagate->GetEuler(FGJSBBase::ePsi));
+      GroundReactions->SetRollingFFactor(getRolingFrictionFactor());
+      GroundReactions->SetStaticFFactor(getStaticFrictionFactor());
+      GroundReactions->SetMaximumForce(getPressure()*0.00014503773800721815);
+      GroundReactions->SetBumpiness(getBumpiness());
+      GroundReactions->SetSolid(getSolid());
       GroundReactions->SetPosition(pt);
       material_valid = true;
     } else {
@@ -1431,7 +1409,8 @@ FGJSBsim::get_agl_ft(double t, const FGColumnVector3& loc, double alt_off,
 #else
   terrain->setBoolValue("valid", false);
 #endif
-  return dot(hlToEc.rotate(SGVec3d(0, 0, 1)), SGVec3d(contact) - SGVec3d(pt));
+  return dot(hlToEc.rotate(SGVec3d(0, 0, 1)), SGVec3d(contact) - SGVec3d(pt)) +
+         getGroundDisplacement();
 }
 
 inline static double sqr(double x)

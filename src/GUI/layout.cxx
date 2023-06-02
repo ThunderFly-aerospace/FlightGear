@@ -55,7 +55,7 @@ void LayoutWidget::calcPrefSize(int* w, int* h)
             if(hasField("width")) *w = getNum("width");
             if(hasField("height")) *h = getNum("height");
         } else {
-            string layout = getStr("layout");
+            std::string layout = getStr("layout");
             if     (layout == "hbox")  doHVBox(false, false, w, h);
             else if(layout == "vbox")  doHVBox(false, true, w, h);
             else if(layout == "table") doTable(false, w, h);
@@ -130,7 +130,7 @@ void LayoutWidget::layout(int x, int y, int w, int h)
 
     // Correct our box for alignment.  The values above correspond to
     // a "fill" alignment.
-    string halign = (isGroup || isType("hrule")) ? "fill" : "center";
+    std::string halign = (isGroup || isType("hrule")) ? "fill" : "center";
     if(hasField("halign")) halign = getStr("halign");
     if(halign == "left") {
         w = prefw;
@@ -141,7 +141,7 @@ void LayoutWidget::layout(int x, int y, int w, int h)
         x += (w - prefw)/2;
         w = prefw;
     }
-    string valign = (isGroup || isType("vrule")) ? "fill" : "center";
+    std::string valign = (isGroup || isType("vrule")) ? "fill" : "center";
     if(hasField("valign")) valign = getStr("valign");
     if(valign == "bottom") {
         h = prefh;
@@ -186,7 +186,7 @@ void LayoutWidget::layout(int x, int y, int w, int h)
 
     // Finally, if we are ourselves a layout object, do the actual layout.
     if(isGroup && hasField("layout")) {
-        string layout = getStr("layout");
+        std::string layout = getStr("layout");
         if     (layout == "hbox")  doHVBox(true, false);
         else if(layout == "vbox")  doHVBox(true, true);
         else if(layout == "table") doTable(true);

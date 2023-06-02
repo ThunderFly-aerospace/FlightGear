@@ -1,24 +1,9 @@
-// ExternalPipe.cxx -- a "pipe" interface to an external flight dynamics model
-//
-// Written by Curtis Olson, started March 2003.
-//
-// Copyright (C) 2003  Curtis L. Olson  - http://www.flightgear.org/~curt
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-//
-// $Id$
+/*
+ * SPDX-FileName: ExternalPipe.cxx
+ * SPDX-FileComment: a "pipe" interface to an external flight dynamics model
+ * SPDX-FileCopyrightText: Copyright (C) 2003  Curtis L. Olson  - http://www.flightgear.org/~curt
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
 
 #ifdef HAVE_CONFIG_H
 #  include <config.h>
@@ -52,7 +37,7 @@ using std::endl;
 
 static const int MAX_BUF = 32768;
 
-FGExternalPipe::FGExternalPipe( double dt, string name, string protocol ) {
+FGExternalPipe::FGExternalPipe( double dt, std::string name, std::string protocol ) {
     valid = true;
     last_weight = 0.0;
     last_cg_offset = -9999.9;
@@ -246,32 +231,32 @@ void FGExternalPipe::init_binary() {
     char cmd[256];
     int result;
 
-    sprintf( cmd, "longitude-deg=%.8f", lon );
+    snprintf(cmd, 256, "longitude-deg=%.8f", lon);
     result = write_binary( '1', pd1, cmd, strlen(cmd) );
 
-    sprintf( cmd, "latitude-deg=%.8f", lat );
+    snprintf(cmd, 256, "latitude-deg=%.8f", lat);
     result = write_binary( '1', pd1, cmd, strlen(cmd) );
 
-    sprintf( cmd, "altitude-ft=%.8f", alt );
+    snprintf(cmd, 256, "altitude-ft=%.8f", alt);
     result = write_binary( '1', pd1, cmd, strlen(cmd) );
 
-    sprintf( cmd, "ground-m=%.8f", ground );
+    snprintf(cmd, 256, "ground-m=%.8f", ground);
     result = write_binary( '1', pd1, cmd, strlen(cmd) );
 
-    sprintf( cmd, "speed-kts=%.8f", speed );
+    snprintf(cmd, 256, "speed-kts=%.8f", speed);
     result = write_binary( '1', pd1, cmd, strlen(cmd) );
 
-    sprintf( cmd, "heading-deg=%.8f", heading );
+    snprintf(cmd, 256, "heading-deg=%.8f", heading);
     result = write_binary( '1', pd1, cmd, strlen(cmd) );
 
     if ( weight > 1000.0 ) {
-        sprintf( cmd, "aircraft-weight-lbs=%.2f", weight );
+        snprintf(cmd, 256, "aircraft-weight-lbs=%.2f", weight);
         result = write_binary( '1', pd1, cmd, strlen(cmd) );
     }
     last_weight = weight;
 
     if ( cg_offset > -5.0 || cg_offset < 5.0 ) {
-        sprintf( cmd, "aircraft-cg-offset-inches=%.2f", cg_offset );
+        snprintf(cmd, 256, "aircraft-cg-offset-inches=%.2f", cg_offset);
         result = write_binary( '1', pd1, cmd, strlen(cmd) );
     }
     last_cg_offset = cg_offset;
@@ -279,9 +264,9 @@ void FGExternalPipe::init_binary() {
     SG_LOG( SG_IO, SG_ALERT, "before sending reset command." );
 
     if( fgGetBool("/sim/presets/onground") ) {
-        sprintf( cmd, "reset=ground" );
+        snprintf(cmd, 256, "reset=ground");
     } else {
-        sprintf( cmd, "reset=air" );
+        snprintf(cmd, 256, "reset=air");
     }
     result = write_binary( '1', pd1, cmd, strlen(cmd) );
 
@@ -311,32 +296,32 @@ void FGExternalPipe::init_property() {
     char cmd[256];
     int result;
 
-    sprintf( cmd, "init longitude-deg=%.8f", lon );
+    snprintf(cmd, 256, "init longitude-deg=%.8f", lon);
     result = write_property( pd1, cmd );
 
-    sprintf( cmd, "init latitude-deg=%.8f", lat );
+    snprintf(cmd, 256, "init latitude-deg=%.8f", lat);
     result = write_property( pd1, cmd );
 
-    sprintf( cmd, "init altitude-ft=%.8f", alt );
+    snprintf(cmd, 256, "init altitude-ft=%.8f", alt);
     result = write_property( pd1, cmd );
 
-    sprintf( cmd, "init ground-m=%.8f", ground );
+    snprintf(cmd, 256, "init ground-m=%.8f", ground);
     result = write_property( pd1, cmd );
 
-    sprintf( cmd, "init speed-kts=%.8f", speed );
+    snprintf(cmd, 256, "init speed-kts=%.8f", speed);
     result = write_property( pd1, cmd );
 
-    sprintf( cmd, "init heading-deg=%.8f", heading );
+    snprintf(cmd, 256, "init heading-deg=%.8f", heading);
     result = write_property( pd1, cmd );
 
     if ( weight > 1000.0 ) {
-        sprintf( cmd, "init aircraft-weight-lbs=%.2f", weight );
+        snprintf(cmd, 256, "init aircraft-weight-lbs=%.2f", weight);
         result = write_property( pd1, cmd );
     }
     last_weight = weight;
 
     if ( cg_offset > -5.0 || cg_offset < 5.0 ) {
-        sprintf( cmd, "init aircraft-cg-offset-inches=%.2f", cg_offset );
+        snprintf(cmd, 256, "init aircraft-cg-offset-inches=%.2f", cg_offset);
         result = write_property( pd1, cmd );
     }
     last_cg_offset = cg_offset;
@@ -344,9 +329,9 @@ void FGExternalPipe::init_property() {
     SG_LOG( SG_IO, SG_ALERT, "before sending reset command." );
 
     if( fgGetBool("/sim/presets/onground") ) {
-        sprintf( cmd, "reset ground" );
+        snprintf(cmd, 256, "reset ground");
     } else {
-        sprintf( cmd, "reset air" );
+        snprintf(cmd, 256, "reset air");
     }
     result = write_property( pd1, cmd );
 
@@ -391,7 +376,7 @@ void FGExternalPipe::update_binary( double dt ) {
     static double last_weight = 0.0;
     if ( fabs( weight - last_weight ) > 0.01 ) {
         char cmd[256];
-        sprintf( cmd, "aircraft-weight-lbs=%.2f", weight );
+        snprintf(cmd, 256, "aircraft-weight-lbs=%.2f", weight);
         result = write_binary( '1', pd1, cmd, strlen(cmd) );
     }
     last_weight = weight;
@@ -399,7 +384,7 @@ void FGExternalPipe::update_binary( double dt ) {
     double cg_offset = fgGetDouble( "/sim/aircraft-cg-offset-inches" );
     if ( fabs( cg_offset - last_cg_offset ) > 0.01 ) {
         char cmd[256];
-        sprintf( cmd, "aircraft-cg-offset-inches=%.2f", cg_offset );
+        snprintf(cmd, 256, "aircraft-cg-offset-inches=%.2f", cg_offset);
         result = write_binary( '1', pd1, cmd, strlen(cmd) );
     }
     last_cg_offset = cg_offset;
@@ -504,27 +489,27 @@ void FGExternalPipe::update_property( double dt ) {
     double weight = fgGetDouble( "/sim/aircraft-weight-lbs" );
     static double last_weight = 0.0;
     if ( fabs( weight - last_weight ) > 0.01 ) {
-        sprintf( cmd, "init aircraft-weight-lbs=%.2f", weight );
+        snprintf(cmd, 256, "init aircraft-weight-lbs=%.2f", weight);
         result = write_property( pd1, cmd );
     }
     last_weight = weight;
 
     double cg_offset = fgGetDouble( "/sim/aircraft-cg-offset-inches" );
     if ( fabs( cg_offset - last_cg_offset ) > 0.01 ) {
-        sprintf( cmd, "init aircraft-cg-offset-inches=%.2f", cg_offset );
+        snprintf(cmd, 256, "init aircraft-cg-offset-inches=%.2f", cg_offset);
         result = write_property( pd1, cmd );
     }
     last_cg_offset = cg_offset;
 
     // Send requested property values to fdm
     for ( unsigned int i = 0; i < nodes.size(); i++ ) {
-        sprintf( cmd, "set %s %s", property_names[i].c_str(),
-                 nodes[i]->getStringValue().c_str() );
+        snprintf(cmd, 256, "set %s %s", property_names[i].c_str(),
+                 nodes[i]->getStringValue().c_str());
         // cout << "  sending " << cmd << endl;
         result = write_property( pd1, cmd );
     }
 
-    sprintf( cmd, "update %d", iterations );
+    snprintf(cmd, 256, "update %d", iterations);
     write_property( pd1, cmd );
 
     fflush( pd1 );

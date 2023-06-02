@@ -1,24 +1,9 @@
-// generic.cxx -- generic protocol class
-//
-// Written by Curtis Olson, started November 1999.
-//
-// Copyright (C) 1999  Curtis L. Olson - http://www.flightgear.org/~curt
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-//
-// $Id$
+/*
+ * SPDX-FileName: generic.cxx
+ * SPDX-FileComment: generic protocol class
+ * SPDX-FileCopyrightText: Copyright (C) 1999  Curtis L. Olson - http://www.flightgear.org/~curt
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
 
 #ifdef HAVE_CONFIG_H
 #  include "config.h"
@@ -222,7 +207,7 @@ int FGSTXETXWrapper::unwrap( size_t n, uint8_t * buf )
   return n;
 }
 
-FGGeneric::FGGeneric(vector<string> tokens) : exitOnError(false), initOk(false), wrapper(NULL)
+FGGeneric::FGGeneric(std::vector<std::string> tokens) : exitOnError(false), initOk(false), wrapper(NULL)
 {
     size_t configToken;
     if (tokens[1] == "socket") {
@@ -239,12 +224,12 @@ FGGeneric::FGGeneric(vector<string> tokens) : exitOnError(false), initOk(false),
        return;
     }
 
-    string config = tokens[ configToken ];
+    std::string config = tokens[ configToken ];
     file_name = config+".xml";
     set_direction(tokens[2]);
 
     if (get_direction() == SG_IO_NONE) {
-        SG_LOG(SG_NETWORK, SG_ALERT, "Unsuported protocol direction: " << tokens[2]);
+        SG_LOG(SG_NETWORK, SG_ALERT, "Unsupported protocol direction: " << tokens[2]);
         return;
     }
 
@@ -267,7 +252,7 @@ union u64 {
 
 // generate the message
 bool FGGeneric::gen_message_binary() {
-    string generic_sentence;
+    std::string generic_sentence;
     length = 0;
 
     double val;
@@ -357,7 +342,7 @@ bool FGGeneric::gen_message_binary() {
         }
 
         default: // SG_STRING
-            string strdata = _out_message[i].prop->getStringValue();
+            std::string strdata = _out_message[i].prop->getStringValue();
             size_t strlength = strdata.length();
 
             if (binary_byte_order == BYTE_ORDER_NEEDS_CONVERSION) {
@@ -408,7 +393,7 @@ bool FGGeneric::gen_message_binary() {
 }
 
 bool FGGeneric::gen_message_ascii() {
-    string generic_sentence;
+    std::string generic_sentence;
     char tmp[255];
     length = 0;
 
@@ -419,7 +404,7 @@ bool FGGeneric::gen_message_ascii() {
             generic_sentence += var_separator;
         }
         
-        string format = simgear::strutils::sanitizePrintfFormat(_out_message[i].format);
+        std::string format = simgear::strutils::sanitizePrintfFormat(_out_message[i].format);
 
         switch (_out_message[i].type) {
         case FG_BYTE:
@@ -807,7 +792,7 @@ FGGeneric::reinit()
 
 
 bool
-FGGeneric::read_config(SGPropertyNode *root, vector<_serial_prot> &msg)
+FGGeneric::read_config(SGPropertyNode *root, std::vector<_serial_prot> &msg)
 {
     binary_mode = root->getBoolValue("binary_mode");
 
@@ -868,7 +853,7 @@ FGGeneric::read_config(SGPropertyNode *root, vector<_serial_prot> &msg)
         }
 
         if ( root->hasValue("binary_footer") ) {
-            string footer_type = root->getStringValue("binary_footer");
+            std::string footer_type = root->getStringValue("binary_footer");
             if ( footer_type == "length" ) {
                 binary_footer_type = FOOTER_LENGTH;
             } else if ( footer_type.substr(0, 5) == "magic" ) {
@@ -887,7 +872,7 @@ FGGeneric::read_config(SGPropertyNode *root, vector<_serial_prot> &msg)
         }
 
         if ( root->hasValue("byte_order") ) {
-            string byte_order = root->getStringValue("byte_order");
+            std::string byte_order = root->getStringValue("byte_order");
             if (byte_order == "network" ) {
                 if ( sgIsLittleEndian() ) {
                     binary_byte_order = BYTE_ORDER_NEEDS_CONVERSION;
@@ -904,7 +889,7 @@ FGGeneric::read_config(SGPropertyNode *root, vector<_serial_prot> &msg)
         }
 
         if( root->hasValue( "wrapper" ) ) {
-            string w = root->getStringValue( "wrapper" );
+            std::string w = root->getStringValue( "wrapper" );
             if( w == "kiss" )  wrapper = new FGKissWrapper();
             else if( w == "stxetx" )  wrapper = new FGSTXETXWrapper();
             else SG_LOG(SG_IO, SG_ALERT,
@@ -913,7 +898,7 @@ FGGeneric::read_config(SGPropertyNode *root, vector<_serial_prot> &msg)
     }
 
     int record_length = 0; // Only used for binary protocols.
-    vector<SGPropertyNode_ptr> chunks = root->getChildren("chunk");
+    std::vector<SGPropertyNode_ptr> chunks = root->getChildren("chunk");
 
     for (unsigned int i = 0; i < chunks.size(); i++) {
 
@@ -932,11 +917,11 @@ FGGeneric::read_config(SGPropertyNode *root, vector<_serial_prot> &msg)
             chunk.prop = new SGPropertyNode();
             chunk.prop->setStringValue( chunks[i]->getStringValue("const", "" ) );
         } else {
-            string node = chunks[i]->getStringValue("node", "/null");
+            std::string node = chunks[i]->getStringValue("node", "/null");
             chunk.prop = fgGetNode(node.c_str(), true);
         }
 
-        string type = chunks[i]->getStringValue("type");
+        std::string type = chunks[i]->getStringValue("type");
 
         // Note: officially the type is called 'bool' but for backward
         //       compatibility 'boolean' will also be supported.

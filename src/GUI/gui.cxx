@@ -24,9 +24,7 @@
  **************************************************************************/
 
 
-#ifdef HAVE_CONFIG_H
-#  include <config.h>
-#endif
+#include <config.h>
 
 #include <simgear/compiler.h>
 
@@ -57,10 +55,14 @@
 
 using namespace flightgear;
 
+#if defined(HAVE_PUI)
+
 puFont guiFnt = 0;
 
 // this is declared in puLocal.h, re-declare here so we can call it ourselves
 void puSetPasteBuffer  ( const char *ch ) ;
+
+#endif
 
 /* -------------------------------------------------------------------------
 init the gui
@@ -68,10 +70,12 @@ _____________________________________________________________________*/
 
 namespace
 {
-class GUIInitOperation : public GraphicsContextOperation
+
+#if defined(HAVE_PUI)
+class PUIInitOperation : public GraphicsContextOperation
 {
 public:
-    GUIInitOperation() : GraphicsContextOperation(std::string("GUI init"))
+    PUIInitOperation() : GraphicsContextOperation(std::string("GUI init"))
     {
     }
     void run(osg::GraphicsContext* gc)
@@ -109,6 +113,10 @@ public:
         }
     }
 };
+
+osg::ref_ptr<PUIInitOperation> initOp;
+
+#endif
 
 // Operation for querying OpenGL parameters. This must be done in a
 // valid OpenGL context, potentially in another thread.
@@ -160,32 +168,33 @@ struct GeneralInitOperation : public GraphicsContextOperation
     }
 };
 
-osg::ref_ptr<GUIInitOperation> initOp;
-
 }
 
 /** Initializes GUI.
  * Returns true when done, false when still busy (call again). */
-bool guiInit()
+bool guiInit(osg::GraphicsContext* gc)
 {
     static osg::ref_ptr<GeneralInitOperation> genOp;
-
+    static bool didInit = false;
+    
+    if (didInit) {
+        return true;
+    }
+    
     if (!genOp.valid())
     {
         // Pick some window on which to do queries.
         // XXX Perhaps all this graphics initialization code should be
         // moved to renderer.cxx?
         genOp = new GeneralInitOperation;
-        osg::Camera* guiCamera = getGUICamera(CameraGroup::getDefault());
-        WindowSystemAdapter* wsa = WindowSystemAdapter::getWSA();
-        osg::GraphicsContext* gc = 0;
-        if (guiCamera)
-            gc = guiCamera->getGraphicsContext();
         if (gc) {
             gc->add(genOp.get());
-            initOp = new GUIInitOperation;
+#if defined(HAVE_PUI)
+            initOp = new PUIInitOperation;
             gc->add(initOp.get());
+#endif
         } else {
+            WindowSystemAdapter* wsa = WindowSystemAdapter::getWSA();
             wsa->windows[0]->gc->add(genOp.get());
         }
         return false; // not ready yet
@@ -194,12 +203,15 @@ bool guiInit()
     {
         if (!genOp->isFinished())
             return false;
+#if defined(HAVE_PUI)
         if (!initOp.valid())
             return true;
         if (!initOp->isFinished())
             return false;
-        genOp = 0;
         initOp = 0;
+#endif
+        genOp = 0;
+        didInit = true;
         // we're done
         return true;
     }
@@ -207,7 +219,7 @@ bool guiInit()
 
 void syncPausePopupState()
 {
-    bool paused = fgGetBool("/sim/freeze/master",true) | fgGetBool("/sim/freeze/clock",true);
+    bool paused = fgGetBool("/sim/freeze/master",true) || fgGetBool("/sim/freeze/clock",true);
     SGPropertyNode_ptr args(new SGPropertyNode);
     args->setStringValue("id", "sim-pause");
     if (paused && fgGetBool("/sim/view-name-popup")) {

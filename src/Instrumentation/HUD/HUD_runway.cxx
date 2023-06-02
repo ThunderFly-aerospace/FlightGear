@@ -91,7 +91,7 @@ void HUD::Runway::draw()
     
     double yaw = -(cockpitView->getHeadingOffset_deg() - _default_heading) * SG_DEGREES_TO_RADIANS;
     double pitch = (cockpitView->getPitchOffset_deg() - _default_pitch) * SG_DEGREES_TO_RADIANS;
-    //double roll = fgGetDouble("/sim/view[0]/config/roll-offset-deg",0.0) //TODO: adjust for default roll offset
+    //double roll = fgGetDouble("/sim/view[0]/config/roll-offset-deg",0.0) // TODO: adjust for default roll offset
     double sPitch = sin(pitch), cPitch = cos(pitch),
            sYaw = sin(yaw), cYaw = cos(yaw);
 

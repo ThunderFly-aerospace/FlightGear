@@ -1,29 +1,14 @@
-// kln89_page.cxx - a class to manage the simulation of a KLN89
-//                  GPS unit.  Note that this is primarily the 
-//                  simulation of the user interface and display
-//                  - the core GPS calculations such as position
-//                  and waypoint sequencing are done (or should 
-//                  be done) by FG code. 
-//
-// Written by David Luff, started 2005.
-//
-// Copyright (C) 2005 - David C Luff - daveluff AT ntlworld.com
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-//
-// $Id$
+/*
+ * SPDX-FileName: kln89.cxx
+ * SPDX-FileComment: <text>a class to manage the simulation of a KLN89
+ *                  GPS unit.  Note that this is primarily the 
+ *                  simulation of the user interface and display
+ *                  - the core GPS calculations such as position
+ *                  and waypoint sequencing are done (or should 
+ *                  be done) by FG code.</text>
+ * SPDX-FileCopyrightText: Copyright (C) 2005 - David C Luff - daveluff AT ntlworld.com
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
 
 #include "kln89.hxx"
 #include "kln89_page.hxx"
@@ -57,75 +42,75 @@ using std::string;
 
 static bool do_kln89_msg_pressed(const SGPropertyNode * arg, SGPropertyNode * root) {
 	//cout << "do_kln89_msg_pressed called!\n";
-	KLN89* gps = (KLN89*)globals->get_subsystem("kln89");
+	auto gps = globals->get_subsystem<KLN89>();
 	gps->MsgPressed();
 	return(true);
 }
 
 static bool do_kln89_obs_pressed(const SGPropertyNode * arg, SGPropertyNode * root) {
 	//cout << "do_kln89_obs_pressed called!\n";
-	KLN89* gps = (KLN89*)globals->get_subsystem("kln89");
+	auto gps = globals->get_subsystem<KLN89>();
 	gps->OBSPressed();
 	return(true);
 }
 
 static bool do_kln89_alt_pressed(const SGPropertyNode * arg, SGPropertyNode * root) {
 	//cout << "do_kln89_alt_pressed called!\n";
-	KLN89* gps = (KLN89*)globals->get_subsystem("kln89");
+	auto gps = globals->get_subsystem<KLN89>();
 	gps->AltPressed();
 	return(true);
 }
 
 static bool do_kln89_nrst_pressed(const SGPropertyNode * arg, SGPropertyNode * root) {
-	KLN89* gps = (KLN89*)globals->get_subsystem("kln89");
+	auto gps = globals->get_subsystem<KLN89>();
 	gps->NrstPressed();
 	return(true);
 }
 
 static bool do_kln89_dto_pressed(const SGPropertyNode * arg, SGPropertyNode * root) {
-	KLN89* gps = (KLN89*)globals->get_subsystem("kln89");
+	auto gps = globals->get_subsystem<KLN89>();
 	gps->DtoPressed();
 	return(true);
 }
 
 static bool do_kln89_clr_pressed(const SGPropertyNode * arg, SGPropertyNode * root) {
-	KLN89* gps = (KLN89*)globals->get_subsystem("kln89");
+	auto gps = globals->get_subsystem<KLN89>();
 	gps->ClrPressed();
 	return(true);
 }
 
 static bool do_kln89_ent_pressed(const SGPropertyNode * arg, SGPropertyNode * root) {
-	KLN89* gps = (KLN89*)globals->get_subsystem("kln89");
+	auto gps = globals->get_subsystem<KLN89>();
 	gps->EntPressed();
 	return(true);
 }
 
 static bool do_kln89_crsr_pressed(const SGPropertyNode * arg, SGPropertyNode * root) {
-	KLN89* gps = (KLN89*)globals->get_subsystem("kln89");
+	auto gps = globals->get_subsystem<KLN89>();
 	gps->CrsrPressed();
 	return(true);
 }
 
 static bool do_kln89_knob1left1(const SGPropertyNode * arg, SGPropertyNode * root) {
-	KLN89* gps = (KLN89*)globals->get_subsystem("kln89");
+	auto gps = globals->get_subsystem<KLN89>();
 	gps->Knob1Left1();
 	return(true);
 }
 
 static bool do_kln89_knob1right1(const SGPropertyNode * arg, SGPropertyNode * root) {
-	KLN89* gps = (KLN89*)globals->get_subsystem("kln89");
+	auto gps = globals->get_subsystem<KLN89>();
 	gps->Knob1Right1();
 	return(true);
 }
 
 static bool do_kln89_knob2left1(const SGPropertyNode * arg, SGPropertyNode * root) {
-	KLN89* gps = (KLN89*)globals->get_subsystem("kln89");
+	auto gps = globals->get_subsystem<KLN89>();
 	gps->Knob2Left1();
 	return(true);
 }
 
 static bool do_kln89_knob2right1(const SGPropertyNode * arg, SGPropertyNode * root) {
-	KLN89* gps = (KLN89*)globals->get_subsystem("kln89");
+	auto gps = globals->get_subsystem<KLN89>();
 	gps->Knob2Right1();
 	return(true);
 }
@@ -239,7 +224,7 @@ KLN89::KLN89(RenderArea2D* instrument)
 	_mapScaleAuto = true;
 	
 	// Mega-hack - hardwire airport town and state names for the FG base area since we don't have any data for these at the moment
-	// TODO - do this better one day!
+	// TODO: do this better one day!
 	_airportTowns["KSFO"] = "San Francisco";
 	_airportTowns["KSQL"] = "San Carlos";
 	_airportTowns["KPAO"] = "Palo Alto";
@@ -323,7 +308,7 @@ void KLN89::update(double dt) {
 	// (i.e. nighttime), or the user covering the photocell that detects the light level.
 	// At the moment I don't know how to detect nighttime or actual light level, so only
 	// respond to the photocell being obscured.
-	// TODO - reduce the brightness in response to nighttime / lowlight.
+	// TODO: reduce the brightness in response to nighttime / lowlight.
 	float rgba[4] = {1.0, 0.0, 0.0, 1.0};
 	if(fgGetBool("/instrumentation/kln89/photocell-obscured")) {
 		rgba[0] -= (9 - _minDisplayBrightness) * 0.05;
@@ -356,7 +341,7 @@ void KLN89::update(double dt) {
 		if(_messageStack.empty()) {
 			DrawText("No Message", 0, 5, 2);
 		} else {
-			// TODO - parse the message string for special strings that indicate degrees signs etc!
+			// TODO: parse the message string for special strings that indicate degrees signs etc!
 			DrawText(*_messageStack.begin(), 0, 0, 3);
 		}
 		return;
@@ -378,10 +363,10 @@ void KLN89::update(double dt) {
 }
 
 void KLN89::CreateDefaultFlightPlans() {
-	// TODO - read these in from preferences.xml or similar instead!!!!
+	// TODO: read these in from preferences.xml or similar instead!!!!
 	// Create some hardwired default flightplans for testing.
-	vector<string> ids;
-	vector<GPSWpType> wps;
+	std::vector<std::string> ids;
+	std::vector<GPSWpType> wps;
 	
 	ids.clear();
 	wps.clear();
@@ -609,7 +594,7 @@ void KLN89::DtoPressed() {
 
 void KLN89::NrstPressed() {
 	if(_activePage != _nrst_page) {
-		_activePage->LooseFocus();	// TODO - check whether we should call loose focus here
+		_activePage->LooseFocus();	// TODO: check whether we should call loose focus here
 		_lastActivePage = _activePage;
 		_activePage = _nrst_page;
 		_lastMode = _mode;
@@ -622,7 +607,7 @@ void KLN89::NrstPressed() {
 	
 void KLN89::AltPressed() {
 	if(_activePage != _alt_page) {
-		_activePage->LooseFocus();	// TODO - check whether we should call loose focus here
+		_activePage->LooseFocus();	// TODO: check whether we should call loose focus here
 		_lastActivePage = _activePage;
 		_alt_page->SetSubPage(0);
 		_activePage = _alt_page;
@@ -653,7 +638,7 @@ void KLN89::OBSPressed() {
 }
 
 void KLN89::MsgPressed() {
-	// TODO - handle persistent messages such as SUA alerting.
+	// TODO: handle persistent messages such as SUA alerting.
 	// (The message annunciation flashes before first view, but afterwards remains continuously lit with the message available
 	// until the potential conflict no longer pertains).
 	if(_dispMsg && ! _messageStack.empty()) {
@@ -672,7 +657,7 @@ void KLN89::DtoInitiate(const string& id) {
 	_curPage = 6;
 	_activePage = _pages[_curPage];
 	_activePage->SetSubPage(0);
-	// TODO - need to output a scratchpad message with the new course, but we don't know it yet!
+	// TODO: need to output a scratchpad message with the new course, but we don't know it yet!
 	// Call the base class to actually initiate the DTO.
 	DCLGPS::DtoInitiate(id);
 }
@@ -760,7 +745,7 @@ void KLN89::DrawMap(bool draw_avs) {
 	
 	double mapScaleMeters = _mapScale * (_mapScaleUnits == 0 ? SG_NM_TO_METER : 1000);
 	
-	// TODO - use an aligned projection when either DTK or TK up!
+	// TODO: use an aligned projection when either DTK or TK up!
 	AlignedProjection mapProj(SGGeod::fromRad(_gpsLon, _gpsLat), _mapHeading);
 	double meter_per_pix = (_mapOrientation == 0 ? mapScaleMeters / 20.0f : mapScaleMeters / 29.0f);
 //	SGGeod bottomLeft = mapProj.ConvertFromLocal(SGVec3d(gps_max(-57.0 * meter_per_pix, -50000), gps_max((_mapOrientation == 0 ? -20.0 * meter_per_pix : -11.0 * meter_per_pix), -25000), 0.0));
@@ -841,7 +826,7 @@ void KLN89::DrawMap(bool draw_avs) {
 	
 	// FlightTrack
 	if(_activeFP->waypoints.size() > 1) {
-		vector<int> xvec, yvec, qvec;	// qvec stores the quadrant that each waypoint label should
+		std::vector<int> xvec, yvec, qvec;	// qvec stores the quadrant that each waypoint label should
 										// be drawn in (relative to the waypoint). 
 										// 1 = NE, 2 = SE, 3 = SW, 4 = NW.
 		double save_h = 0.0; // Each pass, save a heading from the previous one for label quadrant determination.
@@ -893,7 +878,7 @@ void KLN89::DrawMap(bool draw_avs) {
 			DrawWaypoint(xvec[i], yvec[i]);
 			bool right_align = (qvec[i] > 2);
 			bool top = (qvec[i] == 1 || qvec[i] == 4);
-			// TODO - not sure if labels should be drawn in sequence with waypoints and flightpaths,
+			// TODO: not sure if labels should be drawn in sequence with waypoints and flightpaths,
 			// or all before or all afterwards.  Doesn't matter a huge deal though.
 			DrawLabel(_activeFP->waypoints[i]->id, xvec[i] + (right_align ? -2 : 3), yvec[i] + (top ? 3 : -7), right_align);
 		}
@@ -911,7 +896,7 @@ void KLN89::DrawMap(bool draw_avs) {
 		DrawUser2(56, 10);
 	} else {
 		// Heading up
-		// TODO - don't know what to do here!
+		// TODO: don't know what to do here!
 	}
 	
 	// And finally, reset the clip region to stop the rest of the code going pear-shaped!
@@ -1150,7 +1135,7 @@ void KLN89::DrawCDI() {
 	if(_cdiScaleTransition) {
 		double dots = (xtd / _currentCdiScale) * 5.0;
 		deflect = (int)(dots * 7.0 * -1.0);
-		// TODO - for all these I think I should add 0.5 before casting to int, and *then* multiply by -1.  Possibly!
+		// TODO: for all these I think I should add 0.5 before casting to int, and *then* multiply by -1.  Possibly!
 	} else {
 		if(0 == _currentCdiScaleIndex) {	// 5.0nm FSD => 1 nm per dot => 7 pixels per nm.
 			deflect = (int)(xtd * 7.0 * -1.0);	// The -1.0 is because we move the 'needle' indicating the course, not the plane.
@@ -1251,7 +1236,7 @@ void KLN89::DrawEnt(int field, int px, int py) {
 }
 
 void KLN89::DrawMessageAlert() {
-	// TODO - draw the proper message indicator
+	// TODO: draw the proper message indicator
 	if(!_blink) {
 		int px = _xBorder + _xFieldBorder[1] + _xFieldStart[1];
 		int py = 1 * 9 + _yBorder + _yFieldBorder[1] + _yFieldStart[1] + 1;
@@ -1468,7 +1453,7 @@ void KLN89::DrawLatitude(double d, int field, int px, int py) {
 	DrawChar((d >= 0 ? 'N' : 'S'), field, px, py);
 	d = fabs(d);
 	px += 1;
-	// TODO - sanity check input to ensure major lat field can only ever by 2 chars wide
+	// TODO: sanity check input to ensure major lat field can only ever by 2 chars wide
 	char buf[8];
 	// Don't know whether to zero pad the below for single digits or not?
 	//cout << d << ", " << (int)d << '\n';
@@ -1489,7 +1474,7 @@ void KLN89::DrawLongitude(double d, int field, int px, int py) {
 	DrawChar((d >= 0 ? 'E' : 'W'), field, px, py);
 	d = fabs(d);
 	px += 1;
-	// TODO - sanity check input to ensure major lat field can only ever be 2 chars wide
+	// TODO: sanity check input to ensure major lat field can only ever be 2 chars wide
 	char buf[8];
 	// Don't know whether to zero pad the below for single digits or not?
 	//cout << d << ", " << (int)d << '\n';
@@ -1548,7 +1533,7 @@ void KLN89::DrawDist(double d, int field, int px, int py) {
 }
 
 void KLN89::DrawSpeed(double v, int field, int px, int py, int decimal) {
-	// TODO - implement variable decimal places
+	// TODO: implement variable decimal places
 	v *= (_velUnits == GPS_VEL_UNITS_KT ? 1.0 : 0.51444444444 * 0.001 * 3600.0);
 	char buf[10];
 	snprintf(buf, 9, "%i", (int)(v + 0.5));

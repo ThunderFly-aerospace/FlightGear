@@ -21,8 +21,6 @@
 #include <Main/fg_os.hxx>
 #include <Main/fg_props.hxx>
 #include <Main/globals.hxx>
-#include <Viewer/CameraGroup.hxx>
-#include <Viewer/renderer.hxx>
 
 #include <simgear/canvas/Canvas.hxx>
 #include <simgear/canvas/CanvasPlacement.hxx>
@@ -32,6 +30,7 @@
 
 #include <osg/BlendFunc>
 #include <osgViewer/Viewer>
+#include <osgViewer/View>
 #include <osgGA/GUIEventHandler>
 
 class DesktopGroup;
@@ -117,7 +116,7 @@ class DesktopGroup:
   public sc::Group
 {
   public:
-    DesktopGroup();
+    DesktopGroup(osg::Camera* camera);
 
     void setFocusWindow(const sc::WindowPtr& window);
 
@@ -203,7 +202,7 @@ bool GUIEventHandler::handle( const osgEA& ea,
 }
 
 //------------------------------------------------------------------------------
-DesktopGroup::DesktopGroup():
+DesktopGroup::DesktopGroup(osg::Camera* camera):
   Group(sc::CanvasPtr(), fgGetNode("/sim/gui/canvas", true)),
   _cb_mouse_mode( this,
                   &DesktopGroup::handleMouseMode,
@@ -211,7 +210,6 @@ DesktopGroup::DesktopGroup():
   _width(_node, "size[0]"),
   _height(_node, "size[1]")
 {
-  auto camera = flightgear::getGUICamera(flightgear::CameraGroup::getDefault());
   if( !camera )
   {
     SG_LOG(SG_GUI, SG_WARN, "DesktopGroup: failed to get GUI camera.");
@@ -275,7 +273,7 @@ sc::WindowPtr DesktopGroup::windowAtPosition(const osg::Vec2f& screen_pos)
     osg::Group *element = _scene_group->getChild(i)->asGroup();
 
     if( !element || !element->getUserData() )
-      continue; // TODO warn/log?
+      continue; // TODO: warn/log?
 
     sc::WindowPtr window =
       dynamic_cast<sc::Window*>
@@ -615,7 +613,7 @@ bool DesktopGroup::handleDrag(const sc::EventPtr& event)
       drag_window->handleEvent(event->clone(sc::Event::DRAG_START));
   }
 
-  // TODO dragover
+  // TODO: dragover
   return drag_window && drag_window->handleEvent(event);
 }
 
@@ -643,6 +641,13 @@ GUIMgr::GUIMgr()
 }
 
 //------------------------------------------------------------------------------
+void GUIMgr::setGUIViewAndCamera(osgViewer::View* view, osg::Camera* cam)
+{
+  _viewerView = view;
+    _camera = cam;
+}
+
+//------------------------------------------------------------------------------
 sc::WindowPtr GUIMgr::createWindow(const std::string& name)
 {
   sc::WindowPtr window = _desktop->createChild<sc::Window>(name);
@@ -654,13 +659,19 @@ sc::WindowPtr GUIMgr::createWindow(const std::string& name)
 //------------------------------------------------------------------------------
 void GUIMgr::init()
 {
-  if( _desktop && _event_handler )
+  assert(_viewerView);
+   if( _desktop && _event_handler )
   {
     SG_LOG(SG_GUI, SG_WARN, "GUIMgr::init() already initialized.");
     return;
   }
 
-  DesktopPtr desktop( new DesktopGroup );
+    auto camera = _camera;
+    if (!camera) {
+        camera = _viewerView->getCamera();
+    }
+    
+  DesktopPtr desktop( new DesktopGroup(camera) );
   desktop->handleResize
   (
     0,
@@ -671,9 +682,7 @@ void GUIMgr::init()
   _desktop = desktop;
 
   _event_handler = new GUIEventHandler(desktop);
-  globals->get_renderer()
-         ->getView()
-         ->getEventHandlers()
+  _viewerView->getEventHandlers()
          // GUI is on top of everything so lets install as first event handler
          .push_front( _event_handler );
 
@@ -705,11 +714,11 @@ void GUIMgr::shutdown()
 
   if( _event_handler )
   {
-    globals->get_renderer()
-           ->getView()
-           ->removeEventHandler( _event_handler );
+    _viewerView->removeEventHandler( _event_handler );
     _event_handler = 0;
   }
+
+    _viewerView = nullptr;
 }
 
 //------------------------------------------------------------------------------
@@ -766,5 +775,6 @@ GUIMgr::addWindowPlacement( SGPropertyNode* placement,
 // Register the subsystem.
 SGSubsystemMgr::Registrant<GUIMgr> registrantGUIMgr(
     SGSubsystemMgr::DISPLAY,
-    {{"viewer", SGSubsystemMgr::Dependency::HARD},
-     {"FGRenderer", SGSubsystemMgr::Dependency::NONSUBSYSTEM_HARD}});
+    {
+      {"viewer", SGSubsystemMgr::Dependency::HARD},
+    });

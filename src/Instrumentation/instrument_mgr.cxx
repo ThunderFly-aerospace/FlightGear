@@ -24,6 +24,7 @@
 #include "airspeed_indicator.hxx"
 #include "altimeter.hxx"
 #include "attitude_indicator.hxx"
+#include "attitude_indicator_electric.hxx"
 #include "clock.hxx"
 #include "dme.hxx"
 #include "gps.hxx"
@@ -132,6 +133,9 @@ bool FGInstrumentMgr::build (SGPropertyNode* config_props, const SGPath& path)
 
         } else if ( name == "attitude-indicator" ) {
             set_subsystem( id, new AttitudeIndicator( node ) );
+
+        } else if ( name == "attitude-indicator-electric" ) {
+            set_subsystem( id, new AttitudeIndicatorElectric( node ) );
 
         } else if ( name == "clock" ) {
             set_subsystem( id, new Clock( node ), 0.25 );

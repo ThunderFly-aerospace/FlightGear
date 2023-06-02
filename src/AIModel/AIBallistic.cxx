@@ -1,27 +1,12 @@
-// FGAIBallistic - FGAIBase-derived class creates a ballistic object
-//
-// Written by David Culp, started November 2003.
-// - davidculp2@comcast.net
-//
-// With major additions by Mathias Froehlich & Vivian Meazza 2004-2008
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+/*
+ * SPDX-FileName: AIBallistic.cxx
+ * SPDX-FileComment: GAIBase-derived class creates a ballistic object
+ * SPDX-FileCopyrightText: Copyright (C) 2003  David P. Culp - davidculp2@comcast.net
+ * SPDX-FileContributor: With major additions by Mathias Froehlich & Vivian Meazza 2004-2008
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
 
-#ifdef HAVE_CONFIG_H
-#  include <config.h>
-#endif
+#include <config.h>
 
 #include <simgear/math/sg_random.hxx>
 #include <simgear/math/sg_geodesy.hxx>
@@ -33,6 +18,7 @@
 
 #include <Main/util.hxx>
 #include <Environment/gravity.hxx>
+#include <Environment/atmosphere.hxx>
 #include <Main/fg_props.hxx>
 
 using namespace simgear;
@@ -695,6 +681,10 @@ void FGAIBallistic::Run(double dt) {
     // for a conventional shell/bullet (no boat-tail).
     double Cdm;
 
+    const double Mach = FGAtmo::machFromKnotsAtAltitudeFt(speed, altitude_ft);
+    const double rhoKgM3 =  FGAtmo::densityAtAltitudeFt(altitude_ft);
+    const double rho = rhoKgM3 / SG_SLUGFT3_TO_KGPM3;
+    
     if (Mach < 0.7)
         Cdm = 0.0125 * Mach + _cd;
     else if (Mach < 1.2)
@@ -793,7 +783,7 @@ void FGAIBallistic::Run(double dt) {
                     dynamic_friction_force_lbs = static_friction_force_lbs * 0.95;
 
                 // Ignore wind when on the ground for now
-                //TODO fix this
+                // TODO: fix this
                 _wind_from_north = 0;
                 _wind_from_east = 0;
             }
@@ -897,7 +887,7 @@ void FGAIBallistic::Run(double dt) {
         //cout<< "_aero_stabilised " << hdg << " az " << _azimuth << endl;
         const double coeff = 0.9;
 
-        // we assume a symetrical MI about the pitch and yaw axis
+        // we assume a symmetrical MI about the pitch and yaw axis
         setPch(_elevation, dt, coeff);
         setHdg(_azimuth, dt, coeff);
     }
@@ -915,7 +905,7 @@ void FGAIBallistic::Run(double dt) {
         if (force_pitch <= force_elevation_deg)
             force_pitch = force_elevation_deg;
 
-        // we assume a symetrical MI about the pitch and yaw axis
+        // we assume a symmetrical MI about the pitch and yaw axis
         setPch(force_pitch,dt, coeff);
         setHdg(_azimuth, dt, coeff);
     }

@@ -19,7 +19,6 @@
 
 #include "fg_props.hxx"
 #include "globals.hxx"
-#include "util.hxx"
 
 using std::string;
 using std::endl;
@@ -42,9 +41,6 @@ FGLogger::init ()
     if (!child->getBoolValue("enabled", false))
         continue;
 
-    _logs.emplace_back(new Log());
-    Log &log = *_logs.back();
-
     string filename = child->getStringValue("filename");
     if (filename.empty()) {
         filename = "fg_log.csv";
@@ -53,7 +49,7 @@ FGLogger::init ()
 
     // Security: the path comes from the global Property Tree; it *must* be
     //           validated before we overwrite the file.
-    const SGPath authorizedPath = fgValidatePath(SGPath::fromUtf8(filename),
+    const SGPath authorizedPath = SGPath::fromUtf8(filename).validate(
                                                  /* write */ true);
 
     if (authorizedPath.isNull()) {
@@ -67,8 +63,11 @@ FGLogger::init ()
         "folder (" + (globals->get_fg_home() / "Export").utf8Str() + ").";
 
       SG_LOG(SG_GENERAL, SG_ALERT, msg);
-      exit(EXIT_FAILURE);
+      return;
     }
+
+    _logs.emplace_back(new Log());
+    Log &log = *_logs.back();
 
     string delimiter = child->getStringValue("delimiter");
     if (delimiter.empty()) {
@@ -79,7 +78,7 @@ FGLogger::init ()
     log.interval_ms = child->getLongValue("interval-ms");
     log.last_time_ms = globals->get_sim_time_sec() * 1000;
     log.delimiter = delimiter.c_str()[0];
-    // Security: use the return value of fgValidatePath()
+    // Security: use the return value of SGPath::validate()
     log.output.reset(new sg_ofstream(authorizedPath, std::ios_base::out));
     if ( !(*log.output) ) {
       SG_LOG(SG_GENERAL, SG_ALERT, "Cannot write log to " << filename);

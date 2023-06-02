@@ -59,7 +59,7 @@ void AeroMeshTests::testLiftComputation()
 {
     double b = 10.0;
     double c = 2.0;
-    AircraftMesh_ptr mesh = new AircraftMesh(b, c);
+    AircraftMesh_ptr mesh = new AircraftMesh(b, c, "test");
     SGGeod geodPos = SGGeod::fromDeg(0.0, 0.0);
     SGVec3d pos;
     double vel = 100.;
@@ -85,9 +85,10 @@ void AeroMeshTests::testLiftComputation()
     props->setDoubleValue("geometry/wing/chord-ft", c);
     props->setDoubleValue("geometry/weight-lbs", weight);
 
-    globals->add_new_subsystem<PerformanceDB>(SGSubsystemMgr::POST_FDM);
-    globals->get_subsystem<PerformanceDB>()->bind();
-    globals->get_subsystem<PerformanceDB>()->init();
+    auto subsystem_mgr = globals->get_subsystem_mgr();
+    subsystem_mgr->add<PerformanceDB>();
+    subsystem_mgr->get_subsystem<PerformanceDB>()->bind();
+    subsystem_mgr->get_subsystem<PerformanceDB>()->init();
 
     FGAIManager *aiManager = new FGAIManager;
     FGAIAircraft *ai = new FGAIAircraft;
@@ -127,7 +128,7 @@ void AeroMeshTests::testFourierLiftingLine()
 
     auto accessor = FGTestApi::PrivateAccessor::FDM::Accessor();
 
-    WakeMesh_ptr mesh = new WakeMesh(b, c);
+    WakeMesh_ptr mesh = new WakeMesh(b, c, "testMesh");
     int N = accessor.read_FDM_AIWake_WakeMesh_nelm(mesh);
     double **mtx = nr_matrix(1, N, 1, N);
     double **coef = nr_matrix(1, N, 1, 1);
@@ -192,7 +193,7 @@ void AeroMeshTests::testFrameTransformations()
     CPPUNIT_ASSERT_DOUBLES_EQUAL(pos[1] * SG_METER_TO_FEET, loc(2), 1e-7);
     CPPUNIT_ASSERT_DOUBLES_EQUAL(pos[2] * SG_METER_TO_FEET, loc(3), 1e-7);
 
-    AircraftMesh_ptr mesh = new AircraftMesh(b, c);
+    AircraftMesh_ptr mesh = new AircraftMesh(b, c, "test");
     mesh->setPosition(pos, orient);
 
     FGQuaternion qJ(roll, pitch, yaw);

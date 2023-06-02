@@ -1,20 +1,8 @@
 /*
- * Copyright (C) 2021 James Turner
- *
- * This file is part of the program FlightGear.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * SPDX-FileName: ErrorReporter.cxx
+ * SPDX-FileComment: This file is part of the program FlightGear
+ * SPDX-FileCopyrightText: Copyright (C) 2021 James Turner
+ * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
 #include "config.h"
@@ -35,7 +23,9 @@
 #include <simgear/structure/commands.hxx>
 
 #include <GUI/MessageBox.hxx>
+#include <GUI/dialog.hxx>
 #include <GUI/new_gui.hxx>
+
 #include <Main/fg_props.hxx>
 #include <Main/globals.hxx>
 #include <Main/locale.hxx>
@@ -131,7 +121,7 @@ public:
 
     bool doProcessEntry(const simgear::LogEntry& e) override
     {
-        ostringstream os;
+        std::ostringstream os;
         if (e.file != nullptr) {
             os << e.file << ":" << e.line << ":\t";
         }
@@ -328,7 +318,7 @@ public:
         // remove any existing error children
         _displayNode->removeChildren("error");
 
-        ostringstream detailsTextStream;
+        std::ostringstream detailsTextStream;
 
         // add all the discrete errors as child nodes with all their information
         for (const auto& e : report.errors) {
@@ -519,46 +509,46 @@ void ErrorReporter::ErrorReporterPrivate::writeReportToStream(const AggregateRep
         char buf[64];
         time_t now = time(nullptr);
         strftime(buf, sizeof(buf), "%a, %d %b %Y %H:%M:%S GMT", gmtime(&now));
-        os << buf << endl;
+        os << buf << std::endl;
     }
 
-    os << "Category:" << static_categoryIds.at(static_cast<int>(report.type)) << endl;
+    os << "Category:" << static_categoryIds.at(static_cast<int>(report.type)) << std::endl;
     if (!report.parameter.empty()) {
-        os << "\tParameter:" << report.parameter << endl;
+        os << "\tParameter:" << report.parameter << std::endl;
     }
 
-    os << endl; // insert a blank line after header data
+    os << std::endl; // insert a blank line after header data
 
     int index = 1;
     char whenBuf[64];
 
     for (const auto& err : report.errors) {
         os << "Error " << index++ << std::endl;
-        os << "\tcode:" << static_errorIds.at(static_cast<int>(err.code)) << endl;
-        os << "\ttype:" << static_errorTypeIds.at(static_cast<int>(err.type)) << endl;
+        os << "\tcode:" << static_errorIds.at(static_cast<int>(err.code)) << std::endl;
+        os << "\ttype:" << static_errorTypeIds.at(static_cast<int>(err.type)) << std::endl;
 
         strftime(whenBuf, sizeof(whenBuf), "%H:%M:%S GMT", gmtime(&err.when));
-        os << "\twhen:" << whenBuf << endl;
+        os << "\twhen:" << whenBuf << std::endl;
 
         os << "\t" << err.detailedInfo << std::endl;
-        os << "\tlocation:" << err.origin.asString() << endl;
+        os << "\tlocation:" << err.origin.asString() << std::endl;
         writeContextToStream(err, os);
         writeLogToStream(err, os);
         os << std::endl; // trailing blank line
     }
 
-    os << "Command line / launcher / fgfsrc options" << endl;
+    os << "Command line / launcher / fgfsrc options" << std::endl;
     for (auto o : Options::sharedInstance()->extractOptions()) {
         os << "\t" << o << "\n";
     }
-    os << endl;
+    os << std::endl;
 
     writeSignificantPropertiesToStream(os);
 }
 
 void ErrorReporter::ErrorReporterPrivate::writeSignificantPropertiesToStream(std::ostream& os) const
 {
-    os << "Properties:" << endl;
+    os << "Properties:" << std::endl;
     for (const auto& ps : _significantProperties) {
         auto node = fgGetNode(ps);
         if (!node) {
@@ -567,7 +557,7 @@ void ErrorReporter::ErrorReporterPrivate::writeSignificantPropertiesToStream(std
             os << "\t" << ps << ": " << node->getStringValue() << "\n";
         }
     }
-    os << endl;
+    os << std::endl;
 }
 
 
@@ -940,3 +930,7 @@ std::string ErrorReporter::threadSpecificContextValue(const std::string& key)
 
 
 } // namespace flightgear
+
+// Register the subsystem.
+SGSubsystemMgr::Registrant<flightgear::ErrorReporter> registrantErrorReporter(
+    SGSubsystemMgr::GENERAL);

@@ -63,7 +63,7 @@ using std::string;
  * class FGTowerController
 s * subclass of FGATCController
  **************************************************************************/
- 
+
 FGTowerController::FGTowerController(FGAirportDynamics *par) :
         FGATCController()
 {
@@ -72,8 +72,6 @@ FGTowerController::FGTowerController(FGAirportDynamics *par) :
 
 FGTowerController::~FGTowerController()
 {
-    _isDestroying = true;
-    clearTrafficControllers(activeTraffic);
 }
 
 //
@@ -86,11 +84,11 @@ void FGTowerController::announcePosition(int id,
         FGAIAircraft * ref)
 {
     init();
-	
+
     // Search activeTraffic for a record matching our id
-    TrafficVectorIterator i = searchActiveTraffic(activeTraffic, id);
-    
-    // Add a new TrafficRecord if no one exsists for this aircraft.
+    TrafficVectorIterator i = FGATCController::searchActiveTraffic(id);
+
+    // Add a new TrafficRecord if no one exists for this aircraft.
     if (i == activeTraffic.end() || (activeTraffic.empty())) {
         FGTrafficRecord rec;
         rec.setId(id);
@@ -98,7 +96,7 @@ void FGTowerController::announcePosition(int id,
         rec.setPositionAndHeading(lat, lon, heading, speed, alt);
         rec.setRunway(intendedRoute->getRunway());
         rec.setLeg(leg);
-        //rec.setCallSign(callsign);
+        rec.setCallsign(ref->getCallSign());
         rec.setRadius(radius);
         rec.setAircraft(ref);
         activeTraffic.push_back(rec);
@@ -109,33 +107,40 @@ void FGTowerController::announcePosition(int id,
                 if (rwy->getRunwayName() == intendedRoute->getRunway()) {
                     break;
                 }
-                rwy++;
+                ++rwy;
             }
         }
         if (rwy == activeRunways.end()) {
             ActiveRunway aRwy(intendedRoute->getRunway(), id);
             aRwy.addToDepartureQueue(ref);
+            time_t now = globals->get_time_params()->get_cur_time();
+            rec.setPlannedArrivalTime(now);
+            rec.setRunwaySlot(aRwy.requestTimeSlot(now));
             activeRunways.push_back(aRwy);
             rwy = (activeRunways.end()-1);
         } else {
+            time_t now = globals->get_time_params()->get_cur_time();
+            rec.setPlannedArrivalTime(now);
+            rec.setRunwaySlot(rwy->requestTimeSlot(now));
             rwy->addToDepartureQueue(ref);
         }
 
-        SG_LOG(SG_ATC, SG_DEBUG, ref->getTrafficRef()->getCallSign() << " You are number " << rwy->getdepartureQueueSize() << " for takeoff ");
+        SG_LOG(SG_ATC, SG_DEBUG, ref->getTrafficRef()->getCallSign() << " You are number " << rwy->getdepartureQueueSize() << " for takeoff from " << rwy->getRunwayName());
     } else {
         i->setPositionAndHeading(lat, lon, heading, speed, alt);
     }
 }
 
-void FGTowerController::updateAircraftInformation(int id, double lat, double lon,
+void FGTowerController::updateAircraftInformation(int id, SGGeod geod,
         double heading, double speed, double alt,
         double dt)
 {
     // Search activeTraffic for a record matching our id
-    TrafficVectorIterator i = searchActiveTraffic(activeTraffic, id);
-    
+    TrafficVectorIterator i = FGATCController::searchActiveTraffic(id);
+
     setDt(getDt() + dt);
 
+    time_t now = globals->get_time_params()->get_cur_time();
     if (i == activeTraffic.end() || (activeTraffic.empty())) {
         SG_LOG(SG_ATC, SG_ALERT,
                "AI error: updating aircraft without traffic record at " <<
@@ -145,29 +150,29 @@ void FGTowerController::updateAircraftInformation(int id, double lat, double lon
 
     // Update the position of the current aircraft
     FGTrafficRecord& current = *i;
-    current.setPositionAndHeading(lat, lon, heading, speed, alt);
+    current.setPositionAndHeading(geod.getLatitudeDeg(), geod.getLongitudeDeg(), heading, speed, alt);
 
     // see if we already have a clearance record for the currently active runway
     // NOTE: dd. 2011-08-07: Because the active runway has been constructed in the announcePosition function, we may safely assume that is
     // already exists here. So, we can simplify the current code.
-    
+
     ActiveRunwayVecIterator rwy = activeRunways.begin();
     //if (parent->getId() == fgGetString("/sim/presets/airport-id")) {
-    //    for (rwy = activeRunways.begin(); rwy != activeRunways.end(); rwy++) {
+    //    for (rwy = activeRunways.begin(); rwy != activeRunways.end(); ++rwy) {
     //        rwy->printdepartureQueue();
     //    }
     //}
-    
-    rwy = activeRunways.begin();
+
+    // rwy = activeRunways.begin();
     while (rwy != activeRunways.end()) {
         if (rwy->getRunwayName() == current.getRunway()) {
             break;
         }
-        rwy++;
+        ++rwy;
     }
 
     // only bother running the following code if the current aircraft is the
-    // first in line for depature
+    // first in line for departure
     /* if (current.getAircraft() == rwy->getFirstAircraftIndepartureQueue()) {
         if (rwy->getCleared()) {
             if (id == rwy->getCleared()) {
@@ -176,49 +181,75 @@ void FGTowerController::updateAircraftInformation(int id, double lat, double lon
                 current.setHoldPosition(true);
             }
         } else {
-            // For now. At later stages, this will probably be the place to check for inbound traffc.
+            // For now. At later stages, this will probably be the place to check for inbound traffic.
             rwy->setCleared(id);
         }
     } */
     // only bother with aircraft that have a takeoff status of 2, since those are essentially under tower control
     auto ac = rwy->getFirstAircraftInDepartureQueue();
     if (ac) {
-        if (ac->getTakeOffStatus() == 1) {
+        if (ac->getTakeOffStatus() == AITakeOffStatus::QUEUED) {
             // transmit takeoff clearance
-            ac->setTakeOffStatus(2);
+            ac->setTakeOffStatus(AITakeOffStatus::CLEARED_FOR_TAKEOFF);
+            TrafficVectorIterator first = searchActiveTraffic(ac->getID());
+            //FIXME use checkTransmissionState
+            if (first == activeTraffic.end() || activeTraffic.empty()) {
+                SG_LOG(SG_ATC, SG_ALERT,
+                "FGApproachController updating aircraft without traffic record at " << SG_ORIGIN);
+            } else {
+                first->setState(ATCMessageState::CLEARED_TAKEOFF);
+                transmit(&(*first), &(*parent), MSG_CLEARED_FOR_TAKEOFF, ATC_GROUND_TO_AIR, true);
+            }
         }
     }
-    
-    if (current.getAircraft()->getTakeOffStatus() == 2) {
+    //FIXME Make it an member of traffic record
+    if (current.getAircraft()->getTakeOffStatus() == AITakeOffStatus::CLEARED_FOR_TAKEOFF &&
+        current.getRunwaySlot() < now) {
         current.setHoldPosition(false);
+        if (checkTransmissionState(ATCMessageState::CLEARED_TAKEOFF, ATCMessageState::CLEARED_TAKEOFF, i, now, MSG_ACKNOWLEDGE_CLEARED_FOR_TAKEOFF, ATC_AIR_TO_GROUND)) {
+            current.setState(ATCMessageState::ANNOUNCE_ARRIVAL);
+        }
     } else {
         current.setHoldPosition(true);
+        SG_LOG(SG_ATC, SG_BULK,
+                current.getCallsign() << "| Waiting for " << (current.getRunwaySlot() - now) << " seconds");
     }
     int clearanceId = rwy->getCleared();
     if (clearanceId) {
         if (id == clearanceId) {
+            SG_LOG(SG_ATC, SG_BULK, current.getCallsign() << "| Unset Hold " << clearanceId << " for rwy " << rwy->getRunwayName());
             current.setHoldPosition(false);
+        } else {
+            SG_LOG(SG_ATC, SG_BULK, current.getCallsign() << "| Not cleared " << id << " Currently cleared " << clearanceId);
         }
     } else {
         if (current.getAircraft() == rwy->getFirstAircraftInDepartureQueue()) {
+            SG_LOG(SG_ATC, SG_BULK,
+               current.getCallsign() << "| Cleared for runway " << getName() << " " << rwy->getRunwayName() << " Id " << id);
             rwy->setCleared(id);
-            auto ac = rwy->getFirstOfStatus(1);
-            if (ac)
-                ac->setTakeOffStatus(2);
-                // transmit takeoff clearacne? But why twice?
+            auto l_ac = rwy->getFirstOfStatus(AITakeOffStatus::QUEUED);
+            if (l_ac) {
+                l_ac->setTakeOffStatus(AITakeOffStatus::QUEUED);
+                // transmit takeoff clearance? But why twice?
+            }
+        } else {
+#if 0   // Ticket #2770 : ATC/TowerController floods log
+            SG_LOG(SG_ATC, SG_BULK,
+               "Not cleared " << current.getAircraft()->getCallSign() << " " << rwy->getFirstAircraftInDepartureQueue()->getCallSign());
+#endif
         }
     }
-} 
-
+}
 
 void FGTowerController::signOff(int id)
 {
+    SG_LOG(SG_ATC, SG_BULK, "Signing off " << id << " from Tower");
     // ensure we don't modify activeTraffic during destruction
     if (_isDestroying)
         return;
 
     // Search activeTraffic for a record matching our id
-    TrafficVectorIterator i = searchActiveTraffic(activeTraffic, id);
+    TrafficVectorIterator i = FGATCController::searchActiveTraffic(id);
     if (i == activeTraffic.end() || (activeTraffic.empty())) {
         SG_LOG(SG_ATC, SG_ALERT,
                "AI error: Aircraft without traffic record is signing off from tower at " << SG_ORIGIN);
@@ -232,29 +263,28 @@ void FGTowerController::signOff(int id)
                                  });
 
     if (runwayIt != activeRunways.end()) {
-        runwayIt->setCleared(0);
-        runwayIt->updateDepartureQueue();
+        SG_LOG(SG_ATC, SG_BULK, i->getCallsign() << "|Cleared " << id << " from " << runwayIt->getRunwayName() << " cleared " << runwayIt->getCleared() );
+        runwayIt->removeFromDepartureQueue(id);
     } else {
         SG_LOG(SG_ATC, SG_ALERT,
                "AI error: Attempting to erase non-existing runway clearance record in FGTowerController::signoff at " << SG_ORIGIN);
     }
 
     i->getAircraft()->resetTakeOffStatus();
-    activeTraffic.erase(i);
-    SG_LOG(SG_ATC, SG_DEBUG, "Signing off from tower controller");
+    FGATCController::signOff(id);
 }
 
-// NOTE:
-// IF WE MAKE TRAFFICRECORD A MEMBER OF THE BASE CLASS
-// THE FOLLOWING THREE FUNCTIONS: SIGNOFF, HAS INSTRUCTION AND GETINSTRUCTION CAN
-// BECOME DEVIRTUALIZED AND BE A MEMBER OF THE BASE ATCCONTROLLER CLASS
-// WHICH WOULD SIMPLIFY CODE MAINTENANCE.
-// Note that this function is probably obsolete
+// Note:
+// if we make trafficrecord a member of the base class
+// the following three functions: signOff, hasInstruction and getInstruction can
+// become devirtualized and be a member of the base ATCController class
+// which would simplify code maintenance.
+// note that this function is probably obsolete
 bool FGTowerController::hasInstruction(int id)
 {
     // Search activeTraffic for a record matching our id
-    TrafficVectorIterator i = searchActiveTraffic(activeTraffic, id);
-    
+    TrafficVectorIterator i = FGATCController::searchActiveTraffic(id);
+
     if (i == activeTraffic.end() || activeTraffic.empty()) {
         SG_LOG(SG_ATC, SG_ALERT,
                "AI error: checking ATC instruction for aircraft without traffic record at " << SG_ORIGIN);
@@ -268,8 +298,8 @@ bool FGTowerController::hasInstruction(int id)
 FGATCInstruction FGTowerController::getInstruction(int id)
 {
     // Search activeTraffic for a record matching our id
-    TrafficVectorIterator i = searchActiveTraffic(activeTraffic, id);
-    
+    TrafficVectorIterator i = FGATCController::searchActiveTraffic(id);
+
     if (i == activeTraffic.end() || activeTraffic.empty()) {
         SG_LOG(SG_ATC, SG_ALERT,
                "AI error: requesting ATC instruction for aircraft without traffic record at " << SG_ORIGIN);
@@ -285,10 +315,16 @@ void FGTowerController::render(bool visible) {
 }
 
 string FGTowerController::getName() {
-    return string(parent->getId() + "-tower");
+    return string(parent->parent()->getName() + "-tower");
 }
+
 
 void FGTowerController::update(double dt)
 {
-    FGATCController::eraseDeadTraffic(activeTraffic);
+    FGATCController::eraseDeadTraffic();
+}
+
+int FGTowerController::getFrequency() {
+    int towerFreq = parent->getTowerFrequency(2);
+    return towerFreq;
 }

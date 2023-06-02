@@ -113,8 +113,8 @@ void FGNasalModelData::load()
 
   SG_LOG(SG_NASAL, SG_DEBUG, "Loading nasal module " << _module.c_str());
 
-  const string s = _load ? _load->getStringValue() : "";
-  FGNasalSys* nasalSys = (FGNasalSys*) globals->get_subsystem("nasal");
+  const std::string s = _load ? _load->getStringValue() : "";
+  auto nasalSys = globals->get_subsystem<FGNasalSys>();
 
   // Add _module_id to script local hash to allow placing canvasses on objects
   // inside the model.
@@ -138,7 +138,7 @@ void FGNasalModelData::unload()
     if (_module.empty())
         return;
 
-    FGNasalSys* nasalSys = (FGNasalSys*) globals->get_subsystem("nasal");
+    auto nasalSys = globals->get_subsystem<FGNasalSys>();
     if(!nasalSys) {
         SG_LOG(SG_NASAL, SG_WARN, "Trying to run an <unload> script "
                "without Nasal subsystem present.");
@@ -149,7 +149,7 @@ void FGNasalModelData::unload()
 
     if (_unload)
     {
-        const string s = _unload->getStringValue();
+        const std::string s = _unload->getStringValue();
         nasalSys->createModule(_module.c_str(), _module.c_str(), s.c_str(), s.length(), _root);
     }
 
@@ -181,11 +181,14 @@ FGNasalModelData* FGNasalModelData::getByModuleId(unsigned int id)
 //------------------------------------------------------------------------------
 FGNasalModelDataProxy::~FGNasalModelDataProxy()
 {
-    FGNasalSys* nasalSys = (FGNasalSys*) globals->get_subsystem("nasal");
-    // when necessary, register Nasal module to be destroyed/unloaded
-    // in the main thread.
-    if ((_data.valid())&&(nasalSys))
-        nasalSys->registerToUnload(_data);
+    if (globals) {
+      auto nasalSys = globals->get_subsystem<FGNasalSys>();
+
+      // when necessary, register Nasal module to be destroyed/unloaded
+      // in the main thread.
+      if ((_data.valid())&&(nasalSys))
+          nasalSys->registerToUnload(_data);
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -203,7 +206,7 @@ void FGNasalModelDataProxy::modelLoaded( const std::string& path,
     if(!nasal)
         return;
     
-    FGNasalSys* nasalSys = (FGNasalSys*) globals->get_subsystem("nasal");
+    auto nasalSys = globals->get_subsystem<FGNasalSys>();
     if(!nasalSys)
     {
         SG_LOG

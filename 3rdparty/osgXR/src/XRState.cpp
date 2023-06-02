@@ -4,6 +4,7 @@
 #include "XRState.h"
 #include "XRStateCallbacks.h"
 #include "ActionSet.h"
+#include "CompositionLayer.h"
 #include "InteractionProfile.h"
 #include "Subaction.h"
 #include "projection.h"
@@ -18,6 +19,7 @@
 #include <osg/Notify>
 #include <osg/MatrixTransform>
 #include <osg/RenderInfo>
+#include <osg/Texture>
 #include <osg/View>
 
 #include <osgUtil/SceneView>
@@ -31,6 +33,10 @@
 #include <cmath>
 #include <sstream>
 
+#ifndef GL_DEPTH32F_STENCIL8
+#define GL_DEPTH32F_STENCIL8 0x8cad
+#endif
+
 using namespace osgXR;
 
 XRState::XRState(Settings *settings, Manager *manager) :
@@ -40,6 +46,7 @@ XRState::XRState(Settings *settings, Manager *manager) :
     _visibilityMaskLeft(0),
     _visibilityMaskRight(0),
     _actionsUpdated(false),
+    _compositionLayersUpdated(false),
     _currentState(VRSTATE_DISABLED),
     _downState(VRSTATE_MAX),
     _upState(VRSTATE_DISABLED),
@@ -61,14 +68,16 @@ XRState::XRState(Settings *settings, Manager *manager) :
 XRState::XRSwapchain::XRSwapchain(XRState *state,
                                   osg::ref_ptr<OpenXR::Session> session,
                                   const OpenXR::System::ViewConfiguration::View &view,
-                                  int64_t chosenSwapchainFormat,
-                                  int64_t chosenDepthSwapchainFormat) :
+                                  int64_t chosenRGBAFormat,
+                                  int64_t chosenDepthFormat,
+                                  GLenum fallbackDepthFormat) :
     OpenXR::SwapchainGroup(session, view,
                            XR_SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT,
-                           chosenSwapchainFormat,
+                           chosenRGBAFormat,
                            XR_SWAPCHAIN_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-                           chosenDepthSwapchainFormat),
+                           chosenDepthFormat),
     _state(state),
+    _forcedAlpha(-1.0f),
     _numDrawPasses(0),
     _drawPassesDone(0),
     _imagesReady(false)
@@ -95,6 +104,7 @@ XRState::XRSwapchain::XRSwapchain(XRState *state,
             XRFramebuffer *fb = new XRFramebuffer(getWidth(),
                                                   getHeight(),
                                                   texture, depthTexture);
+            fb->setDepthFormat(fallbackDepthFormat);
             _imageFramebuffers.push_back(fb);
         }
     }
@@ -175,14 +185,30 @@ void XRState::XRSwapchain::postDrawCallback(osg::RenderInfo &renderInfo)
 
     // Unbind the framebuffer
     osg::State& state = *renderInfo.getState();
-    fbo->unbind(state);
 
     if (++_drawPassesDone == _numDrawPasses && _imagesReady)
     {
+        if (_forcedAlpha >= 0)
+        {
+            // Hack the alpha to a particular value, unpremultiplied
+            // FIXME this overwrites clear colour!
+            glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
+            glClearColor(0, 0, 0, _forcedAlpha);
+            glClear(GL_COLOR_BUFFER_BIT);
+            glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+            glClearColor(0, 0, 0, 1);
+        }
+
+        fbo->unbind(state);
+
         // Done rendering. release the swapchain image
         releaseImages();
 
         _imagesReady = false;
+    }
+    else
+    {
+        fbo->unbind(state);
     }
 }
 
@@ -518,7 +544,13 @@ void XRState::syncSettings()
     else if (diff & (Settings::DIFF_DEPTH_INFO |
                      Settings::DIFF_VISIBILITY_MASK |
                      Settings::DIFF_VR_MODE |
-                     Settings::DIFF_SWAPCHAIN_MODE))
+                     Settings::DIFF_SWAPCHAIN_MODE |
+                     Settings::DIFF_RGB_ENCODING |
+                     Settings::DIFF_DEPTH_ENCODING |
+                     Settings::DIFF_RGB_BITS |
+                     Settings::DIFF_ALPHA_BITS |
+                     Settings::DIFF_DEPTH_BITS |
+                     Settings::DIFF_STENCIL_BITS))
         // Recreate session
         setDownState(VRSTATE_SYSTEM);
 }
@@ -553,6 +585,23 @@ void XRState::syncActionSetup()
         setDownState(VRSTATE_SYSTEM);
 }
 
+void XRState::addCompositionLayer(CompositionLayer::Private *layer)
+{
+    _compositionLayers.push_back(layer);
+    _compositionLayersUpdated = true;
+}
+
+void XRState::removeCompositionLayer(CompositionLayer::Private *layer)
+{
+    auto it = std::find(_compositionLayers.begin(), _compositionLayers.end(),
+                        layer);
+    if (it != _compositionLayers.end())
+    {
+        _compositionLayers.erase(it);
+        _compositionLayersUpdated = true;
+    }
+}
+
 bool XRState::checkAndResetStateChanged()
 {
     bool ret = _stateChanged;
@@ -579,6 +628,7 @@ void XRState::update()
         &XRState::downActions,
     };
 
+    bool wasThreading = _viewer.valid() && _viewer->areThreadsRunning();
     bool pollNeeded = true;
     for (;;)
     {
@@ -650,7 +700,7 @@ void XRState::update()
                 if (res == UP_LATER)
                 {
                     // Don't poll incessantly
-                    _upDelay = 100;
+                    _upDelay = 500;
                 }
                 break;
             }
@@ -664,7 +714,7 @@ void XRState::update()
 
     // Restart threading in case we had to disable it to prevent the GL context
     // being bound in another thread during certain OpenXR calls.
-    if (_viewer.valid())
+    if (_viewer.valid() && wasThreading)
         _viewer->startThreading();
 }
 
@@ -674,7 +724,7 @@ void XRState::onInstanceLossPending(OpenXR::Instance *instance,
     // Reinitialize instance
     setDownState(VRSTATE_DISABLED);
     // FIXME use event.lossTime?
-    _upDelay = 100;
+    _upDelay = 500;
 }
 
 void XRState::onInteractionProfileChanged(OpenXR::Session *session,
@@ -952,6 +1002,14 @@ XRState::UpResult XRState::upSession()
     _settingsCopy.setVisibilityMask(_settings->getVisibilityMask());
     _settingsCopy.setVRMode(_settings->getVRMode());
     _settingsCopy.setSwapchainMode(_settings->getSwapchainMode());
+    _settingsCopy.setPreferredRGBEncodingMask(_settings->getPreferredRGBEncodingMask());
+    _settingsCopy.setAllowedRGBEncodingMask(_settings->getAllowedRGBEncodingMask());
+    _settingsCopy.setPreferredDepthEncodingMask(_settings->getPreferredDepthEncodingMask());
+    _settingsCopy.setAllowedDepthEncodingMask(_settings->getAllowedDepthEncodingMask());
+    _settingsCopy.setRGBBits(_settings->getRGBBits());
+    _settingsCopy.setAlphaBits(_settings->getAlphaBits());
+    _settingsCopy.setDepthBits(_settings->getDepthBits());
+    _settingsCopy.setStencilBits(_settings->getStencilBits());
     _useDepthInfo = _settingsCopy.getDepthInfo();
     _useVisibilityMask = _settingsCopy.getVisibilityMask();
     _vrMode = _settingsCopy.getVRMode();
@@ -1009,57 +1067,40 @@ XRState::UpResult XRState::upSession()
         return UP_ABORT;
     }
 
-    // Decide on ideal depth bits
-    unsigned int bestDepthBits = 24;
+    // Decide on ideal bit depths
+    unsigned int bestRGBBits = 24; // combined
+    unsigned int bestAlphaBits = 0;
+    unsigned int bestDepthBits = 16;
+    unsigned int bestStencilBits = 0;
+    // Use graphics window traits
     auto *traits = _window->getTraits();
     if (traits)
-        bestDepthBits = traits->depth;
-
-    // Choose a swapchain format
-    int64_t chosenSwapchainFormat = 0;
-    int64_t chosenDepthSwapchainFormat = 0;
-    unsigned int chosenDepthBits = 0;
-    for (int64_t format: _session->getSwapchainFormats())
     {
-        unsigned int thisDepthBits = 0;
-        switch (format)
-        {
-            case GL_RGBA16:
-            case GL_RGB10_A2:
-            case GL_RGBA8:
-                // Choose the first supported format suggested by the runtime
-                if (!chosenSwapchainFormat)
-                    chosenSwapchainFormat = format;
-                break;
-            case GL_DEPTH_COMPONENT16:
-                thisDepthBits = 16;
-                goto handle_depth;
-            case GL_DEPTH_COMPONENT24:
-                thisDepthBits = 24;
-                goto handle_depth;
-            case GL_DEPTH_COMPONENT32:
-                thisDepthBits = 32;
-                // fall through
-            handle_depth:
-                if (_useDepthInfo)
-                {
-                    if (// Anything is better than nothing
-                        !chosenDepthSwapchainFormat ||
-                        // A higher number of bits is better than not enough
-                        (thisDepthBits > chosenDepthBits && chosenDepthBits < bestDepthBits) ||
-                        // A lower number of bits may still be enough
-                        (bestDepthBits < thisDepthBits && thisDepthBits < chosenDepthBits))
-                    {
-                        chosenDepthSwapchainFormat = format;
-                        chosenDepthBits = thisDepthBits;
-                    }
-                }
-                break;
-            default:
-                break;
-        }
+        bestRGBBits = traits->red + traits->green + traits->blue;
+        bestAlphaBits = traits->alpha;
+        bestDepthBits = traits->depth;
+        bestStencilBits = traits->stencil;
     }
-    if (!chosenSwapchainFormat)
+    // Override from osgXR::Settings
+    if (_settingsCopy.getRGBBits() >= 0)
+        bestRGBBits = _settingsCopy.getRGBBits() * 3;
+    if (_settingsCopy.getAlphaBits() >= 0)
+        bestAlphaBits = _settingsCopy.getAlphaBits();
+    if (_settingsCopy.getDepthBits() >= 0)
+        bestDepthBits = _settingsCopy.getDepthBits();
+    if (_settingsCopy.getStencilBits() >= 0)
+        bestStencilBits = _settingsCopy.getStencilBits();
+
+    int64_t chosenRGBAFormat;
+    int64_t chosenDepthFormat = 0;
+    GLenum fallbackDepthFormat;
+
+    // Choose OpenXR RGBA swapchain format
+    chosenRGBAFormat = chooseRGBAFormat(bestRGBBits,
+                                        bestAlphaBits,
+                                        _settingsCopy.getPreferredRGBEncodingMask(),
+                                        _settingsCopy.getAllowedRGBEncodingMask());
+    if (!chosenRGBAFormat)
     {
         std::stringstream formats;
         formats << std::hex;
@@ -1070,23 +1111,39 @@ XRState::UpResult XRState::upSession()
         _session = nullptr;
         return UP_ABORT;
     }
-    if (_useDepthInfo && !chosenDepthSwapchainFormat)
+
+    // Choose a fallback depth format in case we can't submit depth to OpenXR
+    fallbackDepthFormat = chooseFallbackDepthFormat(bestDepthBits,
+                                                    bestStencilBits,
+                                                    _settingsCopy.getPreferredDepthEncodingMask(),
+                                                    _settingsCopy.getAllowedDepthEncodingMask());
+
+    // Choose OpenXR depth swapchain format
+    if (_useDepthInfo)
     {
-        std::stringstream formats;
-        formats << std::hex;
-        for (int64_t format: _session->getSwapchainFormats())
-            formats << " 0x" << format;
-        OSG_WARN << "XRState::init(): No supported depth swapchain format found in ["
-                 << formats.str() << " ]" << std::endl;
-        _useDepthInfo = false;
+        chosenDepthFormat = chooseDepthFormat(bestDepthBits,
+                                              bestStencilBits,
+                                              _settingsCopy.getPreferredDepthEncodingMask(),
+                                              _settingsCopy.getAllowedDepthEncodingMask());
+        if (!chosenDepthFormat)
+        {
+            std::stringstream formats;
+            formats << std::hex;
+            for (int64_t format: _session->getSwapchainFormats())
+                formats << " 0x" << format;
+            OSG_WARN << "XRState::init(): No supported depth swapchain format found in ["
+                << formats.str() << " ]" << std::endl;
+            _useDepthInfo = false;
+        }
     }
 
     // Set up swapchains & viewports
     switch (_swapchainMode)
     {
         case SwapchainMode::SWAPCHAIN_SINGLE:
-            if (!setupSingleSwapchain(chosenSwapchainFormat,
-                                      chosenDepthSwapchainFormat))
+            if (!setupSingleSwapchain(chosenRGBAFormat,
+                                      chosenDepthFormat,
+                                      fallbackDepthFormat))
             {
                 _session = nullptr;
                 return UP_ABORT;
@@ -1096,14 +1153,26 @@ XRState::UpResult XRState::upSession()
         case SwapchainMode::SWAPCHAIN_AUTOMATIC:
             // Should already have been handled by upSession()
         case SwapchainMode::SWAPCHAIN_MULTIPLE:
-            if (!setupMultipleSwapchains(chosenSwapchainFormat,
-                                         chosenDepthSwapchainFormat))
+            if (!setupMultipleSwapchains(chosenRGBAFormat,
+                                         chosenDepthFormat,
+                                         fallbackDepthFormat))
             {
                 _session = nullptr;
                 return UP_ABORT;
             }
             break;
     }
+
+    // Finally set up other composition layers
+    // Ensure layers are sorted
+    if (_compositionLayersUpdated)
+    {
+        _compositionLayersUpdated = false;
+        _compositionLayers.sort(CompositionLayer::Private::compareOrder);
+    }
+    // Set up all layers
+    for (auto *layer: _compositionLayers)
+        layer->setup(_session);
 
     return UP_SUCCESS;
 }
@@ -1130,6 +1199,10 @@ XRState::DownResult XRState::downSession()
     _session->makeCurrent();
     _xrViews.resize(0);
     _session->releaseContext();
+
+    // Clean compilation layers
+    for (auto *layer: _compositionLayers)
+        layer->cleanupSession();
 
     // this will destroy the session
     for (auto *actionSet: _actionSets)
@@ -1172,7 +1245,261 @@ XRState::DownResult XRState::downActions()
     return DOWN_SUCCESS;
 }
 
-bool XRState::setupSingleSwapchain(int64_t format, int64_t depthFormat)
+static void applyDefaultRGBEncoding(uint32_t &preferredRGBEncodingMask,
+                                    uint32_t &allowedRGBEncodingMask)
+{
+    if (!allowedRGBEncodingMask)
+    {
+        // Play safe and default to preferring sRGB over linear/float RGB, since
+        // this is what apps are normally tuned for. This avoids incorrect
+        // behaviour in SteamVR (no gamma correction) and also correct but
+        // potentially unexpected behaviour in Monado (extra gamma correction of
+        // linear RGB framebuffer when app produces sRGBish images already).
+        allowedRGBEncodingMask = 1u << Settings::ENCODING_SRGB;
+    }
+    if (!preferredRGBEncodingMask)
+    {
+        // If no preferred RGB encodings, mark all allowed ones as preferred.
+        preferredRGBEncodingMask = allowedRGBEncodingMask;
+    }
+}
+
+static void applyDefaultDepthEncoding(uint32_t &preferredDepthEncodingMask,
+                                      uint32_t &allowedDepthEncodingMask)
+{
+    if (!allowedDepthEncodingMask)
+    {
+        // Default to allowing both discrete or floating point depth.
+        allowedDepthEncodingMask = 1u << Settings::ENCODING_LINEAR |
+                                   1u << Settings::ENCODING_FLOAT;
+    }
+    if (!preferredDepthEncodingMask)
+    {
+        // If no preferred depth encodings, mark all allowed ones as preferred.
+        preferredDepthEncodingMask = allowedDepthEncodingMask;
+    }
+}
+
+int64_t XRState::chooseRGBAFormat(unsigned int bestRGBBits,
+                                  unsigned int bestAlphaBits,
+                                  uint32_t preferredRGBEncodingMask,
+                                  uint32_t allowedRGBEncodingMask) const
+{
+    applyDefaultRGBEncoding(preferredRGBEncodingMask,
+                            allowedRGBEncodingMask);
+
+    // Choose a swapchain format
+    int64_t chosenRGBAFormat = 0;
+    unsigned int chosenAlphaBits = 0;
+    uint32_t chosenRGBSat = 0;
+    for (int64_t format: _session->getSwapchainFormats())
+    {
+        auto thisEncoding = Settings::ENCODING_LINEAR;
+        uint32_t encodingMask = 0;
+        unsigned int thisRGBBits = 0;
+        unsigned int thisAlphaBits = 0;
+        unsigned int thisSat = 0;
+        switch (format)
+        {
+            // Discrete linear RGB(A)
+            case GL_RGBA16:
+                thisRGBBits = 16 * 3;
+                thisAlphaBits = 16;
+                goto handleRGBA;
+            case GL_RGB10_A2:
+                thisRGBBits = 10 * 3;
+                thisAlphaBits = 2;
+                goto handleRGBA;
+            case GL_RGBA8:
+                thisRGBBits = 8 * 3;
+                thisAlphaBits = 8;
+                goto handleRGBA;
+            // Linear floating point RGB(A)
+            case GL_RGB16F_ARB:
+                thisRGBBits = 16 * 3;
+                thisEncoding = Settings::ENCODING_FLOAT;
+                goto handleRGBA;
+            case GL_RGBA16F_ARB:
+                thisRGBBits = 16 * 3;
+                thisEncoding = Settings::ENCODING_FLOAT;
+                thisAlphaBits = 16;
+                goto handleRGBA;
+            // Discrete sRGB (linear A)
+            case GL_SRGB8_ALPHA8:
+                thisEncoding = Settings::ENCODING_SRGB;
+                thisAlphaBits = 8;
+                goto handleRGBA;
+            case GL_SRGB8:
+                thisEncoding = Settings::ENCODING_SRGB;
+                goto handleRGBA;
+            handleRGBA:
+                // Don't even consider a disallowed RGB encoding
+                encodingMask = (1u << (unsigned int)thisEncoding);
+                if (!(allowedRGBEncodingMask & encodingMask))
+                    break;
+
+                // Consider whether our preferences are satisfied
+                if (preferredRGBEncodingMask & encodingMask)
+                    thisSat |= 0x1;
+                if (thisEncoding == Settings::ENCODING_SRGB || thisRGBBits >= bestRGBBits)
+                    thisSat |= 0x2;
+                if (thisAlphaBits >= bestAlphaBits)
+                    thisSat |= 0x4;
+
+                // Skip formats that no longer satisfies some preference
+                if (chosenRGBSat & ~thisSat)
+                    break;
+
+                // Decide whether to choose this format
+                if (// Anything is better than nothing
+                    !chosenRGBAFormat ||
+                    // New preferences satisfied is always better
+                    (~chosenRGBSat & thisSat) ||
+                    // All else being equal, allow improved alpha bits
+                    // A higher number of alpha bits is better than not enough
+                    (thisAlphaBits > chosenAlphaBits && chosenAlphaBits < bestAlphaBits))
+                {
+                    chosenRGBAFormat = format;
+                    chosenAlphaBits = thisAlphaBits;
+                    chosenRGBSat = thisSat;
+                }
+                break;
+
+            default:
+                break;
+        }
+    }
+    return chosenRGBAFormat;
+}
+
+GLenum XRState::chooseFallbackDepthFormat(unsigned int bestDepthBits,
+                                          unsigned int bestStencilBits,
+                                          uint32_t preferredDepthEncodingMask,
+                                          uint32_t allowedDepthEncodingMask) const
+{
+    applyDefaultDepthEncoding(preferredDepthEncodingMask,
+                              allowedDepthEncodingMask);
+
+    if (preferredDepthEncodingMask & (1u << (unsigned int)Settings::ENCODING_LINEAR))
+    {
+        bool allowFloatDepth = allowedDepthEncodingMask & (1u << (unsigned int)Settings::ENCODING_FLOAT);
+        if (bestDepthBits > 24 && allowFloatDepth)
+            return bestStencilBits ? GL_DEPTH32F_STENCIL8
+                                   : GL_DEPTH_COMPONENT32F;
+        else if (bestStencilBits)
+            return GL_DEPTH24_STENCIL8_EXT;
+        else if (bestDepthBits > 16)
+            return GL_DEPTH_COMPONENT24;
+        else
+            return GL_DEPTH_COMPONENT16;
+    }
+    else // preferredDepthEncodingMask & (1 << ENCODING_FLOAT)
+    {
+        if (bestStencilBits)
+            return GL_DEPTH32F_STENCIL8;
+        else
+            return GL_DEPTH_COMPONENT32F;
+    }
+}
+
+int64_t XRState::chooseDepthFormat(unsigned int bestDepthBits,
+                                   unsigned int bestStencilBits,
+                                   uint32_t preferredDepthEncodingMask,
+                                   uint32_t allowedDepthEncodingMask) const
+{
+    applyDefaultDepthEncoding(preferredDepthEncodingMask,
+                              allowedDepthEncodingMask);
+
+    // Choose a swapchain format
+    int64_t chosenDepthFormat = 0;
+    unsigned int chosenDepthBits = 0;
+    unsigned int chosenStencilBits = 0;
+    uint32_t chosenDepthSat = 0;
+    for (int64_t format: _session->getSwapchainFormats())
+    {
+        auto thisEncoding = Settings::ENCODING_LINEAR;
+        uint32_t encodingMask = 0;
+        unsigned int thisDepthBits = 0;
+        unsigned int thisStencilBits = 0;
+        unsigned int thisSat = 0;
+        switch (format)
+        {
+            // Discrete depth (stencil)
+            case GL_DEPTH_COMPONENT16:
+                thisDepthBits = 16;
+                goto handleDepth;
+            case GL_DEPTH_COMPONENT24:
+                thisDepthBits = 24;
+                goto handleDepth;
+#if 0 // crashes nvidia (495.46, with monado)
+            case GL_DEPTH24_STENCIL8_EXT:
+                thisDepthBits = 24;
+                thisStencilBits = 8;
+                goto handleDepth;
+#endif
+            case GL_DEPTH_COMPONENT32:
+                thisDepthBits = 32;
+                goto handleDepth;
+            // Floating point depth, discrete stencil
+            case GL_DEPTH_COMPONENT32F:
+                thisEncoding = Settings::ENCODING_FLOAT;
+                thisDepthBits = 32;
+                goto handleDepth;
+            case GL_DEPTH32F_STENCIL8:
+                thisEncoding = Settings::ENCODING_FLOAT;
+                thisDepthBits = 32;
+                thisStencilBits = 8;
+                goto handleDepth;
+
+            handleDepth:
+                // Don't even consider a disallowed depth encoding
+                encodingMask = (1u << (unsigned int)thisEncoding);
+                if (!(allowedDepthEncodingMask & encodingMask))
+                    break;
+
+                // Consider whether our preferences are satisfied
+                if (preferredDepthEncodingMask & encodingMask)
+                    thisSat |= 0x1;
+                if (thisDepthBits >= bestDepthBits)
+                    thisSat |= 0x2;
+                if (thisStencilBits >= bestStencilBits)
+                    thisSat |= 0x4;
+
+                // Skip formats that no longer satisfies some preference
+                if (chosenDepthSat & ~thisSat)
+                    break;
+
+                if (// Anything is better than nothing
+                    !chosenDepthFormat ||
+                    // New preferences satisfied is always better
+                    (~chosenDepthSat & thisSat) ||
+                    // A higher number of depth bits is better than not enough
+                    (thisDepthBits > chosenDepthBits && chosenDepthBits < bestDepthBits) ||
+                    // A higher number of stencil bits is better than not enough
+                    // so long as depth bits are no worse or good enough
+                    ((thisDepthBits >= chosenDepthBits || thisDepthBits >= bestDepthBits) &&
+                     thisStencilBits > chosenStencilBits && chosenStencilBits < bestStencilBits) ||
+                    // A lower number of depth bits may still be enough
+                    // so long as stencil bits are no worse or good enough
+                    ((thisStencilBits >= chosenStencilBits || thisStencilBits >= bestStencilBits) &&
+                     bestDepthBits < thisDepthBits && thisDepthBits < chosenDepthBits))
+                {
+                    chosenDepthFormat = format;
+                    chosenDepthBits = thisDepthBits;
+                    chosenStencilBits = thisStencilBits;
+                    chosenDepthSat = thisSat;
+                }
+                break;
+
+            default:
+                break;
+        }
+    }
+    return chosenDepthFormat;
+}
+
+bool XRState::setupSingleSwapchain(int64_t format, int64_t depthFormat,
+                                   GLenum fallbackDepthFormat)
 {
     const auto &views = _chosenViewConfig->getViews();
     _xrViews.reserve(views.size());
@@ -1187,7 +1514,8 @@ bool XRState::setupSingleSwapchain(int64_t format, int64_t depthFormat)
     // Create a single swapchain
     osg::ref_ptr<XRSwapchain> xrSwapchain = new XRSwapchain(this, _session,
                                                             singleView, format,
-                                                            depthFormat);
+                                                            depthFormat,
+                                                            fallbackDepthFormat);
     // And the views
     _xrViews.reserve(views.size());
     for (uint32_t i = 0; i < views.size(); ++i)
@@ -1205,7 +1533,8 @@ bool XRState::setupSingleSwapchain(int64_t format, int64_t depthFormat)
     return true;
 }
 
-bool XRState::setupMultipleSwapchains(int64_t format, int64_t depthFormat)
+bool XRState::setupMultipleSwapchains(int64_t format, int64_t depthFormat,
+                                      GLenum fallbackDepthFormat)
 {
     const auto &views = _chosenViewConfig->getViews();
     _xrViews.reserve(views.size());
@@ -1215,7 +1544,8 @@ bool XRState::setupMultipleSwapchains(int64_t format, int64_t depthFormat)
         const auto &vcView = views[i];
         osg::ref_ptr<XRSwapchain> xrSwapchain = new XRSwapchain(this, _session,
                                                                 vcView, format,
-                                                                depthFormat);
+                                                                depthFormat,
+                                                                fallbackDepthFormat);
         osg::ref_ptr<XRView> xrView = new XRView(this, i, xrSwapchain);
         if (!xrView.valid())
         {
@@ -1442,7 +1772,17 @@ void XRState::endFrame(osg::FrameStamp *stamp)
     for (auto &view: _xrViews)
         view->endFrame(frame);
     frame->setEnvBlendMode(_chosenEnvBlendMode);
+    for (auto *layer: _compositionLayers)
+    {
+        if (layer->getOrder() >= 0)
+            break;
+        if (layer->getVisible())
+            layer->endFrame(frame);
+    }
     frame->addLayer(_projectionLayer.get());
+    for (auto *layer: _compositionLayers)
+        if (layer->getOrder() >= 0 && layer->getVisible())
+            layer->endFrame(frame);
     _frames.endFrame(stamp);
 }
 
@@ -1572,6 +1912,14 @@ void XRState::initialDrawCallback(osg::RenderInfo &renderInfo)
 
     // Get up to date depth info from camera's projection matrix
     _depthInfo.setZRangeFromProjection(renderInfo.getCurrentCamera()->getProjectionMatrix());
+}
+
+void XRState::releaseGLObjects(osg::State *state)
+{
+    // Release GL objects managed by the OpenXR session before the GL context is
+    // destroyed
+    if (_currentState >= VRSTATE_SESSION)
+        _session->releaseGLObjects(state);
 }
 
 void XRState::swapBuffersImplementation(osg::GraphicsContext* gc)

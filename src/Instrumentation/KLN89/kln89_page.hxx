@@ -107,7 +107,7 @@ protected:
 	std::string _scratchpadLine1;
 	std::string _scratchpadLine2;
 	
-	// TODO - remove this function from this class and use a built in method instead.
+	// TODO: remove this function from this class and use a built in method instead.
 	std::string GPSitoa(int n);
 };
 

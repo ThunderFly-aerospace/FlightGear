@@ -1,30 +1,34 @@
-// dclgps.hxx - a class to extend the operation of FG's current GPS
-// code, and provide support for a KLN89-specific instrument.  It
-// is envisioned that eventually this file and class will be split
-// up between current FG code and new KLN89-specific code and removed.
-//
-// Written by David Luff, started 2005.
-//
-// Copyright (C) 2005 - David C Luff:  daveluff --AT-- ntlworld --D0T-- com
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-//
-// $Id$
+/*
+ * SPDX-License-Identifier: GPL-2.0+
+ * SPDX-FileCopyrightText: 2005 (C) David C Luff:  daveluff --AT-- ntlworld --D0T-- com
+ * 
+ * dclgps.hxx - a class to extend the operation of FG's current GPS
+ * code, and provide support for a KLN89-specific instrument.  It
+ * is envisioned that eventually this file and class will be split
+ * up between current FG code and new KLN89-specific code and removed
+ * 
+ * Written by David Luff, started 2005.
+ * 
+ * Copyright (C) 2005 - David C Luff:  daveluff --AT-- ntlworld --D0T-- com
+ * 
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of the
+ * License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ * 
+ * $Id$
+*/
 
-#ifndef _DCLGPS_HXX
-#define _DCLGPS_HXX
+#pragma once
 
 #include <Cockpit/render_area_2d.hxx>
 
@@ -101,7 +105,7 @@ public:
     inline bool IsEmpty() { return waypoints.empty(); }
 };
 
-// TODO - probably de-public the internals of the next 2 classes and add some methods!
+// TODO: probably de-public the internals of the next 2 classes and add some methods!
 // Instrument approach procedure base class
 class FGIAP
 {
@@ -195,7 +199,7 @@ private:
 
 // ------------------------------------------------------------------------------
 
-// TODO - merge generic GPS functions instead and split out KLN specific stuff.
+// TODO: merge generic GPS functions instead and split out KLN specific stuff.
 class DCLGPS : public SGSubsystem
 {
 public:
@@ -333,7 +337,7 @@ protected:
 protected:
     void LoadApproachData();
 
-    // Find first of any type of waypoint by id.  (TODO - Possibly we should return multiple waypoints here).
+    // Find first of any type of waypoint by id.  (TODO: Possibly we should return multiple waypoints here).
     GPSWaypoint* FindFirstById(const std::string& id) const;
     GPSWaypoint* FindFirstByExactId(const std::string& id) const;
 
@@ -369,7 +373,7 @@ protected:
     // Hack - it seems that the GPS gets initialised before FG's initial position is properly set.
     // By checking for abnormal slew in the position we can force a re-initialisation of active flight
     // plan leg and anything else that might be affected.
-    // TODO - sort FlightGear's initialisation order properly!!!
+    // TODO: sort FlightGear's initialisation order properly!!!
     double _checkLat, _checkLon;    // (Radians)
     double _groundSpeed_ms;  // filtered groundspeed (m/s)
     double _groundSpeed_kts; // ditto in knots
@@ -496,5 +500,3 @@ protected:
 private:
     simgear::TiedPropertyList _tiedProperties;
 };
-
-#endif  // _DCLGPS_HXX

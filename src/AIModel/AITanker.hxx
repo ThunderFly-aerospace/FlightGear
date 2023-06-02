@@ -1,29 +1,17 @@
-// AITanker.hxx  Based on David Culp's AIModel code
-// - Tanker specific code isolated from AI Aircraft code
-// by Thomas Foerster, started June 2007
-//
-// 
-// Original code written by David Culp, started October 2003.
-// - davidculp2@comcast.net/
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+/*
+ * SPDX-FileName: AITanker.hxx
+ * SPDX-FileComment: Tanker specific code isolated from AI Aircraft code, based on David Culp's AIModel code
+ * SPDX-FileCopyrightText: by Thomas Foerster, started June 2007
+ * SPDX-FileContributor: Original code written by David Culp, started October 2003 - davidculp2@comcast.net
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
 
 #pragma once
 
 #include <string_view>
 
 #include "AIAircraft.hxx"
+
 
 /**
  * An AI tanker for air-air refueling.
@@ -35,20 +23,21 @@
  * @author Thomas F�ster <t.foerster@biologie.hu-berlin.de>
 */
 
-class FGAITanker : public FGAIAircraft {
+class FGAITanker : public FGAIAircraft
+{
 public:
-    FGAITanker(FGAISchedule* ref = 0);
+    explicit FGAITanker(FGAISchedule* ref = 0);
     virtual ~FGAITanker() = default;
 
-    string_view getTypeString(void) const override { return "tanker"; }
+    std::string_view getTypeString() const override { return "tanker"; }
     void readFromScenario(SGPropertyNode* scFileNode) override;
     void bind() override;
 
     void setTACANChannelID(const std::string& id);
-    
+
 private:
-    std::string TACAN_channel_id;     // The TACAN channel of this tanker
-    bool contact = false;             // set if this tanker is within fuelling range
+    std::string TACAN_channel_id; // The TACAN channel of this tanker
+    bool contact = false;         // set if this tanker is within fuelling range
 
     virtual void Run(double dt);
     void update(double dt) override;

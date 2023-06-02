@@ -1,22 +1,9 @@
-// NasalFlightPlan.cxx -- expose FlightPlan classes to Nasal
-//
-// Written by James Turner, started 2020.
-//
-// Copyright (C) 2020 James Turner
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+/*
+ * SPDX-FileName: NasalFlightPlan.cxx
+ * SPDX-FileComment: expose FlightPlan classes to Nasal
+ * SPDX-FileCopyrightText: Copyright (C) 2020 James Turner
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
 
 #include "config.h"
 
@@ -35,7 +22,6 @@
 #include <Autopilot/route_mgr.hxx>
 #include <Main/fg_props.hxx>
 #include <Main/globals.hxx>
-#include <Main/util.hxx>
 #include <Navaids/FlightPlan.hxx>
 #include <Navaids/NavDataCache.hxx>
 #include <Navaids/airways.hxx>
@@ -465,8 +451,26 @@ static RouteRestriction routeRestrictionFromArg(naRef arg)
     if (u == "mach") return SPEED_RESTRICT_MACH;
     if (u == "computed-mach") return SPEED_COMPUTED_MACH;
     if (u == "delete") return RESTRICT_DELETE;
+    if (u == "between") return RESTRICT_BETWEEN;
     return RESTRICT_NONE;
 };
+
+static RouteUnits routeUnitsFromArg(naRef arg)
+{
+    if (naIsNil(arg) || !naIsString(arg)) {
+        return DEFAULT_UNITS;
+    }
+
+    const auto u = simgear::strutils::lowercase(naStr_data(arg));
+    if ((u == "knots") || (u == "kt")) return SPEED_KNOTS;
+    if (u == "kph") return SPEED_KPH;
+    if (u == "mach") return SPEED_MACH;
+    if ((u == "ft") || (u == "\'") || (u == "feet")) return ALTITUDE_FEET;
+    if ((u == "m") || (u == "meter") || (u == "meters")) return ALTITUDE_METER;
+    if ((u == "fl") || (u == "flight-level")) return ALTITUDE_FLIGHTLEVEL;
+
+    throw sg_format_exception("routeUnitsFromArg: unknown units", u);
+}
 
 naRef routeRestrictionToNasal(naContext c, RouteRestriction rr)
 {
@@ -479,6 +483,7 @@ naRef routeRestrictionToNasal(naContext c, RouteRestriction rr)
     case RESTRICT_COMPUTED: return stringToNasal(c, "computed");
     case SPEED_COMPUTED_MACH: return stringToNasal(c, "computed-mach");
     case RESTRICT_DELETE: return stringToNasal(c, "delete");
+    case RESTRICT_BETWEEN: return stringToNasal(c, "between");
     }
 
     return naNil();
@@ -649,10 +654,14 @@ static const char* flightplanGhostGetMember(naContext c, void* g, naRef field, n
         *out = naNum(fp->cruiseAltitudeFt());
     else if (!strcmp(fieldName, "cruiseFlightLevel"))
         *out = naNum(fp->cruiseFlightLevel());
+    else if (!strcmp(fieldName, "cruiseAltitudeM"))
+        *out = naNum(fp->cruiseAltitudeM());
     else if (!strcmp(fieldName, "cruiseSpeedKt"))
         *out = naNum(fp->cruiseSpeedKnots());
     else if (!strcmp(fieldName, "cruiseSpeedMach"))
         *out = naNum(fp->cruiseSpeedMach());
+    else if (!strcmp(fieldName, "cruiseSpeedKPH"))
+        *out = naNum(fp->cruiseSpeedKPH());
     else if (!strcmp(fieldName, "remarks"))
         *out = stringToNasal(c, fp->remarks());
     else if (!strcmp(fieldName, "callsign"))
@@ -790,7 +799,7 @@ static void flightplanGhostSetMember(naContext c, void* g, naRef field, naRef va
         }
 
         if (naIsNil(value)) {
-            fp->setSID(fp->sid(), string{});
+            fp->setSID(fp->sid(), std::string{});
             return;
         }
 
@@ -860,7 +869,7 @@ static void flightplanGhostSetMember(naContext c, void* g, naRef field, naRef va
         }
 
         if (naIsNil(value)) {
-            fp->setSTAR(fp->star(), string{});
+            fp->setSTAR(fp->star(), std::string{});
             return;
         }
 
@@ -925,7 +934,7 @@ static void flightplanGhostSetMember(naContext c, void* g, naRef field, naRef va
         }
 
         if (naIsNil(value)) {
-            fp->setApproach(fp->approach(), string{});
+            fp->setApproach(fp->approach(), std::string{});
             return;
         }
 
@@ -960,10 +969,14 @@ static void flightplanGhostSetMember(naContext c, void* g, naRef field, naRef va
         fp->setFollowLegTrackToFixes(static_cast<bool>(value.num));
     } else if (!strcmp(fieldName, "cruiseAltitudeFt")) {
         fp->setCruiseAltitudeFt(static_cast<int>(value.num));
+    } else if (!strcmp(fieldName, "cruiseAltitudeM")) {
+        fp->setCruiseAltitudeM(static_cast<int>(value.num));
     } else if (!strcmp(fieldName, "cruiseFlightLevel")) {
         fp->setCruiseFlightLevel(static_cast<int>(value.num));
     } else if (!strcmp(fieldName, "cruiseSpeedKt")) {
         fp->setCruiseSpeedKnots(static_cast<int>(value.num));
+     } else if (!strcmp(fieldName, "cruiseSpeedKPH")) {
+        fp->setCruiseSpeedKPH(static_cast<int>(value.num));
     } else if (!strcmp(fieldName, "cruiseSpeedMach")) {
         fp->setCruiseSpeedMach(value.num);
     } else if (!strcmp(fieldName, "callsign")) {
@@ -1116,7 +1129,7 @@ static naRef f_createFlightplan(naContext c, naRef me, int argc, naRef* args)
 static naRef f_flightplan(naContext c, naRef me, int argc, naRef* args)
 {
     if (argc == 0) {
-        FGRouteMgr* rm = static_cast<FGRouteMgr*>(globals->get_subsystem("route-manager"));
+        auto rm = globals->get_subsystem<FGRouteMgr>();
         return ghostForFlightPlan(c, rm->flightPlan());
     }
 
@@ -1922,8 +1935,8 @@ static naRef f_flightplan_save(naContext c, naRef me, int argc, naRef* args)
         naRuntimeError(c, "flightplan.save, no file path argument");
     }
 
-    SGPath raw_path(naStr_data(args[0]));
-    SGPath validated_path = fgValidatePath(raw_path, true);
+    const SGPath raw_path(naStr_data(args[0]));
+    const SGPath validated_path = SGPath(raw_path).validate(true);
     if (validated_path.isNull()) {
         naRuntimeError(c, "flightplan.save, writing to path is not permitted");
     }
@@ -1977,6 +1990,8 @@ static naRef f_leg_setSpeed(naContext c, naRef me, int argc, naRef* args)
 
     double           speed = 0.0;
     RouteRestriction rr = RESTRICT_AT;
+    RouteUnits units = DEFAULT_UNITS;
+
     if (argc > 0) {
         if (naIsNil(args[0])) {
             // clear the restriction to NONE
@@ -1987,9 +2002,13 @@ static naRef f_leg_setSpeed(naContext c, naRef me, int argc, naRef* args)
             } else {
                 naRuntimeError(c, "bad arguments to setSpeed");
             }
+
+            if (argc > 2) {
+                units = routeUnitsFromArg(args[2]);
+            }
         }
 
-        leg->setSpeed(rr, speed);
+        leg->setSpeed(rr, speed, units);
     } else {
         naRuntimeError(c, "bad arguments to setSpeed");
     }
@@ -2006,6 +2025,8 @@ static naRef f_leg_setAltitude(naContext c, naRef me, int argc, naRef* args)
 
     double           altitude = 0.0;
     RouteRestriction rr = RESTRICT_AT;
+    RouteUnits units = DEFAULT_UNITS;
+
     if (argc > 0) {
         if (naIsNil(args[0])) {
             // clear the restriction to NONE
@@ -2016,14 +2037,79 @@ static naRef f_leg_setAltitude(naContext c, naRef me, int argc, naRef* args)
             } else {
                 naRuntimeError(c, "bad arguments to leg.setAltitude");
             }
+
+            if (argc > 2) {
+                units = routeUnitsFromArg(args[2]);
+            }
+        } else if (naIsVector(args[0])) {
+            const auto altTuple = args[0];
+            // we need a second restriction type arg, and the tuple should be of length 2
+            if ((argc < 2) || (naVec_size(altTuple) != 2)) {
+                naRuntimeError(c, "missing/bad arguments to leg.setAltitude");
+            }
+            
+            rr = routeRestrictionFromArg(args[1]);
+            if (rr != RESTRICT_BETWEEN) {
+                naRuntimeError(c, "leg.setAltitude: passed a 2-tuple, but restriction type is not 'between'");
+            }
+            
+            double constraintAltitude;
+            const auto ok = convertToNum(naVec_get(altTuple, 0), constraintAltitude)
+                && convertToNum(naVec_get(altTuple, 1), altitude);
+            if (!ok) {
+                naRuntimeError(c, "leg.setAltitude: tuple members not convertible to numeric altitudes");
+            }
+            
+            if (argc > 2) {
+                units = routeUnitsFromArg(args[2]);
+            }
+            
+            // TODO: store constraint altitude
         }
 
-        leg->setAltitude(rr, altitude);
+        leg->setAltitude(rr, altitude, units);
     } else {
         naRuntimeError(c, "bad arguments to setleg.setAltitude");
     }
 
     return naNil();
+}
+
+static naRef f_leg_altitude(naContext c, naRef me, int argc, naRef* args)
+{
+    FlightPlan::Leg* leg = fpLegGhost(me);
+    if (!leg) {
+        naRuntimeError(c, "leg.altitude called on non-flightplan-leg object");
+    }
+
+    RouteUnits units = DEFAULT_UNITS;
+    if (argc > 0) {
+        units = routeUnitsFromArg(args[9]);
+    }
+
+    if (leg->altitudeRestriction() == RESTRICT_BETWEEN) {
+        naRef result = naNewVector(c);
+        naVec_append(result, naNum(leg->waypoint()->constraintAltitude(units)));
+        naVec_append(result, naNum(leg->altitude(units)));
+        return result;
+    }
+
+    return naNum(leg->altitude(units));
+}
+
+static naRef f_leg_speed(naContext c, naRef me, int argc, naRef* args)
+{
+    FlightPlan::Leg* leg = fpLegGhost(me);
+    if (!leg) {
+        naRuntimeError(c, "leg.speed called on non-flightplan-leg object");
+    }
+
+    RouteUnits units = DEFAULT_UNITS;
+    if (argc > 0) {
+        units = routeUnitsFromArg(args[9]);
+    }
+
+    return naNum(leg->speed(units));
 }
 
 static naRef f_leg_courseAndDistanceFrom(naContext c, naRef me, int argc, naRef* args)
@@ -2076,7 +2162,7 @@ static naRef f_procedure_transition(naContext c, naRef me, int argc, naRef* args
         naRuntimeError(c, "procedure.transition called on non-procedure object");
     }
 
-    const string ident{naStr_data(args[0])};
+    const std::string ident{naStr_data(args[0])};
     const auto ty = proc->type();
     if (Approach::isApproach(ty)) {
         const auto app = static_cast<Approach*>(proc);
@@ -2294,6 +2380,8 @@ naRef initNasalFlightPlan(naRef globals, naContext c)
     naSave(c, fpLegPrototype);
     hashset(c, fpLegPrototype, "setSpeed", naNewFunc(c, naNewCCode(c, f_leg_setSpeed)));
     hashset(c, fpLegPrototype, "setAltitude", naNewFunc(c, naNewCCode(c, f_leg_setAltitude)));
+    hashset(c, fpLegPrototype, "altitude", naNewFunc(c, naNewCCode(c, f_leg_altitude)));
+    hashset(c, fpLegPrototype, "speed", naNewFunc(c, naNewCCode(c, f_leg_speed)));
     hashset(c, fpLegPrototype, "path", naNewFunc(c, naNewCCode(c, f_leg_path)));
     hashset(c, fpLegPrototype, "courseAndDistanceFrom", naNewFunc(c, naNewCCode(c, f_leg_courseAndDistanceFrom)));
 

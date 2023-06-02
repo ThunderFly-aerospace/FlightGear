@@ -81,7 +81,7 @@ static std::string read_string(std::istream& in, size_t& pos)
 
 static int PropertiesWrite(SGPropertyNode* root, std::ostream& out)
 {
-    stringstream buffer;
+    std::stringstream buffer;
     writeProperties(buffer, root, true /*write_all*/);
     uint32_t    buffer_len = buffer.str().size() + 1;
     writeRaw(out, buffer_len);

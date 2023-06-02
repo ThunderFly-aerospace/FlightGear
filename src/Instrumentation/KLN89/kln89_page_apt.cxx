@@ -70,7 +70,7 @@ void KLN89AptPage::Update(double dt) {
 	bool multi;  // Not set by FindFirst...
 	bool exact = false;
 	if(_apt_id.size() == 4) exact = true;
-	// TODO - move this search out to where the button is pressed, and cache the result!
+	// TODO: move this search out to where the button is pressed, and cache the result!
 	if(_apt_id != _last_apt_id || ap == NULL) ap = _kln89->FindFirstAptById(_apt_id, multi, exact);
 	//if(np == NULL) cout << "NULL... ";
 	//if(b == false) cout << "false...\n";
@@ -175,7 +175,7 @@ void KLN89AptPage::Update(double dt) {
 			if(_iaps.empty()) {
 				_kln89->DrawText("NO APR", 2, 0, 0);
 			} else {
-				// TODO - output proper differentiation of ILS and NP APR and NP APR type eg GPS(R)
+				// TODO: output proper differentiation of ILS and NP APR and NP APR type eg GPS(R)
 				_kln89->DrawText("NP APR", 2, 0, 0);
 			}
 		} else if(_subPage == 3) {
@@ -196,7 +196,7 @@ void KLN89AptPage::Update(double dt) {
 				_kln89->DrawText(s, 2, 5 - s.size(), 2);
 				_kln89->DrawText((_kln89->_altUnits == GPS_ALT_UNITS_FT ? "ft" : "m"), 2, 5, 2);
 				// Surface
-				// TODO - why not store these strings as an array?
+				// TODO: why not store these strings as an array?
 				switch(_aptRwys[i]->surface()) {
 				case 1:
 					// Asphalt - fall through
@@ -246,7 +246,7 @@ void KLN89AptPage::Update(double dt) {
 				_kln89->DrawText(s, 2, 5 - s.size(), 0);
 				_kln89->DrawText((_kln89->_altUnits == GPS_ALT_UNITS_FT ? "ft" : "m"), 2, 5, 0);
 				// Surface
-				// TODO - why not store these strings as an array?
+				// TODO: why not store these strings as an array?
 				switch(_aptRwys[i]->surface()) {
 				case 1:
 					// Asphalt - fall through
@@ -303,7 +303,7 @@ void KLN89AptPage::Update(double dt) {
 				_kln89->DrawFreq(_aptFreqs[i].freq, 2, 7, 0);
 			}
 		} else if(_subPage == 5) {
-			// TODO - user ought to be allowed to leave persistent remarks
+			// TODO: user ought to be allowed to leave persistent remarks
 			_kln89->DrawText("[Remarks]", 2, 2, 2);
 		} else if(_subPage == 6) {
 			// We don't have SID/STAR database yet
@@ -427,7 +427,7 @@ void KLN89AptPage::Update(double dt) {
 	if(_kln89->_mode == KLN89_MODE_CRSR) {
 		if(!(_subPage == 7 && (_iafDialog || _addDialog || _replaceDialog))) {
 			if(_uLinePos > 0 && _uLinePos < 5) {
-				// TODO - blink as well
+				// TODO: blink as well
 				_kln89->Underline(2, _uLinePos, 3, 1);
 			}
 			for(unsigned int i = 0; i < _apt_id.size(); ++i) {
@@ -507,7 +507,7 @@ void KLN89AptPage::UpdateAirport(const string& id) {
 	if(_nRwyPages < 1) _nRwyPages = 1;
 	
 	// Instrument approaches
-	// Only non-precision for now - TODO - handle precision approaches if necessary
+	// Only non-precision for now - TODO: handle precision approaches if necessary
 	_iaps.clear();
 	iap_map_iterator itr = _kln89->_np_iap.find(id);
 	if(itr != _kln89->_np_iap.end()) {
@@ -517,7 +517,7 @@ void KLN89AptPage::UpdateAirport(const string& id) {
 		if(_iafDialog || _addDialog || _replaceDialog) {
 			// Eek - major logic error if an airport details cache update occurs
 			// with one of these dialogs active.
-			// TODO - output a warning.
+			// TODO: output a warning.
 			//cout << "HELP!!!!!!!!!!\n";
 		} else {
 			_maxULinePos = 4 + _iaps.size();	// We shouldn't need to check the crsr for out-of-bounds here since we only update the airport details when the airport code is changed - ie. _uLinePos <= 4!
@@ -585,7 +585,7 @@ void KLN89AptPage::ClrPressed() {
 				_iafDialog = true;
 				_maxULinePos = 1;
 				// Don't reset _curIaf since it is remembed.
-				_uLinePos = 1 + _curIaf;	// TODO - make this robust to more than 3 IAF
+				_uLinePos = 1 + _curIaf;	// TODO: make this robust to more than 3 IAF
 			} else {
 				_maxULinePos = 4 + _iaps.size();
 				if(_iaps.empty()) {
@@ -623,7 +623,7 @@ void KLN89AptPage::EntPressed() {
 					_curIaf = _uLinePos - 1 + _iafStart;
 				}
 				//cout << "_curIaf = " << _curIaf << '\n';
-				// TODO - delete the waypoints inside _approachFP before clearing them!!!!!!!
+				// TODO: delete the waypoints inside _approachFP before clearing them!!!!!!!
 				_kln89->_approachFP->waypoints.clear();
 				GPSWaypoint* wp = new GPSWaypoint;
 				*wp = *(_approachRoutes[_curIaf]->waypoints[0]);	// Need to make copies here since we're going to alter ID and type sometimes
@@ -679,7 +679,7 @@ void KLN89AptPage::EntPressed() {
 					_kln89->_approachLoaded = true;
 					//_kln89->_messageStack.push_back("*Press ALT To Set Baro");
 					// Actually - this message is only sent when we go into appraoch-arm mode.
-					// TODO - check the flightplan for consistency
+					// TODO: check the flightplan for consistency
 					_kln89->OrientateToActiveFlightPlan();
 					_kln89->_mode = KLN89_MODE_DISP;
 					_kln89->_curPage = 7;
@@ -687,14 +687,14 @@ void KLN89AptPage::EntPressed() {
 				}
 			}
 		} else if(_replaceDialog) {
-			// TODO - load the approach!
+			// TODO: load the approach!
 		} else if(_uLinePos > 4) {
 			_approachRoutes.clear();
 			_IAP.clear();
 			_curIaf = 0;
 			_approachRoutes = ((FGNPIAP*)(_iaps[_uLinePos-5]))->_approachRoutes;
 			_IAP = ((FGNPIAP*)(_iaps[_uLinePos-5]))->_IAP;
-			_curIap = _uLinePos - 5;	// TODO - handle the start of list ! no. 1, and the end of list not sequential!
+			_curIap = _uLinePos - 5;	// TODO: handle the start of list ! no. 1, and the end of list not sequential!
 			_uLinePos = 1;
 			if(_approachRoutes.size() > 1) {
 				// More than 1 IAF - display the selection dialog
@@ -702,7 +702,7 @@ void KLN89AptPage::EntPressed() {
 				_maxULinePos = _approachRoutes.size();
 			} else {
 				// There is only 1 IAF, so load the waypoints into the approach flightplan here.
-				// TODO - there is nasty code duplication loading the approach FP between the case here where we have only one
+				// TODO: there is nasty code duplication loading the approach FP between the case here where we have only one
 				// IAF and the case where we must choose the IAF from a list.  Try to tidy this after it is all working properly.
 				_kln89->_approachFP->waypoints.clear();
 				GPSWaypoint* wp = new GPSWaypoint;
@@ -814,7 +814,7 @@ void KLN89AptPage::Knob2Left1() {
 			}
 		} else {
 			if(_subPage == 0) {
-				// TODO - set by name
+				// TODO: set by name
 			} else {
 				// NO-OP - to/fr is cycled by clr button
 			}
@@ -866,7 +866,7 @@ void KLN89AptPage::Knob2Right1() {
 			}
 		} else {
 			if(_subPage == 0) {
-				// TODO - set by name
+				// TODO: set by name
 			} else {
 				// NO-OP - to/fr is cycled by clr button
 			}

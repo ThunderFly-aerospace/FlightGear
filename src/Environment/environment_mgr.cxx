@@ -1,22 +1,9 @@
-// environment-mgr.cxx -- manager for natural environment information.
-//
-// Written by David Megginson, started February 2002.
-//
-// Copyright (C) 2002  David Megginson - david@megginson.com
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+/*
+ * SPDX-FileName: environment_mgr.cxx
+ * SPDX-FileComment: manager for natural environment information
+ * SPDX-FileCopyrightText: Copyright (C) 2002  David Megginson - david@megginson.com
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
 
 #ifdef HAVE_CONFIG_H
 #  include <config.h>
@@ -149,8 +136,8 @@ SGSubsystem::InitStatus FGEnvironmentMgr::incrementalInit()
   if (r == INIT_DONE) {
     fgClouds->Init();
     _multiplayerListener = new FGEnvironmentMgrMultiplayerListener(this);
-    globals->get_event_mgr()->addTask("updateClosestAirport", this,
-                                      &FGEnvironmentMgr::updateClosestAirport, 10 );
+    globals->get_event_mgr()->addTask("updateClosestAirport",
+        [this](){ this->updateClosestAirport(); }, 10 );
   }
 
   return r;
@@ -336,9 +323,9 @@ void FGEnvironmentMgr::updateClosestAirport()
     SGGeod nearestTowerPosition;
     std::string nearestIdent;
     const SGGeod airportGeod;
-    double towerDistance = numeric_limits<double>::max();
+    double towerDistance = std::numeric_limits<double>::max();
     if (nearestAirport) {
-        const string currentId = fgGetString("/sim/airport/closest-airport-id", "");
+        const std::string currentId = fgGetString("/sim/airport/closest-airport-id", "");
         if (currentId != nearestAirport->ident()) {
             SG_LOG(SG_ENVIRONMENT, SG_INFO, "FGEnvironmentMgr::updateClosestAirport: selected:" << nearestAirport->ident());
             fgSetString("/sim/airport/closest-airport-id", nearestAirport->ident().c_str());
@@ -353,7 +340,7 @@ void FGEnvironmentMgr::updateClosestAirport()
             SG_LOG(SG_ENVIRONMENT, SG_DEBUG, "no tower for airport-id=" << nearestAirport->getId());
         }
         //Ensure that the tower isn't at ground level by adding a nominal amount
-        //TODO: (fix the data so that too short or too tall towers aren't present in the data)
+        // TODO: (fix the data so that too short or too tall towers aren't present in the data)
         auto towerAirpotDistance = abs(nearestTowerPosition.getElevationFt() - nearestAirport->geod().getElevationFt());
         if (towerAirpotDistance < min_tower_height_feet) {
             nearestTowerPosition.setElevationFt(nearestTowerPosition.getElevationFt() + default_tower_height_feet);

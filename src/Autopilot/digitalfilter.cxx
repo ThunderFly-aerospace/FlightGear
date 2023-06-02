@@ -839,6 +839,7 @@ bool CoherentNoiseFilterImplementation::configure(SGPropertyNode& cfg_node,
 
     if (cfg_name == "absolute") {
         _absoluteVal = cfg_node.getBoolValue();
+        return true;
     }
     return false;
 }
@@ -925,7 +926,7 @@ bool DigitalFilter::configure( SGPropertyNode& prop_root,
   _implementation->collectDependentProperties(inputs);
   collectDependentProperties(inputs);
   
-  Highlight* highlight = globals->get_subsystem<Highlight>();
+  auto highlight = globals->get_subsystem<Highlight>();
   if (highlight) {
     for (auto in: inputs) {
       for (auto& out: _output_list) {

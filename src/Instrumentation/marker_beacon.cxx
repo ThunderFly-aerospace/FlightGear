@@ -103,7 +103,7 @@ FGMarkerBeacon::init ()
     if (audio_btn->getType() == simgear::props::NONE)
         audio_btn->setBoolValue( true );
 
-    SGSoundMgr *smgr = globals->get_subsystem<SGSoundMgr>();
+    auto smgr = globals->get_subsystem<SGSoundMgr>();
     if (smgr) {
         _audioSampleGroup = smgr->find("avionics", true);
         _audioSampleGroup->tie_to_listener();
@@ -297,6 +297,10 @@ void FGMarkerBeacon::search()
     _time_before_search_sec = 0.5;
 
     const SGGeod pos = globals->get_aircraft_position();
+    if (!pos.isValid()) {
+        // avoid error flood when core positions goes wrong
+        return;
+    }
 
     // get closest marker beacon - within a 1nm cutoff
     BeaconFilter filter;

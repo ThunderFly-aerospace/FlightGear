@@ -93,7 +93,7 @@ void KLN89NDBPage::Update(double dt) {
 			}
 		}
 		if(_subPage == 0) {
-			// TODO - trim VOR-DME from the name, convert to uppercase, abbreviate, etc
+			// TODO: trim VOR-DME from the name, convert to uppercase, abbreviate, etc
 			_kln89->DrawText(np->name(), 2, 0, 2);
 			_kln89->DrawLatitude(np->get_lat(), 2, 3, 1);
 			_kln89->DrawLongitude(np->get_lon(), 2, 3, 0);
@@ -115,7 +115,7 @@ void KLN89NDBPage::Update(double dt) {
 	
 	if(_kln89->_mode == KLN89_MODE_CRSR) {
 		if(_uLinePos > 0 && _uLinePos < 4) {
-			// TODO - blink as well
+			// TODO: blink as well
 			_kln89->Underline(2, _uLinePos, 3, 1);
 		}
 		for(unsigned int i = 0; i < _ndb_id.size(); ++i) {

@@ -18,18 +18,18 @@
  *
  *
  **************************************************************************/
- 
+
 /* This a prototype version of a top-level flight plan manager for Flightgear.
- * It parses the fgtraffic.txt file and determine for a specific time/date, 
- * where each aircraft listed in this file is at the current time. 
- * 
+ * It parses the fgtraffic.txt file and determine for a specific time/date,
+ * where each aircraft listed in this file is at the current time.
+ *
  * I'm currently assuming the following simplifications:
  * 1) The earth is a perfect sphere
  * 2) Each aircraft flies a perfect great circle route.
  * 3) Each aircraft flies at a constant speed (with infinite accelerations and
- *    decelerations) 
- * 4) Each aircraft leaves at exactly the departure time. 
- * 5) Each aircraft arrives at exactly the specified arrival time. 
+ *    decelerations)
+ * 4) Each aircraft leaves at exactly the departure time.
+ * 5) Each aircraft arrives at exactly the specified arrival time.
  *
  * TODO:
  * - Check the code for known portability issues
@@ -44,8 +44,6 @@
 #include <time.h>
 #include <iostream>
 #include <fstream>
-
-
 #include <string>
 #include <vector>
 
@@ -59,75 +57,76 @@
 #include <AIModel/AIManager.hxx>
 #include <Airports/airport.hxx>
 
-
-
 #include <Main/globals.hxx>
 
 #include "SchedFlight.hxx"
 
 using std::string;
 
+
 /******************************************************************************
  * FGScheduledFlight stuff
  *****************************************************************************/
 
-FGScheduledFlight::FGScheduledFlight()
+std::map<std::string, std::string> FGScheduledFlight::missingAirports = std::map<std::string, std::string>();
+
+FGScheduledFlight::FGScheduledFlight() : departurePort{nullptr},
+                                         arrivalPort{nullptr},
+                                         departureTime{0},
+                                         arrivalTime{0},
+                                         repeatPeriod{0}
 {
-    departureTime  = 0;
-    arrivalTime    = 0;
     cruiseAltitude = 0;
-    repeatPeriod   = 0;
     initialized = false;
     available = true;
-    departurePort = NULL;
-    arrivalPort = NULL;
 }
-  
-FGScheduledFlight::FGScheduledFlight(const FGScheduledFlight &other)
+
+FGScheduledFlight::FGScheduledFlight(const FGScheduledFlight &other) : callsign{other.callsign},
+                                                                       fltRules{other.fltRules},
+                                                                       departurePort{other.departurePort},
+                                                                       arrivalPort{other.arrivalPort},
+                                                                       depId{other.depId},
+                                                                       arrId{other.arrId},
+                                                                       requiredAircraft{other.requiredAircraft},
+                                                                       departureTime{other.departureTime},
+                                                                       arrivalTime{other.arrivalTime},
+                                                                       repeatPeriod{other.repeatPeriod}
 {
-  callsign          = other.callsign;
-  fltRules          = other.fltRules;
-  departurePort     = other.departurePort;
-  depId             = other.depId;
-  arrId             = other.arrId;
-  departureTime     = other.departureTime;
   cruiseAltitude    = other.cruiseAltitude;
-  arrivalPort       = other.arrivalPort;
-  arrivalTime       = other.arrivalTime;
-  repeatPeriod      = other.repeatPeriod;
   initialized       = other.initialized;
-  requiredAircraft  = other.requiredAircraft;
   available         = other.available;
 }
 
 /**
  * @param cs The callsign
- * @param fr The flightrules 
+ * @param fr The flightrules
  * @param depPrt The departure ICAO
  * @param arrPrt The arrival ICAO
- */ 
+ */
 
 FGScheduledFlight::FGScheduledFlight(const string& cs,
-		   const string& fr,
-		   const string& depPrt,
-		   const string& arrPrt,
-		   int cruiseAlt,
-		   const string& deptime,
-		   const string& arrtime,
-		   const string& rep,
-                   const string& reqAC)
+		                             const string& fr,
+		                             const string& depPrt,
+		                             const string& arrPrt,
+		                             int cruiseAlt,
+		                             const string& deptime,
+		                             const string& arrtime,
+		                             const string& rep,
+		                             const string& reqAC) : callsign{cs},
+                                                            fltRules{fr},
+                                                            departurePort{nullptr},
+                                                            arrivalPort{nullptr},
+                                                            depId{depPrt},
+                                                            arrId{arrPrt},
+                                                            requiredAircraft{reqAC}
 {
-  callsign          = cs;
-  fltRules          = fr;
   //departurePort.setId(depPrt);
   //arrivalPort.setId(arrPrt);
-  depId = depPrt;
-  arrId = arrPrt;
+
   //cerr << "Constructor: departure " << depId << ". arrival " << arrId << endl;
   //departureTime     = processTimeString(deptime);
   //arrivalTime       = processTimeString(arrtime);
   cruiseAltitude    = cruiseAlt;
-  requiredAircraft  = reqAC;
 
   // Process the repeat period string
   if (rep.find("WEEK",0) != string::npos)
@@ -150,10 +149,10 @@ FGScheduledFlight::FGScheduledFlight(const string& cs,
       available = false;
       return;
   }
-  
-  
+
+
   // What we still need to do is preprocess the departure and
-  // arrival times. 
+  // arrival times.
   departureTime = processTimeString(deptime);
   arrivalTime   = processTimeString(arrtime);
   //departureTime += rand() % 300; // Make sure departure times are not limited to 5 minute increments.
@@ -186,11 +185,11 @@ time_t FGScheduledFlight::processTimeString(const string& theTime)
     // okay first split theTime string into
     // weekday, hour, minute, second;
     // Check if a week day is specified
-    const auto daySeperatorPos = timeCopy.find("/", 0);
-    if (daySeperatorPos != string::npos) {
-        const int weekday = std::stoi(timeCopy.substr(0, daySeperatorPos));
+    const auto daySeparatorPos = timeCopy.find("/", 0);
+    if (daySeparatorPos != string::npos) {
+        const int weekday = std::stoi(timeCopy.substr(0, daySeparatorPos));
         timeOffsetInDays = weekday - currTimeDate->getGmt()->tm_wday;
-        timeCopy = theTime.substr(daySeperatorPos + 1);
+        timeCopy = theTime.substr(daySeparatorPos + 1);
     }
 
     const auto timeTokens = simgear::strutils::split(timeCopy, ":");
@@ -218,7 +217,7 @@ time_t FGScheduledFlight::processTimeString(const string& theTime)
   //tm *temp = currTimeDate->getGmt();
   //char buffer[512];
   //sgTimeFormatTime(&targetTimeDate, buffer);
-  //cout << "Scheduled Time " << buffer << endl; 
+  //cout << "Scheduled Time " << buffer << endl;
   //cout << "Time :" << time(NULL) << " SGTime : " << sgTimeGetGMT(temp) << endl;
   return processedTime;
 }
@@ -231,7 +230,7 @@ void FGScheduledFlight::update()
 
 /**
  * //FIXME Doesn't have to be an iteration / when sitting at departure why adjust based on arrival
- */ 
+ */
 
 void FGScheduledFlight::adjustTime(time_t now)
 {
@@ -279,24 +278,30 @@ FGAirport * FGScheduledFlight::getArrivalAirport  ()
 
 // Upon the first time of requesting airport information
 // for this scheduled flight, these data need to be
-// looked up in the main FlightGear database. 
+// looked up in the main FlightGear database.
 // Missing or bogus Airport codes are currently ignored,
 // but we should improve that. The best idea is probably to cancel
 // this flight entirely by removing it from the schedule, if one
-// of the airports cannot be found. 
+// of the airports cannot be found.
 bool FGScheduledFlight::initializeAirports()
 {
   //cerr << "Initializing using : " << depId << " " << arrId << endl;
   departurePort = FGAirport::findByIdent(depId);
-  if(departurePort == NULL)
+  if(departurePort == nullptr)
     {
-      SG_LOG( SG_AI, SG_DEBUG, "Traffic manager could not find departure airport : " << depId);
+      if (!FGScheduledFlight::missingAirports.count(depId)) {
+        FGScheduledFlight::missingAirports.insert(std::pair<std::string,std::string>(depId, depId));
+        SG_LOG( SG_AI, SG_DEBUG, "Traffic manager could not find airport : " << depId);
+      }
       return false;
     }
   arrivalPort = FGAirport::findByIdent(arrId);
-  if(arrivalPort == NULL)
+  if(arrivalPort == nullptr)
     {
-      SG_LOG( SG_AI, SG_DEBUG, "Traffic manager could not find arrival airport   : " << arrId);
+      if (!FGScheduledFlight::missingAirports.count(arrId)) {
+        FGScheduledFlight::missingAirports.insert(std::pair<std::string,std::string>(arrId, arrId));
+        SG_LOG( SG_AI, SG_DEBUG, "Traffic manager could not find airport : " << arrId);
+      }
       return false;
     }
 
@@ -306,7 +311,7 @@ bool FGScheduledFlight::initializeAirports()
   return true;
 }
 
-bool compareScheduledFlights(FGScheduledFlight *a, FGScheduledFlight *b) 
-{ 
-  return (*a) < (*b); 
+bool FGScheduledFlight::compareScheduledFlights(const FGScheduledFlight *a, const FGScheduledFlight *b)
+{
+  return (*a) < (*b);
 };

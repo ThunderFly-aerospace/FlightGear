@@ -29,7 +29,7 @@
 #include <cstring>
 #include <cstdlib>
 
-#define _JS_MAX_AXES 16
+#define _JS_MAX_AXES 32
 #define _JS_MAX_BUTTONS 32
 #define _JS_MAX_HATS 4
 

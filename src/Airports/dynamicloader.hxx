@@ -25,7 +25,7 @@
 
 class FGGroundNetXMLLoader : public XMLVisitor {
 public:
-    FGGroundNetXMLLoader(FGGroundNetwork* gn);
+    explicit FGGroundNetXMLLoader(FGGroundNetwork* gn);
 
     bool hasErrors() const
     {

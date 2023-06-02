@@ -36,16 +36,18 @@
 #include <simgear/structure/exception.hxx>
 #include <simgear/scene/model/modellib.hxx>
 #include <simgear/scene/util/SGReaderWriterOptions.hxx>
+#include <simgear/scene/tgdb/VPBTechnique.hxx>
 #include <simgear/scene/tsync/terrasync.hxx>
 #include <simgear/misc/strutils.hxx>
 #include <simgear/scene/material/matlib.hxx>
 
-#include <Main/globals.hxx>
 #include <Main/fg_props.hxx>
+#include <Main/globals.hxx>
+#include <Main/sentryIntegration.hxx>
+#include <Scripting/NasalModelData.hxx>
+#include <Scripting/NasalSys.hxx>
 #include <Viewer/renderer.hxx>
 #include <Viewer/splash.hxx>
-#include <Scripting/NasalSys.hxx>
-#include <Scripting/NasalModelData.hxx>
 
 #include "scenery.hxx"
 #include "SceneryPager.hxx"
@@ -119,6 +121,10 @@ public:
             _lodRough->setDoubleValue(_lodDetailed->getDoubleValue() + _lodRoughDelta->getDoubleValue());
             _lodBare->setDoubleValue(_lodRough->getDoubleValue() + _lodBareDelta->getDoubleValue());
         }
+
+        flightgear::addSentryBreadcrumb("Property:" + prop->getNameString() + " is now " +
+                                            prop->getStringValue(),
+                                        "info");
     }
 
 private:
@@ -207,6 +213,8 @@ void FGTileMgr::reinit()
     double rough    = fgGetDouble("/sim/rendering/static-lod/rough-delta", SG_OBJECT_RANGE_ROUGH) + detailed;
     double bare     = fgGetDouble("/sim/rendering/static-lod/bare", SG_OBJECT_RANGE_BARE) + rough;
     double tile_min_expiry = fgGetDouble("/sim/rendering/plod-minimum-expiry-time-secs", SG_TILE_MIN_EXPIRY);
+    flightgear::addSentryBreadcrumb("PLod-minimum-expiry time=" + std::to_string(tile_min_expiry), "info");
+
     _use_vpb = fgGetBool("/scenery/use-vpb");
 
     _options->setPluginStringData("SimGear::LOD_RANGE_BARE", std::to_string(bare));
@@ -310,7 +318,7 @@ bool FGTileMgr::sched_tile( const SGBucket& b, double priority, bool current_vie
         if (!v)
         {
             // create a new entry
-            v = new VPBTileEntry( b );
+            v = new VPBTileEntry( b, _options );
             SG_LOG( SG_TERRAIN, SG_INFO, "sched_tile: new VPB tile entry for:" << b );
 
             // insert the tile into the cache, update will generate load request
@@ -328,7 +336,7 @@ bool FGTileMgr::sched_tile( const SGBucket& b, double priority, bool current_vie
             SG_LOG( SG_TERRAIN, SG_DEBUG, "  New tile cache size " << (int)tile_cache.get_size() );
         }
 
-        // update tile's properties.  We ensure VPB tiles have maximum priority - priority is calcualated as
+        // update tile's properties.  We ensure VPB tiles have maximum priority - priority is calculated as
         // _negative_ the square of the distance from the viewer to the tile.
         // so by multiplying by 0.1 we increase the number towards 0.
         tile_cache.request_tile(v,priority * 0.1,current_view,duration);
@@ -477,6 +485,11 @@ void FGTileMgr::update_queues(bool& isDownloadingScenery)
             SG_LOG(SG_TERRAIN, SG_DEBUG, "Dropping:" << old->get_tile_bucket());
 
             tile_cache.clear_entry(drop_index);
+
+            if (_use_vpb) {
+                // Clear out any VPB data - e.g. roads
+                simgear::VPBTechnique::unloadFeatures(old->get_tile_bucket());
+            }
 
             osg::ref_ptr<osg::Object> subgraph = old->getNode();
             old->removeFromSceneGraph();

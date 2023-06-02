@@ -1,41 +1,25 @@
-// AV400WSim.cxx -- Garmin 400 series protocal class.  This AV400WSim
-// protocol generates the set of "simulator" commands a garmin 400 WAAS
-// series gps would expect as input in simulator mode.  The AV400W
-// protocol parses the set of commands that a garmin 400W series gps
-// would emit.
-// 
-// The Garmin WAAS GPS uses 2 serial channels to communicate with the
-// simulator.  These 2 channels are represented by the FGAV400WSimA and
-// the FGAV400WSimB classes.  The "A" channel is similar to the previous
-// AVSim400 protocol. The "B" channel is considered the "GPS" channel and
-// uses a different protocol than the "A" channel. The GPS unit expects
-// input on the "B" channel at two different frequencies (1hz and 5hz,
-// normally).  The "B" channel also expects responses to certain output
-// messages.
-//
-// Original AV400Sim code Written by Curtis Olson, started Janauary 2009.
-// This AV400W code written by Bruce Hellstrom, March 2011.
-//
-// Copyright (C) 2009  Curtis L. Olson - http://www.flightgear.org/~curt
-// Copyright (c) 2011  Bruce Hellstrom - http://www.celebritycc.com
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-//
-//
-// $Id$
-
+/*
+ * SPDX-FileName: AV400WSim.cxx
+ * SPDX-FileComment: <text>Garmin 400 series protocal class.  This AV400WSim
+ * protocol generates the set of "simulator" commands a garmin 400 WAAS
+ * series gps would expect as input in simulator mode.  The AV400W
+ * protocol parses the set of commands that a garmin 400W series gps
+ * would emit.
+ * 
+ * The Garmin WAAS GPS uses 2 serial channels to communicate with the
+ * simulator.  These 2 channels are represented by the FGAV400WSimA and
+ * the FGAV400WSimB classes.  The "A" channel is similar to the previous
+ * AVSim400 protocol. The "B" channel is considered the "GPS" channel and
+ * uses a different protocol than the "A" channel. The GPS unit expects
+ * input on the "B" channel at two different frequencies (1hz and 5hz,
+ * normally).  The "B" channel also expects responses to certain output
+ * messages.
+ *
+ * Original AV400Sim code Written by Curtis Olson, started Janauary 2009.</text>
+ * SPDX-FileCopyrightText: Copyright (c) 2011  Bruce Hellstrom - http://www.celebritycc.com
+ * SPDX-FileContributor: Copyright (C) 2009  Curtis L. Olson - http://www.flightgear.org/~curt
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
 
 #ifdef HAVE_CONFIG_H
 #  include "config.h"
@@ -105,7 +89,7 @@ bool FGAV400WSimA::gen_message() {
     //sprintf( msg_type2, "w01%c\r\n", (char)65 );
 
     // assemble message
-    string sentence;
+    std::string sentence;
     sentence += '\002';         // STX
     sentence += msg_h;		// obs heading in deg (*10)
     sentence += msg_i;		// total fuel in gal (*10)
@@ -128,14 +112,14 @@ bool FGAV400WSimA::gen_message() {
 bool FGAV400WSimA::parse_message() {
     SG_LOG( SG_IO, SG_INFO, "parse AV400WSimA message" );
 
-    string msg = buf;
+    std::string msg = buf;
     msg = msg.substr( 0, length );
     SG_LOG( SG_IO, SG_INFO, "entire message = " << msg );
 
-    string ident = msg.substr(0, 1);
+    std::string ident = msg.substr(0, 1);
     if ( ident == "i" ) {
-        string side = msg.substr(1,1);
-        string num = msg.substr(2,3);
+        std::string side = msg.substr(1,1);
+        std::string num = msg.substr(2,3);
         if ( side == "-" ) {
             fgSetDouble("/instrumentation/av400w/cdi-deflection", 0.0);
         }
@@ -150,8 +134,8 @@ bool FGAV400WSimA::parse_message() {
         }
     }
     else if ( ident == "j" ) {
-        string side = msg.substr(1,1);
-        string num = msg.substr(2,3);
+        std::string side = msg.substr(1,1);
+        std::string num = msg.substr(2,3);
         if ( side == "-" ) {
             fgSetDouble("/instrumentation/av400w/gs-deflection", 0.0);
         }
@@ -167,7 +151,7 @@ bool FGAV400WSimA::parse_message() {
         }
     }
     else if ( ident == "k" ) {
-        string ind = msg.substr(1,1);
+        std::string ind = msg.substr(1,1);
         if ( ind == "T" ) {
             fgSetBool("/instrumentation/av400w/to-flag", true);
             fgSetBool("/instrumentation/av400w/from-flag", false);
@@ -184,7 +168,7 @@ bool FGAV400WSimA::parse_message() {
         //printf( "k, %s\n", ind.c_str() );
     }
     else if ( ident == "S" ) {
-        string ind = msg.substr(1,5);
+        std::string ind = msg.substr(1,5);
         //printf( "S - %s\n", ind.c_str() );
     }
     else {
@@ -283,7 +267,7 @@ FGAV400WSimB::~FGAV400WSimB() {
 
 bool FGAV400WSimB::gen_hostid_message() {
     char chksum = 0;
-    string data = "Cj\r\n";
+    std::string data = "Cj\r\n";
     data += "COPYRIGHT 2008 GARMIN LTD.       \r\n";
     data += "SFTW P/N #    006-B0339-0A\r\n";
     data += "SOFTWARE VER #           3\r\n";
@@ -296,18 +280,18 @@ bool FGAV400WSimB::gen_hostid_message() {
     data += "OPTIONS LIST    iiiiiiiiii";
     
     // calculate the checksum
-    for ( string::const_iterator cli = data.begin(); cli != data.end(); cli++ ) {
+    for ( std::string::const_iterator cli = data.begin(); cli != data.end(); cli++ ) {
         chksum ^= *cli;
     }
     
-    string sentence( "@@" );
+    std::string sentence( "@@" );
     sentence += data;
     sentence.push_back( chksum );
     sentence += "\x0D\n";
     
     length = sentence.length();
     char *bufptr = buf;
-    for ( string::const_iterator cli = sentence.begin(); cli != sentence.end(); cli++ ) {
+    for ( std::string::const_iterator cli = sentence.begin(); cli != sentence.end(); cli++ ) {
         *bufptr++ = *cli;
     }
 
@@ -316,23 +300,23 @@ bool FGAV400WSimB::gen_hostid_message() {
 
 bool FGAV400WSimB::gen_sbas_message() {
     char chksum = 0;
-    string data = "WA";
+    std::string data = "WA";
     data.push_back( '\0' );
     data += sbas_sel;
     
     // calculate the checksum
-    for ( string::const_iterator cli = data.begin(); cli != data.end(); cli++ ) {
+    for ( std::string::const_iterator cli = data.begin(); cli != data.end(); cli++ ) {
         chksum ^= *cli;
     }
     
-    string sentence( "@@" );
+    std::string sentence( "@@" );
     sentence += data;
     sentence.push_back( chksum );
     sentence += "\x0D\n";
     
     length = sentence.length();
     char *bufptr = buf;
-    for ( string::const_iterator cli = sentence.begin(); cli != sentence.end(); cli++ ) {
+    for ( std::string::const_iterator cli = sentence.begin(); cli != sentence.end(); cli++ ) {
         *bufptr++ = *cli;
     }
 
@@ -344,7 +328,7 @@ bool FGAV400WSimB::gen_Wh_message() {
     char chksum = 0;
     
     // generate the Wh message
-    string data = "Wh";
+    std::string data = "Wh";
     data.push_back( '\x0F' );
     data.append( "\x3f\x00\x00\x20\x00\x20", 6 );
     data.append( "\x4f\x00\x00\x28\x00\x30", 6 );
@@ -364,18 +348,18 @@ bool FGAV400WSimB::gen_Wh_message() {
     data.push_back( '0' );
     
     // calculate the checksum
-    for ( string::const_iterator cli = data.begin(); cli != data.end(); cli++ ) {
+    for ( std::string::const_iterator cli = data.begin(); cli != data.end(); cli++ ) {
         chksum ^= *cli;
     }
     
-    string sentence( "@@" );
+    std::string sentence( "@@" );
     sentence += data;
     sentence.push_back( chksum );
     sentence += "\x0D\n";
 
     length = sentence.length();
     char *bufptr = buf;
-    for ( string::const_iterator cli = sentence.begin(); cli != sentence.end(); cli++ ) {
+    for ( std::string::const_iterator cli = sentence.begin(); cli != sentence.end(); cli++ ) {
         *bufptr++ = *cli;
     }
 
@@ -388,7 +372,7 @@ bool FGAV400WSimB::gen_Wx_message() {
     char chksum = 0;
     
     // Now process the Wx message
-    string data = "Wx";
+    std::string data = "Wx";
     data.push_back( (char)( fgGetInt( "/sim/time/utc/month") & 0xFF ) );
     data.push_back( (char)( fgGetInt( "/sim/time/utc/day") & 0xFF ) );
     data.push_back( (char)( (fgGetInt( "/sim/time/utc/year") >> 8 ) & 0xFF ) );
@@ -404,11 +388,11 @@ bool FGAV400WSimB::gen_Wx_message() {
     data.push_back( '\0' );
     
     // calculate the checksum
-    for ( string::const_iterator cli = data.begin(); cli != data.end(); cli++ ) {
+    for ( std::string::const_iterator cli = data.begin(); cli != data.end(); cli++ ) {
         chksum ^= *cli;
     }
     
-    string sentence( "@@" );
+    std::string sentence( "@@" );
     sentence += data;
     sentence.push_back( chksum );
     sentence += "\x0D\n";
@@ -416,7 +400,7 @@ bool FGAV400WSimB::gen_Wx_message() {
     // cout << sentence;
     length = sentence.length();
     char *bufptr = buf;
-    for ( string::const_iterator cli = sentence.begin(); cli != sentence.end(); cli++ ) {
+    for ( std::string::const_iterator cli = sentence.begin(); cli != sentence.end(); cli++ ) {
         *bufptr++ = *cli;
     }
 
@@ -429,7 +413,7 @@ bool FGAV400WSimB::gen_Wt_message() {
     char chksum = 0;
     
     // generate the Wt message
-    string data = "Wt";
+    std::string data = "Wt";
     data.push_back( (char)( fgGetInt( "/sim/time/utc/month") & 0xFF ) );
     data.push_back( (char)( fgGetInt( "/sim/time/utc/day") & 0xFF ) );
     data.push_back( (char)( (fgGetInt( "/sim/time/utc/year") >> 8 ) & 0xFF ) );
@@ -509,18 +493,18 @@ bool FGAV400WSimB::gen_Wt_message() {
     data += "\x7F\xFF";
     
     // calculate the checksum
-    for ( string::const_iterator cli = data.begin(); cli != data.end(); cli++ ) {
+    for ( std::string::const_iterator cli = data.begin(); cli != data.end(); cli++ ) {
         chksum ^= *cli;
     }
     
-    string sentence( "@@" );
+    std::string sentence( "@@" );
     sentence += data;
     sentence.push_back( chksum );
     sentence += "\x0D\n";
 
     length = sentence.length();
     char *bufptr = buf;
-    for ( string::const_iterator cli = sentence.begin(); cli != sentence.end(); cli++ ) {
+    for ( std::string::const_iterator cli = sentence.begin(); cli != sentence.end(); cli++ ) {
         *bufptr++ = *cli;
     }
 
@@ -533,7 +517,7 @@ bool FGAV400WSimB::gen_Wm_message() {
     char chksum = 0;
     
     // generate the Wt message
-    string data = "Wm";
+    std::string data = "Wm";
 
     // flight phase
     data.push_back( flight_phase );
@@ -559,18 +543,18 @@ bool FGAV400WSimB::gen_Wm_message() {
     data.append( "\x00\x0F\x00\x0F\x00\x0F", 6 );
     
     // calculate the checksum
-    for ( string::const_iterator cli = data.begin(); cli != data.end(); cli++ ) {
+    for ( std::string::const_iterator cli = data.begin(); cli != data.end(); cli++ ) {
         chksum ^= *cli;
     }
     
-    string sentence( "@@" );
+    std::string sentence( "@@" );
     sentence += data;
     sentence.push_back( chksum );
     sentence += "\x0D\n";
 
     length = sentence.length();
     char *bufptr = buf;
-    for ( string::const_iterator cli = sentence.begin(); cli != sentence.end(); cli++ ) {
+    for ( std::string::const_iterator cli = sentence.begin(); cli != sentence.end(); cli++ ) {
         *bufptr++ = *cli;
     }
 
@@ -582,7 +566,7 @@ bool FGAV400WSimB::gen_Wv_message() {
     char chksum = 0;
     
     // generate the Wt message
-    string data = "Wv";
+    std::string data = "Wv";
 
     // data is valid
     data += "1";
@@ -612,11 +596,11 @@ bool FGAV400WSimB::gen_Wv_message() {
     data.push_back( (char)( vnup & 0xFF ) );
 
     // calculate the checksum
-    for ( string::const_iterator cli = data.begin(); cli != data.end(); cli++ ) {
+    for ( std::string::const_iterator cli = data.begin(); cli != data.end(); cli++ ) {
         chksum ^= *cli;
     }
     
-    string sentence( "@@" );
+    std::string sentence( "@@" );
     sentence += data;
     sentence.push_back( chksum );
     sentence += "\x0D\n";
@@ -624,7 +608,7 @@ bool FGAV400WSimB::gen_Wv_message() {
     // cout << sentence;
     length = sentence.length();
     char *bufptr = buf;
-    for ( string::const_iterator cli = sentence.begin(); cli != sentence.end(); cli++ ) {
+    for ( std::string::const_iterator cli = sentence.begin(); cli != sentence.end(); cli++ ) {
         *bufptr++ = *cli;
     }
 
@@ -632,12 +616,12 @@ bool FGAV400WSimB::gen_Wv_message() {
 }
 
 
-bool FGAV400WSimB::verify_checksum( string message, int datachars ) {
+bool FGAV400WSimB::verify_checksum( std::string message, int datachars ) {
     bool bRet = false;
-    string dataseg = message.substr(SOM_SIZE, datachars);
+    std::string dataseg = message.substr(SOM_SIZE, datachars);
     char chksum = 0;
     char cs = message[SOM_SIZE + datachars];
-    for ( string::const_iterator cli = dataseg.begin();
+    for ( std::string::const_iterator cli = dataseg.begin();
           cli != dataseg.end(); cli++ ) {
         chksum ^= *cli;
     }
@@ -647,7 +631,7 @@ bool FGAV400WSimB::verify_checksum( string message, int datachars ) {
     }
     else {
         SG_LOG( SG_IO, SG_INFO, "bad input checksum: " << message );
-        //string msgid = asciitize_message( message );
+        //std::string msgid = asciitize_message( message );
         //printf( "FGAV400SimB::verify_checksum bad input checksum:\n%s\n", msgid.c_str() );
     }
         
@@ -655,10 +639,10 @@ bool FGAV400WSimB::verify_checksum( string message, int datachars ) {
 }
 
 
-string FGAV400WSimB::asciitize_message( string message ) {
-    string asciimsg;
+std::string FGAV400WSimB::asciitize_message( std::string message ) {
+    std::string asciimsg;
 
-    for ( string::const_iterator cli = message.begin();
+    for ( std::string::const_iterator cli = message.begin();
           cli != message.end(); cli++ ) 
     {
         unsigned char uc = static_cast<unsigned char>(*cli);
@@ -675,8 +659,8 @@ string FGAV400WSimB::asciitize_message( string message ) {
     return( asciimsg );
 }
 
-string FGAV400WSimB::buffer_to_string() {
-    string message;
+std::string FGAV400WSimB::buffer_to_string() {
+    std::string message;
     char *bufctr = buf;
     
     for ( int xctr = 0; xctr < length; xctr++ ) {
@@ -690,20 +674,20 @@ string FGAV400WSimB::buffer_to_string() {
 bool FGAV400WSimB::parse_message() {
     SG_LOG( SG_IO, SG_INFO, "parse AV400WSimB message" );
 
-    string msg = buffer_to_string();
+    std::string msg = buffer_to_string();
     
-    string som = msg.substr(0, 2);
+    std::string som = msg.substr(0, 2);
     if ( som != "@@" ) {
         SG_LOG( SG_IO, SG_INFO, "bad start message" );
         return false;
     }
 
-    string ident = msg.substr(2,2);
+    std::string ident = msg.substr(2,2);
     
     if ( ident == "AH" ) { // Flight Phase
         if ( verify_checksum( msg, 3 ) ) {
             flight_phase = msg[4];
-            //string ascmsg = asciitize_message( msg );
+            //std::string ascmsg = asciitize_message( msg );
             //printf( "%10d received AH %s\n", outputctr, ascmsg.c_str() );
             switch( flight_phase ) {
                 case FGAV400WSimB::PHASE_OCEANIC: // Oceanic
@@ -808,7 +792,7 @@ bool FGAV400WSimB::parse_message() {
         // Do nothing until we know what it does
     }
     else {
-        string unkmsg = msg.substr( 0, 4 );
+        std::string unkmsg = msg.substr( 0, 4 );
         printf( "parse_message unknown: %s\n", unkmsg.c_str() );
     }
     
@@ -1008,8 +992,8 @@ bool FGAV400WSimB::process() {
         length++;
         
         if ( gotCr && gotLf ) { // message done
-            //string msg = buffer_to_string();
-            //string ascmsg = asciitize_message( msg );
+            //std::string msg = buffer_to_string();
+            //std::string ascmsg = asciitize_message( msg );
             //printf( "Received message\n" );
             //printf( "%s\n", ascmsg.c_str() );
             //printf( "got message\n" );

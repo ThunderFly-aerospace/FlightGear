@@ -32,67 +32,67 @@ MetarPropertiesATISInformationProvider::~MetarPropertiesATISInformationProvider(
 {
 }
 
-bool MetarPropertiesATISInformationProvider::isValid()
+bool MetarPropertiesATISInformationProvider::isValid() const
 {
   return _metar->getBoolValue( "valid", false );
 }
 
-string MetarPropertiesATISInformationProvider::airportId()
+string MetarPropertiesATISInformationProvider::airportId() const
 {
   return _metar->getStringValue( "station-id", "xxxx" );
 }
 
-long MetarPropertiesATISInformationProvider::getTime()
+long MetarPropertiesATISInformationProvider::getTime() const
 {
   return makeAtisTime( 0,
     _metar->getIntValue( "hour" ) % 24, 
     _metar->getIntValue( "minute" ) % 60 );
 }
 
-int MetarPropertiesATISInformationProvider::getWindDeg()
+int MetarPropertiesATISInformationProvider::getWindDeg() const
 {
    return _metar->getIntValue( "base-wind-dir-deg" );
 }
 
-int MetarPropertiesATISInformationProvider::getWindMinDeg()
+int MetarPropertiesATISInformationProvider::getWindMinDeg() const
 {
    return _metar->getIntValue( "base-wind-range-from" );
 }
-int MetarPropertiesATISInformationProvider::getWindMaxDeg()
+int MetarPropertiesATISInformationProvider::getWindMaxDeg() const
 {
    return _metar->getIntValue( "base-wind-range-to" );
 }
-int MetarPropertiesATISInformationProvider::getWindSpeedKt()
+int MetarPropertiesATISInformationProvider::getWindSpeedKt() const
 {
   return _metar->getIntValue( "base-wind-speed-kt" );
 }
 
-int MetarPropertiesATISInformationProvider::getGustsKt()
+int MetarPropertiesATISInformationProvider::getGustsKt() const
 {
   return _metar->getIntValue( "gust-wind-speed-kt" );
 }
 
-int MetarPropertiesATISInformationProvider::getQnh()
+int MetarPropertiesATISInformationProvider::getQnh() const
 {
   return _metar->getDoubleValue("pressure-inhg") * SG_INHG_TO_PA / 100.0;
 }
 
-double MetarPropertiesATISInformationProvider::getQnhInHg()
+double MetarPropertiesATISInformationProvider::getQnhInHg() const
 {
   return _metar->getDoubleValue("pressure-inhg");
 }
 
-bool MetarPropertiesATISInformationProvider::isCavok()
+bool MetarPropertiesATISInformationProvider::isCavok() const
 {
   return _metar->getBoolValue( "cavok" );
 }
 
-int MetarPropertiesATISInformationProvider::getVisibilityMeters()
+int MetarPropertiesATISInformationProvider::getVisibilityMeters() const
 {
   return _metar->getIntValue( "min-visibility-m" );
 }
 
-string MetarPropertiesATISInformationProvider::getPhenomena()
+string MetarPropertiesATISInformationProvider::getPhenomena() const
 {
   return _metar->getStringValue( "decoded" );
 }
@@ -102,6 +102,7 @@ ATISInformationProvider::CloudEntries MetarPropertiesATISInformationProvider::ge
   CloudEntries reply;
 
   using simgear::PropertyList;
+
   PropertyList layers = _metar->getNode("clouds", true )->getChildren("layer");
   for( PropertyList::iterator it = layers.begin(); it != layers.end(); ++it ) {
     std::string coverage = (*it)->getStringValue("coverage", "clear");
@@ -110,21 +111,21 @@ ATISInformationProvider::CloudEntries MetarPropertiesATISInformationProvider::ge
       reply[elevation] = coverage;
     }
   }
+
   return reply;
 }
 
-int MetarPropertiesATISInformationProvider::getTemperatureDeg()
+int MetarPropertiesATISInformationProvider::getTemperatureDeg() const
 {
   return _metar->getIntValue( "temperature-degc" );
 }
 
-int MetarPropertiesATISInformationProvider::getDewpointDeg()
+int MetarPropertiesATISInformationProvider::getDewpointDeg() const
 {
   return _metar->getIntValue( "dewpoint-degc" );
 }
 
-string MetarPropertiesATISInformationProvider::getTrend()
+string MetarPropertiesATISInformationProvider::getTrend() const
 {
   return "nosig";
 }
-

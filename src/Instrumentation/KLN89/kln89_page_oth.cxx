@@ -52,7 +52,7 @@ void KLN89OthPage::Update(double dt) {
 		
 		// FIXME - hardwired value.
 		_kln89->DrawText("NAV D", 2, 9, 3);
-		// TODO - add error physics to FG GPS where the alt value comes from.
+		// TODO: add error physics to FG GPS where the alt value comes from.
 		char buf[6];
 		int n = snprintf(buf, 5, "%i", _kln89->_altUnits == GPS_ALT_UNITS_FT ? (int)_kln89->_alt : (int)(_kln89->_alt * SG_FEET_TO_METER));
 		_kln89->DrawText((string)buf, 2, 13-n, 2);

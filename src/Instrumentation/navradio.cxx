@@ -145,7 +145,7 @@ FGNavRadio::FGNavRadio(SGPropertyNode *node) :
     }
   
     string branch = nodePath();
-    _radio_node = fgGetNode(branch.c_str(), true);
+    _radio_node = fgGetNode(branch, true);
 }
 
 
@@ -378,9 +378,9 @@ void FGNavRadio::updateFormattedFrequencies()
     // Create "formatted" versions of the nav frequencies for
     // instrument displays.
     char tmp[16];
-    sprintf( tmp, "%.2f", freq_node->getDoubleValue() );
+    snprintf(tmp, 16, "%.2f", freq_node->getDoubleValue());
     fmt_freq_node->setStringValue(tmp);
-    sprintf( tmp, "%.2f", alt_freq_node->getDoubleValue() );
+    snprintf(tmp, 16, "%.2f", alt_freq_node->getDoubleValue());
     fmt_alt_freq_node->setStringValue(tmp);
     is_loc_freq_node->setBoolValue( IsLocalizerFrequency( freq_node->getDoubleValue() ));
 }
@@ -483,8 +483,6 @@ void FGNavRadio::updateReceiver(double dt)
 
   //////////////////////////////////////////////////////////
   // adjust reception range for altitude
-  // FIXME: make sure we are using the navdata range now that
-  //        it is valid in the data file
   //////////////////////////////////////////////////////////
 	if ( is_loc ) {
 	    double offset = radial - target_radial;
@@ -513,9 +511,12 @@ void FGNavRadio::updateReceiver(double dt)
     signal_quality_norm = 1/(range_exceed_norm*range_exceed_norm);
   }
 
-  signal_quality_norm = fgGetLowPass( last_signal_quality_norm, 
-           signal_quality_norm, dt );
-  
+  if (_apply_lowpass_filter) {
+      signal_quality_norm = fgGetLowPass( last_signal_quality_norm,
+                                          signal_quality_norm, dt );
+  }
+  _apply_lowpass_filter = true;
+
   signal_quality_norm_node->setDoubleValue( signal_quality_norm );
   bool inrange = signal_quality_norm > 0.2;
   inrange_node->setBoolValue( inrange );
@@ -695,11 +696,14 @@ void FGNavRadio::valueChanged (SGPropertyNode* prop)
     }
     // slave-to-GPS enabled/disabled, resync NAV station (update all outputs)
     _navaid = NULL;
+    _apply_lowpass_filter = false;
     _time_before_search_sec = 0;
-  } else if ((prop == freq_node) || (prop == alt_freq_node)) {
+  } else if (prop == alt_freq_node) {
       updateFormattedFrequencies();
-      // force a frequency update
-      _time_before_search_sec = 0.0;
+  } else if (prop == freq_node) {
+      updateFormattedFrequencies();
+      _apply_lowpass_filter = false; // signal quality allowed to vary quickly
+      _time_before_search_sec = 0.0; // trigger a new search() ASAP
   }
 }
 

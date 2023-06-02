@@ -48,7 +48,7 @@ void PerformanceDB::update(double dt)
 }
 
 void PerformanceDB::registerPerformanceData(const std::string& id, PerformanceData* data) {
-    //TODO if key exists already replace data "inplace", i.e. copy to existing PerfData instance
+    // TODO: if key exists already replace data "inplace", i.e. copy to existing PerfData instance
     // this updates all aircraft currently using the PerfData instance.
     _db[id] = data;
 }

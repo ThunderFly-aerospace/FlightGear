@@ -247,7 +247,7 @@ bool FGPgtTerrain::schedule_scenery(const SGGeod& position, double range_m, doub
 
 void FGPgtTerrain::materialLibChanged()
 {
-    // PSADRO: TODO - passing down new regional textures won't work.  these need to be set in the 
+    // PSADRO: TODO: passing down new regional textures won't work.  these need to be set in the 
     // lod tree at init time, as OSGDBPager generates the load request, not the tile cache.
 
     // _options->setMaterialLib(globals->get_matlib());

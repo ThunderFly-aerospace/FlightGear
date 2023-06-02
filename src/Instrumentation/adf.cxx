@@ -84,7 +84,7 @@ void
 ADF::init ()
 {
     string branch = nodePath();
-    SGPropertyNode *node = fgGetNode(branch.c_str(), true );
+    SGPropertyNode *node = fgGetNode(branch, true );
 
     initServicePowerProperties(node);
     
@@ -105,7 +105,7 @@ ADF::init ()
     _heading_node       = fgGetNode("/orientation/heading-deg", true);
 
     // sound support (audible ident code)
-    SGSoundMgr *smgr = globals->get_subsystem<SGSoundMgr>();
+    auto smgr = globals->get_subsystem<SGSoundMgr>();
     _sgr = smgr->find("avionics", true);
     _sgr->tie_to_listener();
 

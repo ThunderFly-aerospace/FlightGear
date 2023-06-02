@@ -178,8 +178,8 @@ public:
     glPushAttrib(GL_ALL_ATTRIB_BITS);
     glPushClientAttrib(~0u);
 
-    // HUD can be NULL
-      HUD *hud = static_cast<HUD*>(globals->get_subsystem("hud"));
+      // HUD can be NULL
+      auto hud = globals->get_subsystem<HUD>();
       if (hud) {
           hud->draw(state);
       }
@@ -214,7 +214,7 @@ public:
     osg::LightSource* lightSource = static_cast<osg::LightSource*>(node);
     osg::Light* light = lightSource->getLight();
 
-    FGLight *l = static_cast<FGLight*>(globals->get_subsystem("lighting"));
+    auto l = globals->get_subsystem<FGLight>();
       if (!l) {
           // lighting is down during re-init
           return;
@@ -274,7 +274,7 @@ public:
     lightModel = static_cast<osg::LightModel*>(stateAttribute);
 
 #if 0
-    FGLight *l = static_cast<FGLight*>(globals->get_subsystem("lighting"));
+    auto l = globals->get_subsystem<FGLight>();
     lightModel->setAmbientIntensity(toOsg(l->scene_ambient());
 #else
     lightModel->setAmbientIntensity(osg::Vec4(0, 0, 0, 1));
@@ -345,7 +345,8 @@ bool FGScenerySwitchCallback::scenery_enabled = false;
 
 FGRenderer::FGRenderer() :
     _sky(NULL),
-    MaximumTextureSize(0)
+    MaximumTextureSize(0),
+    _splash(nullptr)
 {
 	_root = new osg::Group;
 	_root->setName("fakeRoot");
@@ -427,8 +428,7 @@ FGRenderer::preinit( void )
     view->setDatabasePager(FGScenery::getPagerSingleton());
 
     _quickDrawable = nullptr;
-    _splash = new SplashScreen;
-	_viewerSceneRoot->addChild(_splash);
+    getSplash();
 
     if (composite_viewer) {
         // Nothing to do - composite_viewer->addView() will tell view to use
@@ -479,6 +479,21 @@ FGRenderer::init( void )
         }
         else {
             composite_viewer = new osgViewer::CompositeViewer;
+            std::string affinity = fgGetString("/sim/thread-cpu-affinity");
+            SG_LOG(SG_GENERAL, SG_ALERT, "affinity=" << affinity);
+            bool osg_affinity_flag = true;
+            if (affinity == "") {}
+            else if (affinity == "none") {
+                osg_affinity_flag = false;
+            }
+            else if (affinity == "osg") {
+                /* This is handled elsewhere. */
+            }
+            else {
+                SG_LOG(SG_VIEW, SG_ALERT, "Unrecognised value for /sim/thread-cpu-affinity: " << affinity);
+            }
+            SG_LOG(SG_VIEW, SG_ALERT, "Calling composite_viewer->setUseConfigureAffinity() with flag=" << osg_affinity_flag);
+            composite_viewer->setUseConfigureAffinity(osg_affinity_flag);
         }
         
         // https://stackoverflow.com/questions/15207076/openscenegraph-and-multiple-viewers
@@ -611,7 +626,7 @@ FGRenderer::setupView( void )
     setupRoot();
 
     // build the sky
-    Ephemeris* ephemerisSub = globals->get_subsystem<Ephemeris>();
+    auto ephemerisSub = globals->get_subsystem<Ephemeris>();
 
 
     // The sun and moon radius are scaled down numbers of the actual
@@ -802,7 +817,7 @@ FGRenderer::update( ) {
         fgSetBool("/sim/menubar/overlap-hide", false);
     }
 
-    FGLight *l = static_cast<FGLight*>(globals->get_subsystem("lighting"));
+    auto l = globals->get_subsystem<FGLight>();
 
     // update fog params
     double actual_visibility;
@@ -851,8 +866,10 @@ FGRenderer::update( ) {
         _updateVisitor->setViewData(current__view->getViewPosition(),
                                     current__view->getViewOrientation());
         //_updateVisitor->setViewData(eye2, center3);
-        SGVec3f direction(l->sun_vec()[0], l->sun_vec()[1], l->sun_vec()[2]);
-        _updateVisitor->setLight(direction, l->scene_ambient(),
+        SGVec3f sundirection(l->sun_vec()[0], l->sun_vec()[1], l->sun_vec()[2]);
+	SGVec3f moondirection(l->moon_vec()[0], l->moon_vec()[1], l->moon_vec()[2]);
+	
+	_updateVisitor->setLight(sundirection,moondirection, l->scene_ambient(),
                                  l->scene_diffuse(), l->scene_specular(),
                                  l->adj_fog_color(),
                                  l->get_sun_angle()*SGD_RADIANS_TO_DEGREES);
@@ -878,7 +895,7 @@ FGRenderer::updateSky()
     double altitude_m = _altitude_ft->getDoubleValue() * SG_FEET_TO_METER;
     _sky->modify_vis( altitude_m, 0.0 /* time factor, now unused */);
 
-    FGLight *l = static_cast<FGLight*>(globals->get_subsystem("lighting"));
+    auto l = globals->get_subsystem<FGLight>();
 
     // The sun and moon distances are scaled down versions of the
     // actual distance. See FGRenderer::setupView() for more details.
@@ -901,8 +918,9 @@ FGRenderer::updateSky()
     scolor.cloud_color = SGVec3f(l->cloud_color().data());
     scolor.sun_angle   = l->get_sun_angle();
     scolor.moon_angle  = l->get_moon_angle();
-
-    Ephemeris* ephemerisSub = globals->get_subsystem<Ephemeris>();
+    scolor.altitude_m =  altitude_m;
+    
+    auto ephemerisSub = globals->get_subsystem<Ephemeris>();
     double delta_time_sec = _sim_delta_sec->getDoubleValue();
     _sky->reposition( sstate, *ephemerisSub->data(), delta_time_sec );
     _sky->repaint( scolor, *ephemerisSub->data() );
@@ -1001,7 +1019,7 @@ PickList FGRenderer::pick(const osg::Vec2& windowPos)
     
     // We attempt to highlight nodes until Highlight::highlight_nodes()
     // succeeds and returns +ve, or highlighting is disabled and it returns -1.
-    Highlight* highlight = globals->get_subsystem<Highlight>();
+    auto highlight = globals->get_subsystem<Highlight>();
     int higlight_num_props = 0;
     
     for (Intersections::iterator hit = intersections.begin(),
@@ -1146,6 +1164,14 @@ void
 FGRenderer::setPlanes( double zNear, double zFar )
 {
 //	_planes->set( osg::Vec3f( - zFar, - zFar * zNear, zFar - zNear ) );
+}
+
+SplashScreen*
+FGRenderer::getSplash()
+{
+    if (!_splash)
+        _splash = new SplashScreen;
+    return _splash;
 }
 
 bool

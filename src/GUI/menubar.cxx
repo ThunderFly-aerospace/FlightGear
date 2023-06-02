@@ -36,7 +36,7 @@ FGMenuBar::getLocalizedLabel(SGPropertyNode* node)
     // this can occur if the menu item is missing a <name>
     if (label.empty()) {
         SG_LOG(SG_GUI, SG_ALERT, "FGMenuBar::getLocalizedLabel: No <name> defined for:" << node->getPath());
-        return string{"<unnamed>"};
+        return std::string{"<unnamed>"};
     }
 
     return label;

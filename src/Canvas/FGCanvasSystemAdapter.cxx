@@ -19,7 +19,6 @@
 #include "FGCanvasSystemAdapter.hxx"
 
 #include <Main/globals.hxx>
-#include <Main/util.hxx>
 #include <Network/HTTPClient.hxx>
 #include <Viewer/renderer.hxx>
 
@@ -88,7 +87,7 @@ namespace canvas
 
     if( p.isAbsolute() )
     {
-      SGPath valid_path = fgValidatePath(p, false);
+      const SGPath valid_path = SGPath(p).validate(false);
       if( !valid_path.isNull() )
           return osgDB::readRefImageFile(valid_path.utf8Str(), localReaderWriterOptions);
 
@@ -110,13 +109,13 @@ namespace canvas
   SGSubsystem*
   FGCanvasSystemAdapter::getSubsystem(const std::string& name) const
   {
-    return globals->get_subsystem(name.c_str());
+    return globals->get_subsystem_mgr()->get_subsystem(name.c_str());
   }
 
   //----------------------------------------------------------------------------
   simgear::HTTP::Client* FGCanvasSystemAdapter::getHTTPClient() const
   {
-    FGHTTPClient* http = globals->get_subsystem<FGHTTPClient>();
+    auto http = globals->get_subsystem<FGHTTPClient>();
 
     if( http )
       return http->client();

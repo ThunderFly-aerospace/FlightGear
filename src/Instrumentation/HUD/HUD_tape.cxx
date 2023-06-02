@@ -1,23 +1,10 @@
-// HUD_tape.cxx -- HUD Tape Instrument
-//
-// Written by Michele America, started September 1997.
-//
-// Copyright (C) 1997  Michele F. America  [micheleamerica#geocities:com]
-// Copyright (C) 2006  Melchior FRANZ  [mfranz#aon:at]
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+/*
+ * SPDX-FileName: HUD_tape.cxx
+ * SPDX-FileComment: HUD Tape Instrument
+ * SPDX-FileCopyrightText: Copyright (C) 1997  Michele F. America  [micheleamerica#geocities:com]
+ * SPDX-FileContributor: Copyright (C) 2006  Melchior FRANZ  [mfranz#aon:at]
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
 
 #include "HUD.hxx"
 #include "HUD_private.hxx"
@@ -43,7 +30,7 @@ HUD::Tape::Tape(HUD *hud, const SGPropertyNode *n, float x, float y) :
 {
     _half_width_units = range_to_show() / 2.0;
 
-    string s = n->getStringValue("pointer-type");
+    std::string s = n->getStringValue("pointer-type");
     _pointer_type = s != "moving" ? FIXED : MOVING;    // "fixed", "moving"
 
     s = n->getStringValue("tick-type");

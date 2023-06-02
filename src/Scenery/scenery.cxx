@@ -280,7 +280,6 @@ public:
     {
         SGPropertyNode_ptr elevationMeshNode = fgGetNode(root_node_path, true);
         setupPropertyListener(elevationMeshNode, "constraint-gap-m");
-        setupPropertyListener(elevationMeshNode, "lod-range-factor");
         setupPropertyListener(elevationMeshNode, "sample-ratio");
         setupPropertyListener(elevationMeshNode, "vertical-scale");
 
@@ -343,6 +342,10 @@ public:
     if (vpb_active) {
         vpb_active->addChangeListener(this);
         SGSceneFeatures::instance()->setVPBActive(vpb_active->getBoolValue());
+        flightgear::addSentryTag("use-vpb", "yes");
+
+    } else {
+        flightgear::addSentryTag("use-vpb", "no");
     }
   }
 

@@ -29,6 +29,11 @@
 namespace flightgear
 {
 
+// Unfortunately, this can't be scoped inside VRManager::instance().
+// If its initialisation completes after main() calls atexit(fgExitCleanup),
+// then its destruction should take place before fgExitCleanup() is called.
+static osg::ref_ptr<VRManager> managerInstance;
+
 VRManager::VRManager() :
     _reloadCompositorCallback(new ReloadCompositorCallback(this)),
     _propXrLayersValidation("/sim/vr/openxr/layers/validation"),
@@ -59,7 +64,7 @@ VRManager::VRManager() :
                           FLIGHTGEAR_MINOR_VERSION << 8 |
                           FLIGHTGEAR_PATCH_VERSION);
     _settings->setApp("FlightGear", fgVersion);
-    _settings->preferEnvBlendMode(osgXR::Settings::OPAQUE);
+    _settings->preferEnvBlendMode(osgXR::Settings::BLEND_MODE_OPAQUE);
 
     // Inform osgXR what node masks to use
     setVisibilityMaskNodeMasks(simgear::NodeMask::LEFT_BIT,
@@ -88,8 +93,12 @@ VRManager::VRManager() :
 
 VRManager *VRManager::instance()
 {
-    static osg::ref_ptr<VRManager> single = new VRManager;
-    return single;
+    static bool initialised = false;
+    if (!initialised) {
+        managerInstance = new VRManager;
+        initialised = true;
+    }
+    return managerInstance;
 }
 
 void VRManager::syncProperties()

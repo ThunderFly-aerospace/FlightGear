@@ -1,33 +1,11 @@
-//////////////////////////////////////////////////////////////////////
-//
-// multiplaymgr.hxx
-//
-// Written by Duncan McCreanor, started February 2003.
-// duncan.mccreanor@airservicesaustralia.com
-//
-// Copyright (C) 2003  Airservices Australia
-// Copyright (C) 2005  Oliver Schroeder
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-//
-// $Id$
-//
-//////////////////////////////////////////////////////////////////////
+/*
+ * SPDX-FileName: multiplaymgr.hxx
+ * SPDX-FileCopyrightText: Written by Duncan McCreanor, started February 2003 - duncan.mccreanor@airservicesaustralia.com
+ * SPDX-FileContributor: Copyright (C) 2003  Airservices Australia, Copyright (C) 2005  Oliver Schroeder
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
 
-#ifndef MULTIPLAYMGR_H
-#define MULTIPLAYMGR_H
+#pragma once
 
 #define MULTIPLAYTXMGR_HID "$Id$"
 
@@ -35,22 +13,23 @@ const int MIN_MP_PROTOCOL_VERSION = 1;
 const int MAX_MP_PROTOCOL_VERSION = 2;
 
 #include <deque>
+#include <memory>
 #include <string>
 #include <vector>
-#include <memory>
 
 #include <simgear/compiler.h>
-#include <simgear/props/props.hxx>
 #include <simgear/io/raw_socket.hxx>
+#include <simgear/props/props.hxx>
 #include <simgear/structure/subsystem_mgr.hxx>
+
 
 class IRCConnection;
 class CPDLCManager;
 
-const std::string MPIRC_SERVER_HOST_DEFAULT {"mpirc.flightgear.org"};
-const std::string MPIRC_SERVER_HOST_PROPERTY {"/network/mpirc/server-host"};
-const std::string MPIRC_SERVER_PORT_PROPERTY {"/network/mpirc/server-port"};
-const std::string MPIRC_NICK_PREFIX {"MP_IRC_"};
+const std::string MPIRC_SERVER_HOST_DEFAULT{"mpirc.flightgear.org"};
+const std::string MPIRC_SERVER_HOST_PROPERTY{"/network/mpirc/server-host"};
+const std::string MPIRC_SERVER_PORT_PROPERTY{"/network/mpirc/server-port"};
+const std::string MPIRC_NICK_PREFIX{"MP_IRC_"};
 
 struct FGExternalMotionData;
 class MPPropertyListener;
@@ -75,18 +54,18 @@ public:
 
     // transmitter
 
-    void SendTextMessage(const std::string &sMsgText);
+    void SendTextMessage(const std::string& sMsgText);
     // receiver
 
     FGAIMultiplayer* getMultiplayer(const std::string& callsign);
 
-    std::shared_ptr<vector<char>> popMessageHistory();
-    void pushMessageHistory(std::shared_ptr<vector<char>> message);
-    
+    std::shared_ptr<std::vector<char>> popMessageHistory();
+    void pushMessageHistory(std::shared_ptr<std::vector<char>> message);
+
     // Remove motion information for all multiplayer aircraft, e.g. when
     // scrubbing during replay.
     void ClearMotion();
-    CPDLCManager *getCPDLC() { return _cpdlc.get(); };
+    CPDLCManager* getCPDLC() { return _cpdlc.get(); };
 
 private:
     std::unique_ptr<IRCConnection> _mpirc;
@@ -95,7 +74,7 @@ private:
 
     void setPropertiesChanged()
     {
-      mPropertiesChanged = true;
+        mPropertiesChanged = true;
     }
     int getProtocolToUse()
     {
@@ -116,7 +95,7 @@ private:
     FGAIMultiplayer* addMultiplayer(const std::string& callsign,
                                     const std::string& modelName,
                                     const int fallback_model_index);
-    void FillMsgHdr(T_MsgHdr *MsgHdr, int iMsgId, unsigned _len = 0u);
+    void FillMsgHdr(T_MsgHdr* MsgHdr, int iMsgId, unsigned _len = 0u);
     void ProcessPosMsg(const MsgBuf& Msg, const simgear::IPAddress& SenderAddress,
                        long stamp);
     void ProcessChatMsg(const MsgBuf& Msg, const simgear::IPAddress& SenderAddress);
@@ -125,7 +104,7 @@ private:
     int GetMsg(MsgBuf& msgBuf, simgear::IPAddress& SenderAddress);
 
     /// maps from the callsign string to the FGAIMultiplayer
-    typedef std::map<std::string, SGSharedPtr<FGAIMultiplayer> > MultiPlayerMap;
+    typedef std::map<std::string, SGSharedPtr<FGAIMultiplayer>> MultiPlayerMap;
     MultiPlayerMap mMultiPlayerMap;
 
     std::unique_ptr<simgear::Socket> mSocket;
@@ -136,16 +115,16 @@ private:
 
     // Map between the property id's from the multiplayers network packets
     // and the property nodes
-    typedef std::map<unsigned int, SGSharedPtr<SGPropertyNode> > PropertyMap;
+    typedef std::map<unsigned int, SGSharedPtr<SGPropertyNode>> PropertyMap;
     PropertyMap mPropertyMap;
-    SGPropertyNode *pProtocolVersion;
-    SGPropertyNode *pXmitLen;
-    SGPropertyNode *pMultiPlayDebugLevel;
-    SGPropertyNode *pMultiPlayRange;
-    SGPropertyNode *pMultiPlayTransmitPropertyBase;
-    SGPropertyNode *pReplayState;
-    SGPropertyNode *pLogRawSpeedMultiplayer;
-   
+    SGPropertyNode* pProtocolVersion;
+    SGPropertyNode* pXmitLen;
+    SGPropertyNode* pMultiPlayDebugLevel;
+    SGPropertyNode* pMultiPlayRange;
+    SGPropertyNode* pMultiPlayTransmitPropertyBase;
+    SGPropertyNode* pReplayState;
+    SGPropertyNode* pLogRawSpeedMultiplayer;
+
     typedef std::map<unsigned int, const struct IdPropertyList*> PropertyDefinitionMap;
     PropertyDefinitionMap mPropertyDefinition;
 
@@ -156,8 +135,6 @@ private:
     double mDt; // reciprocal of /sim/multiplay/tx-rate-hz
     double mNextTransmitTime = 0.0;
 
-    std::deque<std::shared_ptr<std::vector<char>>>  mRecordMessageQueue;
-    std::deque<std::shared_ptr<std::vector<char>>>  mReplayMessageQueue;
+    std::deque<std::shared_ptr<std::vector<char>>> mRecordMessageQueue;
+    std::deque<std::shared_ptr<std::vector<char>>> mReplayMessageQueue;
 };
-
-#endif

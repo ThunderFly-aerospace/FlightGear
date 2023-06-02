@@ -83,7 +83,7 @@ AddOnsController::AddOnsController(LauncherMainWindow *parent, LaunchConfig* con
             m_addonsModuleModel->append(path, addon, enable);
         }
         catch (const sg_exception &e) {
-            string msg = "Error getting add-on metadata: " + e.getFormattedMessage();
+            std::string msg = "Error getting add-on metadata: " + e.getFormattedMessage();
             SG_LOG(SG_GENERAL, SG_ALERT, msg);
         }
     }
@@ -218,7 +218,7 @@ QString AddOnsController::addAddOnModulePath() const
             path = QString("");
         }
     } catch (const sg_exception &e) {
-        string msg = "Error getting add-on metadata: " + e.getFormattedMessage();
+        std::string msg = "Error getting add-on metadata: " + e.getFormattedMessage();
         SG_LOG(SG_GENERAL, SG_ALERT, msg);
     }
 

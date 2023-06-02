@@ -42,12 +42,12 @@ void NasalSysTests::setUp()
     fgInitAllowedPaths();
     globals->get_props()->getNode("nasal", true);
 
-    globals->add_subsystem("prop-interpolator", new FGInterpolator, SGSubsystemMgr::INIT);
+    globals->get_subsystem_mgr()->add<FGInterpolator>();
 
     globals->get_subsystem_mgr()->bind();
     globals->get_subsystem_mgr()->init();
 
-    globals->add_new_subsystem<FGNasalSys>(SGSubsystemMgr::INIT);
+    globals->get_subsystem_mgr()->add<FGNasalSys>();
 
     globals->get_subsystem_mgr()->postinit();
 }
@@ -147,7 +147,7 @@ void NasalSysTests::testCommands()
     CPPUNIT_ASSERT(ok);
 
     errors = nasalSys->getAndClearErrorList();
-    CPPUNIT_ASSERT_EQUAL(0UL, errors.size());
+    CPPUNIT_ASSERT_EQUAL(0UL, (unsigned long) errors.size());
 
     // should fail, command is removed
     ok = globals->get_commands()->execute("do-foo", args);
@@ -238,6 +238,57 @@ void NasalSysTests::testRange()
         unitTest.assert_equal(range(2, 8), [2, 3, 4, 5, 6, 7]);
         unitTest.assert_equal(range(2, 10, 3), [2, 5, 8]);
 
+    )");
+    CPPUNIT_ASSERT(ok);
+}
+
+void NasalSysTests::testKeywordArgInHash()
+{
+    auto nasalSys = globals->get_subsystem<FGNasalSys>();
+    nasalSys->getAndClearErrorList();
+
+    bool ok = FGTestApi::executeNasal(R"(
+        var foo = func(arg1, kw1 = "", kw2 = nil)
+        {
+            return {'a':kw1, 'b':kw2};
+        }
+        
+        var d = foo(arg1:42, kw2:'apples', kw1:'pears');
+        unitTest.assert_equal(d.a, 'pears');
+        unitTest.assert_equal(d.b, 'apples');
+
+    )");
+    CPPUNIT_ASSERT(ok);
+
+    ok = FGTestApi::executeNasal(R"(
+        var bar = func(h) {
+            return h;
+        }
+
+        var foo = func(arg1, kw1 = "", kw2 = nil)
+        {
+            return bar({'a':kw1, 'b':kw2});
+        }
+        
+        var d = foo(arg1:42, kw2:'apples', kw1:'pears');
+        unitTest.assert_equal(d.a, 'pears');
+        unitTest.assert_equal(d.b, 'apples');
+
+    )");
+    CPPUNIT_ASSERT(ok);
+
+    ok = FGTestApi::executeNasal(R"(
+        var bar = func(h) {
+            unitTest.assert_equal(h.a, 'pears');
+            unitTest.assert_equal(h.b, 'apples');
+        }
+
+        var foo = func(arg1, kw1 = "", kw2 = nil)
+        {
+            return bar({'a':kw1, 'b':kw2});
+        }
+        
+        var d = foo(arg1:42, kw2:'apples', kw1:'pears');    
     )");
     CPPUNIT_ASSERT(ok);
 }

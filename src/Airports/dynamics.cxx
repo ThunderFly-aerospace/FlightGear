@@ -1,22 +1,9 @@
-// dynamics.cxx - Code to manage the higher order airport ground activities
-// Written by Durk Talsma, started December 2004.
-//
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-//
-// $Id$
+/*
+ * SPDX-FileName: dynamics.cxx
+ * SPDX-FileComment: Code to manage the higher order airport ground activities
+ * SPDX-FileCopyrightText: Written by Durk Talsma, started December 2004
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
 
 #include <config.h>
 
@@ -27,131 +14,127 @@
 #include <simgear/compiler.h>
 #include <simgear/structure/SGWeakPtr.hxx>
 
-#include <Environment/environment_mgr.hxx>
+#include <AIModel/AIBase.hxx>
+#include <AIModel/AIManager.hxx>
+#include <Airports/groundnetwork.hxx>
+#include <Airports/runways.hxx>
 #include <Environment/environment.hxx>
+#include <Environment/environment_mgr.hxx>
+#include <Main/fg_props.hxx>
+#include <Main/globals.hxx>
+#include <Main/locale.hxx>
+#include <Navaids/NavDataCache.hxx>
+#include <simgear/debug/logstream.hxx>
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/props/props.hxx>
 #include <simgear/structure/subsystem_mgr.hxx>
-#include <simgear/debug/logstream.hxx>
-#include <Main/globals.hxx>
-#include <Main/fg_props.hxx>
-#include <Main/locale.hxx>
-#include <Airports/runways.hxx>
-#include <Airports/groundnetwork.hxx>
-#include <Navaids/NavDataCache.hxx>
-#include <AIModel/AIManager.hxx>
-#include <AIModel/AIBase.hxx>
 
 #include "airport.hxx"
 #include "dynamics.hxx"
 
+using std::sort;
 using std::string;
 using std::vector;
-using std::sort;
 
 // #define RUNWAY_FALLBACK_DEBUG
 
 class ParkingAssignment::ParkingAssignmentPrivate
 {
 public:
-  ParkingAssignmentPrivate(FGParking* pk, FGAirportDynamics* dyn) :
-    refCount(0),
-    parking(pk),
-    dynamics(dyn)
-  {
-    assert(pk);
-    assert(dyn);
-    retain(); // initial count of 1
-  }
-
-  ~ParkingAssignmentPrivate()
-  {
-      FGAirportDynamicsRef strongRef = dynamics.lock();
-      if (strongRef) {
-          strongRef->releaseParking(parking);
-      }
-  }
-
-  void release()
-  {
-    if ((--refCount) == 0) {
-      delete this;
+    ParkingAssignmentPrivate(FGParking* pk, FGAirportDynamics* dyn) : refCount(0),
+                                                                      parking(pk),
+                                                                      dynamics(dyn)
+    {
+        assert(pk);
+        assert(dyn);
+        retain(); // initial count of 1
     }
-  }
 
-  void retain()
-  {
-    ++refCount;
-  }
+    ~ParkingAssignmentPrivate()
+    {
+        FGAirportDynamicsRef strongRef = dynamics.lock();
+        if (strongRef) {
+            strongRef->releaseParking(parking);
+        }
+    }
 
-  unsigned int refCount;
-  FGParkingRef parking;
-    
-// we don't want an owning ref here, otherwise we
-// have a circular ownership from AirportDynamics -> us
-  SGWeakPtr<FGAirportDynamics> dynamics;
+    void release()
+    {
+        if ((--refCount) == 0) {
+            delete this;
+        }
+    }
+
+    void retain()
+    {
+        ++refCount;
+    }
+
+    unsigned int refCount;
+    FGParkingRef parking;
+
+    // we don't want an owning ref here, otherwise we
+    // have a circular ownership from AirportDynamics -> us
+    SGWeakPtr<FGAirportDynamics> dynamics;
 };
 
-ParkingAssignment::ParkingAssignment() :
-  _sharedData(NULL)
+ParkingAssignment::ParkingAssignment() : _sharedData(NULL)
 {
 }
 
 ParkingAssignment::~ParkingAssignment()
 {
-  if (_sharedData) {
-    _sharedData->release();
-  }
+    if (_sharedData) {
+        _sharedData->release();
+    }
 }
 
-ParkingAssignment::ParkingAssignment(FGParking* pk, FGAirportDynamics* dyn) :
-  _sharedData(NULL)
+ParkingAssignment::ParkingAssignment(FGParking* pk, FGAirportDynamics* dyn) : _sharedData(NULL)
 {
-  if (pk) {
-    _sharedData = new ParkingAssignmentPrivate(pk, dyn);
-  }
+    if (pk) {
+        _sharedData = new ParkingAssignmentPrivate(pk, dyn);
+    }
 }
 
-ParkingAssignment::ParkingAssignment(const ParkingAssignment& aOther) :
-  _sharedData(aOther._sharedData)
+ParkingAssignment::ParkingAssignment(const ParkingAssignment& aOther) : _sharedData(aOther._sharedData)
 {
-  if (_sharedData) {
-    _sharedData->retain();
-  }
+    if (_sharedData) {
+        _sharedData->retain();
+    }
 }
 
 void ParkingAssignment::operator=(const ParkingAssignment& aOther)
 {
-  if (_sharedData == aOther._sharedData) {
-    return; // self-assignment, special case
-  }
+    if (_sharedData == aOther._sharedData) {
+        return; // self-assignment, special case
+    }
 
-  if (_sharedData) {
-    _sharedData->release();
-  }
+    if (_sharedData) {
+        _sharedData->release();
+    }
 
-  _sharedData = aOther._sharedData;
-  if (_sharedData) {
-    _sharedData->retain();
-  }
+    _sharedData = aOther._sharedData;
+    if (_sharedData) {
+        _sharedData->retain();
+    }
 }
 
 void ParkingAssignment::release()
 {
-  if (_sharedData) {
-    _sharedData->release();
-    _sharedData = NULL;
-  }
+    if (_sharedData) {
+        _sharedData->release();
+        _sharedData = NULL;
+    }
 }
 
 bool ParkingAssignment::isValid() const
 {
-  return (_sharedData != NULL);
+    return (_sharedData != NULL);
 }
 
 FGParking* ParkingAssignment::parking() const
 {
-  return _sharedData ? _sharedData->parking.ptr() : NULL;
+    return _sharedData ? _sharedData->parking.ptr() : NULL;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -165,9 +148,9 @@ FGParking* ParkingAssignment::parking() const
 class NearbyAIObjectCache
 {
 public:
-    NearbyAIObjectCache(FGAirportRef apt) :
-        m_airport(apt)
-    {}
+    explicit NearbyAIObjectCache(FGAirportRef apt) : m_airport(apt)
+    {
+    }
 
     bool isAnythingNear(const SGVec3d& cart, double radiusM)
     {
@@ -189,7 +172,7 @@ private:
     void populate()
     {
         SGVec3d cartAirportPos = m_airport->cart();
-        FGAIManager* aiManager = globals->get_subsystem<FGAIManager>();
+        auto aiManager = globals->get_subsystem<FGAIManager>();
         for (auto ai : aiManager->get_ai_list()) {
             const auto cart = ai->getCartPos();
 
@@ -210,16 +193,15 @@ private:
 
 ////////////////////////////////////////////////////////////////////////////////
 
-FGAirportDynamics::FGAirportDynamics(FGAirport * ap):
-    _ap(ap), rwyPrefs(ap),
-    startupController    (this),
-    towerController      (this),
-    approachController   (this),
-    atisSequenceIndex(-1),
-    atisSequenceTimeStamp(0.0)
-
+FGAirportDynamics::FGAirportDynamics(FGAirport* ap) : _ap(ap), rwyPrefs(ap),
+                                                      startupController(this),
+                                                      towerController(this),
+                                                      approachController(this),
+                                                      groundController(this),
+                                                      lastUpdate{0},
+                                                      atisSequenceIndex(-1),
+                                                      atisSequenceTimeStamp(0.0)
 {
-    lastUpdate = 0;
 }
 
 // Destructor
@@ -232,19 +214,19 @@ FGAirportDynamics::~FGAirportDynamics()
 void FGAirportDynamics::init()
 {
     groundController.setTowerController(&towerController);
-    groundController.init(this);
+    groundController.init();
 }
 
-FGParking* FGAirportDynamics::innerGetAvailableParking(double radius, const string & flType,
-                                           const string & airline,
-                                           bool skipEmptyAirlineCode)
+FGParking* FGAirportDynamics::innerGetAvailableParking(double radius, const std::string& flType,
+                                                       const std::string& airline,
+                                                       bool skipEmptyAirlineCode)
 {
     NearbyAIObjectCache nearCache(parent());
     const FGParkingList& parkings(parent()->groundNetwork()->allParkings());
     FGParkingList candidates;
     for (auto parking : parkings) {
         if (!isParkingAvailable(parking)) {
-          continue;
+            continue;
         }
 
         if (parking->getRadius() < radius) {
@@ -256,13 +238,13 @@ FGParking* FGAirportDynamics::innerGetAvailableParking(double radius, const stri
         }
 
         if (skipEmptyAirlineCode && parking->getCodes().empty()) {
-          continue;
+            continue;
         }
 
         if (!airline.empty() && !parking->getCodes().empty()) {
-          if (parking->getCodes().find(airline, 0) == string::npos) {
-            continue;
-          }
+            if (parking->getCodes().find(airline, 0) == std::string::npos) {
+                continue;
+            }
         }
 
         if (nearCache.isAnythingNear(parking->cart(), parking->getRadius())) {
@@ -290,9 +272,8 @@ FGParking* FGAirportDynamics::innerGetAvailableParking(double radius, const stri
 bool FGAirportDynamics::hasParking(FGParking* parking) const
 {
     return std::find(parent()->groundNetwork()->allParkings().begin(),
-    parent()->groundNetwork()->allParkings().end(),
-    parking)
-    != parent()->groundNetwork()->allParkings().end();
+                     parent()->groundNetwork()->allParkings().end(),
+                     parking) != parent()->groundNetwork()->allParkings().end();
 }
 
 bool FGAirportDynamics::hasParkings() const
@@ -300,27 +281,28 @@ bool FGAirportDynamics::hasParkings() const
     return !parent()->groundNetwork()->allParkings().empty();
 }
 
-ParkingAssignment FGAirportDynamics::getAvailableParking(double radius, const string & flType,
-                                            const string & acType,
-                                            const string & airline)
+ParkingAssignment FGAirportDynamics::getAvailableParking(double radius,
+                                                         const std::string& flType,
+                                                         const std::string& acType,
+                                                         const std::string& airline)
 {
-  SG_UNUSED(acType); // sadly not used at the moment
+    SG_UNUSED(acType); // sadly not used at the moment
 
-  // most exact seach - airline codes must be present and match
-  FGParking* result = innerGetAvailableParking(radius, flType, airline, true);
-  if (result) {
-    return ParkingAssignment(result, this);
-  }
+    // most exact seach - airline codes must be present and match
+    FGParking* result = innerGetAvailableParking(radius, flType, airline, true);
+    if (result) {
+        return ParkingAssignment(result, this);
+    }
 
-  // more tolerant - gates with empty airline codes are permitted
-  result = innerGetAvailableParking(radius, flType, airline, false);
-  if (result) {
-    return ParkingAssignment(result, this);
-  }
+    // more tolerant - gates with empty airline codes are permitted
+    result = innerGetAvailableParking(radius, flType, airline, false);
+    if (result) {
+        return ParkingAssignment(result, this);
+    }
 
-  // fallback - ignore the airline code entirely
-  result = innerGetAvailableParking(radius, flType, string(), false);
-  return result ? ParkingAssignment(result, this) : ParkingAssignment();
+    // fallback - ignore the airline code entirely
+    result = innerGetAvailableParking(radius, flType, std::string(), false);
+    return result ? ParkingAssignment(result, this) : ParkingAssignment();
 }
 
 ParkingAssignment FGAirportDynamics::getParkingByName(const std::string& name) const
@@ -336,19 +318,19 @@ ParkingAssignment FGAirportDynamics::getParkingByName(const std::string& name) c
     return ParkingAssignment();
 }
 
-ParkingAssignment FGAirportDynamics::getAvailableParkingByName(const std::string & name)
+ParkingAssignment FGAirportDynamics::getAvailableParkingByName(const std::string& name)
 {
     const FGParkingList& parkings(parent()->groundNetwork()->allParkings());
-    auto it = std::find_if(parkings.begin(), parkings.end(), [this, name] (FGParkingRef parking){
-       if (parking->name() != name)
-           return false;
-        
+    auto it = std::find_if(parkings.begin(), parkings.end(), [this, name](FGParkingRef parking) {
+        if (parking->name() != name)
+            return false;
+
         return this->isParkingAvailable(parking);
     });
-    
+
     if (it == parkings.end())
         return {}; // no assignment possible
-    
+
     return {*it, this};
 }
 
@@ -365,26 +347,26 @@ FGParkingRef FGAirportDynamics::getOccupiedParkingByName(const std::string& name
 
 void FGAirportDynamics::setParkingAvailable(FGParking* park, bool available)
 {
-  if (available) {
-    releaseParking(park);
-  } else {
-    occupiedParkings.insert(park);
-  }
+    if (available) {
+        releaseParking(park);
+    } else {
+        occupiedParkings.insert(park);
+    }
 }
 
 bool FGAirportDynamics::isParkingAvailable(FGParking* parking) const
 {
-  return (occupiedParkings.find(parking) == occupiedParkings.end());
+    return (occupiedParkings.find(parking) == occupiedParkings.end());
 }
 
 void FGAirportDynamics::releaseParking(FGParking* id)
 {
-  ParkingSet::iterator it = occupiedParkings.find(id);
-  if (it == occupiedParkings.end()) {
-    return;
-  }
+    ParkingSet::iterator it = occupiedParkings.find(id);
+    if (it == occupiedParkings.end()) {
+        return;
+    }
 
-  occupiedParkings.erase(it);
+    occupiedParkings.erase(it);
 }
 
 class GetParkingsPredicate
@@ -392,12 +374,13 @@ class GetParkingsPredicate
     bool mustBeAvailable;
     std::string type;
     const FGAirportDynamics* dynamics;
+
 public:
-    GetParkingsPredicate(bool b, const std::string& ty, const FGAirportDynamics* dyn) :
-        mustBeAvailable(b),
-        type(ty),
-        dynamics(dyn)
-    {}
+    GetParkingsPredicate(bool b, const std::string& ty, const FGAirportDynamics* dyn) : mustBeAvailable(b),
+                                                                                        type(ty),
+                                                                                        dynamics(dyn)
+    {
+    }
 
     bool operator()(const FGParkingRef& park) const
     {
@@ -412,7 +395,7 @@ public:
     }
 };
 
-FGParkingList FGAirportDynamics::getParkings(bool onlyAvailable, const std::string &type) const
+FGParkingList FGAirportDynamics::getParkings(bool onlyAvailable, const std::string& type) const
 {
     FGParkingList result(parent()->groundNetwork()->allParkings());
 
@@ -422,7 +405,7 @@ FGParkingList FGAirportDynamics::getParkings(bool onlyAvailable, const std::stri
     return result;
 }
 
-void FGAirportDynamics::setRwyUse(const FGRunwayPreference & ref)
+void FGAirportDynamics::setRwyUse(const FGRunwayPreference& ref)
 {
     rwyPrefs = ref;
 }
@@ -457,8 +440,7 @@ typedef std::vector<FGRunwayRef> RunwayVec;
 class FallbackRunwayGroup
 {
 public:
-    FallbackRunwayGroup(const FGRunwayRef& rwy) :
-        _groupScore(0.0)
+    explicit FallbackRunwayGroup(const FGRunwayRef& rwy) : _groupScore(0.0)
     {
         runways.push_back(rwy);
         _leadRunwayScore = runwayScore(rwy);
@@ -504,7 +486,7 @@ public:
 
     void getRunways(FGRunwayList& arrivals, FGRunwayList& departures)
     {
-    // make the common cases very obvious
+        // make the common cases very obvious
         if (runways.size() == 1) {
             arrivals.push_back(runways.front());
             departures.push_back(runways.front());
@@ -512,9 +494,9 @@ public:
         }
 
 
-    // becuase runways were sorted by score when building, they were added
-    // by score also, so we can use a simple algorithim to assign
-        for (unsigned int r=0; r < runways.size(); ++r) {
+        // because runways were sorted by score when building, they were added
+        // by score also, so we can use a simple algorithm to assign
+        for (unsigned int r = 0; r < runways.size(); ++r) {
             if ((r % 2) == 0) {
                 arrivals.push_back(runways[r]);
             } else {
@@ -525,9 +507,9 @@ public:
 
     std::string dump()
     {
-        ostringstream os;
+        std::ostringstream os;
         os << runways.front()->ident();
-        for (unsigned int r=1; r <runways.size(); ++r) {
+        for (unsigned int r = 1; r < runways.size(); ++r) {
             os << ", " << runways[r]->ident();
         }
 
@@ -539,22 +521,22 @@ private:
     RunwayVec runways;
     double _groupScore,
         _leadRunwayScore;
-    double _basicScore;
-
+    double _basicScore{0.0};
 };
 
 class WindExclusionCheck
 {
 public:
-    WindExclusionCheck(double windHeading, double windSpeedKts) :
-        _windSpeedKts(windSpeedKts),
-        _windHeading(windHeading)
-    {}
+    WindExclusionCheck(double windHeading, double windSpeedKts) : _windSpeedKts(windSpeedKts),
+                                                                  _windHeading(windHeading)
+    {
+    }
 
     bool operator()(const FGRunwayRef& rwy) const
     {
         return (runwayWindScore(rwy, _windHeading, _windSpeedKts) > 30);
     }
+
 private:
     double _windSpeedKts,
         _windHeading;
@@ -578,7 +560,7 @@ public:
     }
 };
 
-string FGAirportDynamics::fallbackGetActiveRunway(int action, double heading)
+std::string FGAirportDynamics::fallbackGetActiveRunway(int action, double heading)
 {
     bool updateNeeded = false;
     if (_lastFallbackUpdate == SGTimeStamp()) {
@@ -588,7 +570,7 @@ string FGAirportDynamics::fallbackGetActiveRunway(int action, double heading)
     }
 
     if (updateNeeded) {
-        double windSpeed   = fgGetInt("/environment/metar/base-wind-speed-kt");
+        double windSpeed = fgGetInt("/environment/metar/base-wind-speed-kt");
         double windHeading = fgGetInt("/environment/metar/base-wind-dir-deg");
 
         // discount runways based on cross / tail-wind
@@ -658,17 +640,17 @@ string FGAirportDynamics::fallbackGetActiveRunway(int action, double heading)
 #if defined(RUNWAY_FALLBACK_DEBUG)
         ostringstream os;
         os << "\tArrival:" << _fallbackArrivalRunways.front()->ident();
-        for (unsigned int r=1; r <_fallbackArrivalRunways.size(); ++r) {
+        for (unsigned int r = 1; r < _fallbackArrivalRunways.size(); ++r) {
             os << ", " << _fallbackArrivalRunways[r]->ident();
         }
         os << "\n\tDeparture:" << _fallbackDepartureRunways.front()->ident();
-        for (unsigned int r=1; r <_fallbackDepartureRunways.size(); ++r) {
+        for (unsigned int r = 1; r < _fallbackDepartureRunways.size(); ++r) {
             os << ", " << _fallbackDepartureRunways[r]->ident();
         }
 
         std::string s = os.str();
-        SG_LOG(SG_AI, SG_INFO, parent()->ident() << " fallback runways assignments for "
-               << static_cast<int>(windHeading) << "@" << static_cast<int>(windSpeed) << "\n" << s);
+        SG_LOG(SG_AI, SG_INFO, parent()->ident() << " fallback runways assignments for " << static_cast<int>(windHeading) << "@" << static_cast<int>(windSpeed) << "\n"
+                                                 << s);
 #endif
     }
 
@@ -684,27 +666,17 @@ string FGAirportDynamics::fallbackGetActiveRunway(int action, double heading)
     return r->ident();
 }
 
-bool FGAirportDynamics::innerGetActiveRunway(const string & trafficType,
-                                             int action, string & runway,
+bool FGAirportDynamics::innerGetActiveRunway(const std::string& trafficType,
+                                             int action, std::string& runway,
                                              double heading)
 {
-    double windSpeed;
-    double windHeading;
-    double maxTail;
-    double maxCross;
-    string name;
-    string type;
-
     if (!rwyPrefs.available()) {
         runway = fallbackGetActiveRunway(action, heading);
         return !runway.empty();
     }
 
-    RunwayGroup *currRunwayGroup = 0;
-    int nrActiveRunways = 0;
     time_t dayStart = fgGetLong("/sim/time/utc/day-seconds");
-    if ((std::abs((long) (dayStart - lastUpdate)) > 600)
-        || trafficType != prevTrafficType) {
+    if ((std::abs((long)(dayStart - lastUpdate)) > 600) || trafficType != prevTrafficType) {
         landing.clear();
         takeoff.clear();
         lastUpdate = dayStart;
@@ -712,38 +684,37 @@ bool FGAirportDynamics::innerGetActiveRunway(const string & trafficType,
         /*
         FGEnvironment
             stationweather =
-            ((FGEnvironmentMgr *) globals->get_subsystem("environment"))
+            globals->get_subsystem<FGEnvironmentMgr>()
             ->getEnvironment(getLatitude(), getLongitude(),
                              getElevation());
         */
-        windSpeed   = fgGetInt("/environment/metar/base-wind-speed-kt"); //stationweather.get_wind_speed_kt();
-        windHeading = fgGetInt("/environment/metar/base-wind-dir-deg");
+        double windSpeed = fgGetInt("/environment/metar/base-wind-speed-kt"); //stationweather.get_wind_speed_kt();
+        double windHeading = fgGetInt("/environment/metar/base-wind-dir-deg");
         //stationweather.get_wind_from_heading_deg();
-        string scheduleName;
+        std::string scheduleName;
         //cerr << "finding active Runway for : " << _ap->getId() << endl;
         //cerr << "Wind Heading              : " << windHeading << endl;
         //cerr << "Wind Speed                : " << windSpeed << endl;
 
         //cerr << "Nr of seconds since day start << " << dayStart << endl;
 
-        ScheduleTime *currSched;
+        ScheduleTime* currSched;
         //cerr << "A"<< endl;
         currSched = rwyPrefs.getSchedule(trafficType.c_str());
         if (!(currSched))
             return false;
         //cerr << "B"<< endl;
         scheduleName = currSched->getName(dayStart);
-        maxTail = currSched->getTailWind();
-        maxCross = currSched->getCrossWind();
+        double maxTail = currSched->getTailWind();
+        double maxCross = currSched->getCrossWind();
         //cerr << "Current Schedule =        : " << scheduleName << endl;
         if (scheduleName.empty())
             return false;
         //cerr << "C"<< endl;
-        currRunwayGroup = rwyPrefs.getGroup(scheduleName);
+        RunwayGroup* currRunwayGroup = rwyPrefs.getGroup(scheduleName);
         //cerr << "D"<< endl;
         if (!(currRunwayGroup))
             return false;
-        nrActiveRunways = currRunwayGroup->getNrActiveRunways();
 
         // Keep a history of the currently active runways, to ensure
         // that an already established selection of runways will not
@@ -759,12 +730,12 @@ bool FGAirportDynamics::innerGetActiveRunway(const string & trafficType,
             currentlyActive = &ulActive;
         }
 
-        //cerr << "Durrently active selection for " << trafficType << ": ";
+        //cerr << "Currently active selection for " << trafficType << ": ";
         for (stringVecIterator it = currentlyActive->begin();
-             it != currentlyActive->end(); it++) {
-             //cerr << (*it) << " ";
-         }
-         //cerr << endl;
+             it != currentlyActive->end(); ++it) {
+            //cerr << (*it) << " ";
+        }
+        //cerr << endl;
 
         currRunwayGroup->setActive(_ap,
                                    windSpeed,
@@ -775,10 +746,12 @@ bool FGAirportDynamics::innerGetActiveRunway(const string & trafficType,
         // general aviation, one for commercial and one for military
         // traffic.
         currentlyActive->clear();
-        nrActiveRunways = currRunwayGroup->getNrActiveRunways();
+        int nrActiveRunways = currRunwayGroup->getNrActiveRunways();
         //cerr << "Choosing runway for " << trafficType << endl;
         for (int i = 0; i < nrActiveRunways; i++) {
-            type = "unknown";   // initialize to something other than landing or takeoff
+            std::string name;
+            std::string type = "unknown"; // initialize to something other than landing or takeoff
+
             currRunwayGroup->getActive(i, name, type);
             if (type == "landing") {
                 landing.push_back(name);
@@ -794,7 +767,7 @@ bool FGAirportDynamics::innerGetActiveRunway(const string & trafficType,
         //cerr << endl;
     }
 
-    if (action == 1)            // takeoff
+    if (action == 1) // takeoff
     {
         int nr = takeoff.size();
         if (nr) {
@@ -802,17 +775,17 @@ bool FGAirportDynamics::innerGetActiveRunway(const string & trafficType,
             // multiple active runways for this action. This should be
             // under ATC control.
             runway = chooseRwyByHeading(takeoff, heading);
-        } else {                // Fallback
+        } else { // Fallback
             runway = chooseRunwayFallback();
         }
     }
 
-    if (action == 2)            // landing
+    if (action == 2) // landing
     {
         if (!landing.empty()) {
             runway = chooseRwyByHeading(landing, heading);
         }
-        
+
         if (runway.empty()) { //fallback
             runway = chooseRunwayFallback();
         }
@@ -821,20 +794,19 @@ bool FGAirportDynamics::innerGetActiveRunway(const string & trafficType,
     return true;
 }
 
-string FGAirportDynamics::chooseRwyByHeading(stringVec rwys,
-                                             double heading)
+std::string FGAirportDynamics::chooseRwyByHeading(stringVec rwys,
+                                                  double heading)
 {
     double bestError = 360.0;
     double rwyHeading, headingError;
-    string runway;
-    for (stringVecIterator i = rwys.begin(); i != rwys.end(); i++) {
+    std::string runway;
+    for (stringVecIterator i = rwys.begin(); i != rwys.end(); ++i) {
         if (!_ap->hasRunwayWithIdent(*i)) {
-          SG_LOG(SG_ATC, SG_WARN, "chooseRwyByHeading: runway " << *i <<
-            " not found at " << _ap->ident());
-          continue;
+            SG_LOG(SG_ATC, SG_WARN, "chooseRwyByHeading: runway " << *i << " not found at " << _ap->ident());
+            continue;
         }
 
-        FGRunway *rwy = _ap->getRunwayByIdent((*i));
+        FGRunway* rwy = _ap->getRunwayByIdent((*i));
         rwyHeading = rwy->headingDeg();
         headingError = fabs(heading - rwyHeading);
         if (headingError > 180)
@@ -848,8 +820,8 @@ string FGAirportDynamics::chooseRwyByHeading(stringVec rwys,
     return runway;
 }
 
-void FGAirportDynamics::getActiveRunway(const string & trafficType,
-                                        int action, string & runway,
+void FGAirportDynamics::getActiveRunway(const std::string& trafficType,
+                                        int action, std::string& runway,
                                         double heading)
 {
     bool ok = innerGetActiveRunway(trafficType, action, runway, heading);
@@ -858,9 +830,9 @@ void FGAirportDynamics::getActiveRunway(const string & trafficType,
     }
 }
 
-string FGAirportDynamics::chooseRunwayFallback()
+std::string FGAirportDynamics::chooseRunwayFallback()
 {
-    FGRunway *rwy = _ap->getActiveRunwayForUsage();
+    FGRunway* rwy = _ap->getActiveRunwayForUsage();
     if (!rwy) {
         SG_LOG(SG_AI, SG_WARN, "FGAirportDynamics::chooseRunwayFallback failed at " << _ap->ident());
 
@@ -875,7 +847,7 @@ double FGAirportDynamics::getElevation() const
     return _ap->getElevation();
 }
 
-const string FGAirportDynamics::getId() const
+const std::string FGAirportDynamics::getId() const
 {
     return _ap->getId();
 }
@@ -886,6 +858,36 @@ const string FGAirportDynamics::getId() const
 // operations is completely arbitrary. As such, is a short cut I need to take now,
 // so that at least I can start working on assigning different frequencies to different
 // operations.
+
+int FGAirportDynamics::getApproachFrequency(unsigned nr)
+{
+    int approachFreq = 0;
+    if (nr < 2) {
+        SG_LOG(SG_ATC, SG_ALERT,
+               "Leg value is smaller than two at " << SG_ORIGIN);
+    }
+
+    const intVec& freqApproach(parent()->groundNetwork()->getApproachFrequencies());
+
+    if (freqApproach.size() == 0) {
+        return 0;
+    }
+    if ((freqApproach.size() > nr - 1) && (nr > 1)) {
+        approachFreq = freqApproach[nr - 1];
+    }
+    if ((freqApproach.size() < nr - 1) && (nr > 1)) {
+        approachFreq =
+            (freqApproach.size() <
+             (nr - 1))
+                ? freqApproach[freqApproach.size() -
+                               1]
+                : freqApproach[nr - 2];
+    }
+    if ((freqApproach.size() >= nr - 1) && (nr > 1)) {
+        approachFreq = freqApproach[nr - 2];
+    }
+    return approachFreq;
+}
 
 int FGAirportDynamics::getGroundFrequency(unsigned leg)
 {
@@ -906,8 +908,10 @@ int FGAirportDynamics::getGroundFrequency(unsigned leg)
     if ((freqGround.size() < leg) && (leg > 0)) {
         groundFreq =
             (freqGround.size() <=
-             (leg - 1)) ? freqGround[freqGround.size() -
-                                     1] : freqGround[leg - 1];
+             (leg - 1))
+                ? freqGround[freqGround.size() -
+                             1]
+                : freqGround[leg - 1];
     }
     if ((freqGround.size() >= leg) && (leg > 0)) {
         groundFreq = freqGround[leg - 1];
@@ -934,8 +938,10 @@ int FGAirportDynamics::getTowerFrequency(unsigned nr)
     if ((freqTower.size() < nr - 1) && (nr > 1)) {
         towerFreq =
             (freqTower.size() <
-             (nr - 1)) ? freqTower[freqTower.size() -
-                                     1] : freqTower[nr - 2];
+             (nr - 1))
+                ? freqTower[freqTower.size() -
+                            1]
+                : freqTower[nr - 2];
     }
     if ((freqTower.size() >= nr - 1) && (nr > 1)) {
         towerFreq = freqTower[nr - 2];
@@ -945,15 +951,15 @@ int FGAirportDynamics::getTowerFrequency(unsigned nr)
 
 const std::string FGAirportDynamics::getAtisSequence()
 {
-   if (atisSequenceIndex == -1) {
-       updateAtisSequence(1, false);
-   }
+    if (atisSequenceIndex == -1) {
+        updateAtisSequence(1, false);
+    }
 
-   char atisSequenceString[2];
-   atisSequenceString[0] = 'a' + atisSequenceIndex;
-   atisSequenceString[1] = 0;
+    char atisSequenceString[2];
+    atisSequenceString[0] = 'a' + atisSequenceIndex;
+    atisSequenceString[1] = 0;
 
-   return globals->get_locale()->getLocalizedString(atisSequenceString, "atc", "unknown");
+    return globals->get_locale()->getLocalizedString(atisSequenceString, "atc", "unknown");
 }
 
 int FGAirportDynamics::updateAtisSequence(int interval, bool forceUpdate)
@@ -974,5 +980,5 @@ int FGAirportDynamics::updateAtisSequence(int interval, bool forceUpdate)
 
     atisSequenceIndex = (atisSequenceIndex + steps) % 26;
     // return a huge value if no update occurred
-    return (atisSequenceIndex + (steps ? 0 : 26*1000));
+    return (atisSequenceIndex + (steps ? 0 : 26 * 1000));
 }

@@ -1,20 +1,9 @@
-// fgelev.cxx -- compute scenery elevation
-//
-// Copyright (C) 2009 - 2012  Mathias Froehlich
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+/*
+ * SPDX-FileName: fgelev.cxx
+ * SPDX-FileComment: compute scenery elevation
+ * SPDX-FileCopyrightText: Copyright (C) 2009 - 2012  Mathias Froehlich
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -191,7 +180,7 @@ main(int argc, char** argv)
 
     // Get the whole world bvh tree
     SGSharedPtr<sg::BVHNode> node;
-    node = sg::BVHPageNodeOSG::load(bvhFile, options);
+    node = sg::BVHPageNodeOSG::load(bvhFile, options, use_vpb);
 
     // if no model has been successfully loaded report failure.
     if (!node.valid()) {
@@ -234,7 +223,7 @@ main(int argc, char** argv)
                       << "deg lat = " << lat << "deg" << std::endl;
 
         std::cout << id << ": ";
-        string solid = material && material->get_solid() ? "solid" : "-";
+        std::string solid = material && material->get_solid() ? "solid" : "-";
         if (!found) {
             std::cout << "-1000" << std::endl;
         } else {

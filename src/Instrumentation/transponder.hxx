@@ -1,26 +1,30 @@
-// transponder.hxx -- class to impliment a transponder
-//
-// Written by Roy Vegard Ovesen, started September 2004.
-//
-// Copyright (C) 2004  Roy Vegard Ovesen - rvovesen@tiscali.no
-// Copyright (C) 2013  Clement de l'Hamaide - clemaez@hotmail.fr
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+/*
+ * SPDX-License-Identifier: GPL-2.0+
+ * SPDX-FileCopyrightText: 2004 (C) Roy Vegard Ovesen - rvovesen@tiscali.no
+ * SPDX-FileCopyrightText: 2013 (C) Clement de l'Hamaide - clemaez@hotmail.fr
+ * 
+ * transponder.hxx -- class to impliment a transponder
+ * Written by Roy Vegard Ovesen, started September 2004.
+ * 
+ * Copyright (C) 2004  Roy Vegard Ovesen - rvovesen@tiscali.no
+ * Copyright (C) 2013  Clement de l'Hamaide - clemaez@hotmail.fr
+ * 
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of the
+ * License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+*/
 
-#ifndef TRANSPONDER_HXX
-#define TRANSPONDER_HXX 1
+#pragma once
 
 #include <Instrumentation/AbstractInstrument.hxx>
 
@@ -75,6 +79,7 @@ private:
     SGPropertyNode_ptr _pressureAltitude_node;
     SGPropertyNode_ptr _autoGround_node;
     SGPropertyNode_ptr _airspeedIndicator_node;
+    SGPropertyNode_ptr _machSource_node;
 
     SGPropertyNode_ptr _mode_node;
     SGPropertyNode_ptr _knob_node;
@@ -94,6 +99,7 @@ private:
     SGPropertyNode_ptr _ident_node;
     SGPropertyNode_ptr _ground_node;
     SGPropertyNode_ptr _airspeed_node;
+    SGPropertyNode_ptr _mach_node;
 
     // Internal
     Mode _mode;
@@ -104,10 +110,9 @@ private:
     std::string _altitudeSourcePath;
     std::string _autoGroundPath;
     std::string _airspeedSourcePath;
+    std::string _machSourcePath;
 
     void valueChanged (SGPropertyNode *) override;
 
     int setMinMax(int val);
 };
-
-#endif // TRANSPONDER_HXX

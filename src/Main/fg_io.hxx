@@ -1,36 +1,19 @@
-// fg_io.hxx -- Higher level I/O management routines
-//
-// Written by Curtis Olson, started November 1999.
-//
-// Copyright (C) 1999  Curtis L. Olson - http://www.flightgear.org/~curt
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-//
-// $Id$
+/*
+ * SPDX-FileName: fg_io.hxx
+ * SPDX-FileComment: Higher level I/O management routines
+ * SPDX-FileCopyrightText: Copyright (C) 1999  Curtis L. Olson - http://www.flightgear.org/~curt
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
 
+#pragma once
 
-#ifndef _FG_IO_HXX
-#define _FG_IO_HXX
-
+#include <string>
+#include <vector>
 
 #include <simgear/compiler.h>
-#include <simgear/structure/subsystem_mgr.hxx>
 #include <simgear/props/props.hxx>
+#include <simgear/structure/subsystem_mgr.hxx>
 
-#include <vector>
-#include <string>
 
 class FGProtocol;
 
@@ -60,25 +43,23 @@ public:
 
 private:
     FGProtocol* add_channel(const std::string& config, bool& o_ok);
-    
-    FGProtocol* parse_port_config( const std::string& cfgstr, bool& o_ok );
-    FGProtocol* parse_port_config( const string_list& tokens, bool& o_ok );
 
-    void addToPropertyTree(const string name, const string config);
-    void removeFromPropertyTree(const string name);
-    string generateName(const string protocol);
+    FGProtocol* parse_port_config(const std::string& cfgstr, bool& o_ok);
+    FGProtocol* parse_port_config(const string_list& tokens, bool& o_ok);
+
+    void addToPropertyTree(const std::string name, const std::string config);
+    void removeFromPropertyTree(const std::string name);
+    std::string generateName(const std::string protocol);
 
 private:
     // define the global I/O channel list
     //io_container global_io_list;
 
-    typedef std::vector< FGProtocol* > ProtocolVec;
+    typedef std::vector<FGProtocol*> ProtocolVec;
     ProtocolVec io_channels;
 
     SGPropertyNode_ptr _realDeltaTime;
-    
-    bool commandAddChannel(const SGPropertyNode * arg, SGPropertyNode * root);
-    bool commandRemoveChannel(const SGPropertyNode * arg, SGPropertyNode * root);
-};
 
-#endif // _FG_IO_HXX
+    bool commandAddChannel(const SGPropertyNode* arg, SGPropertyNode* root);
+    bool commandRemoveChannel(const SGPropertyNode* arg, SGPropertyNode* root);
+};

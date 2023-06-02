@@ -1,24 +1,10 @@
-// FGAIBase - abstract base class for AI objects
-// Written by David Culp, started Nov 2003, based on
-// David Luff's FGAIEntity class.
-// - davidculp2@comcast.net
-//
-// With additions by Mathias Froehlich & Vivian Meazza 2004 -2007
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-
+/*
+ * SPDX-FileName: AIBase.cxx
+ * SPDX-FileComment: abstract base class for AI objects, based on David Luff's FGAIEntity class.
+ * SPDX-FileCopyrightText: Written by David Culp, started Nov 2003 - davidculp2@comcast.net
+ * SPDX-FileContributor: With additions by Mathias Froehlich & Vivian Meazza 2004-2007
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
 
 #include <config.h>
 
@@ -60,7 +46,7 @@ using namespace simgear;
 
 class FGAIModelData : public simgear::SGModelData {
 public:
-    FGAIModelData(SGPropertyNode *root = nullptr)
+    explicit FGAIModelData(SGPropertyNode *root = nullptr)
       : _root (root)
     {
     }
@@ -119,7 +105,7 @@ public:
      * Not thread-safe. Call from main thread only. */
     void init(void) { _initialized = true; }
 
-    bool needInitilization(void) { return _ready && !_initialized;}
+    bool needInitialization(void) { return _ready && !_initialized;}
     bool isInitialized(void) { return _initialized;}
     inline std::string& get_sound_path() { return _fxpath;}
 
@@ -192,12 +178,6 @@ FGAIBase::FGAIBase(object_type ot, bool enableHot) : replay_time(fgGetNode("sim/
     ht_diff = 0;
 
     serviceable = false;
-
-    rho = 1;
-    T = 280;
-    p = 1e5;
-    a = 340;
-    Mach = 0;
 
     // explicitly disable HOT for (most) AI models
     if (!enableHot)
@@ -273,6 +253,8 @@ void FGAIBase::readFromScenario(SGPropertyNode* scFileNode)
     setLatitude(scFileNode->getDoubleValue("latitude", 0.0));
     setBank(scFileNode->getDoubleValue("roll", 0.0));
     setPitch(scFileNode->getDoubleValue("pitch", 0.0));
+    setCollisionHeight(scFileNode->getDoubleValue("collision-height", 0.0));
+    setCollisionLength(scFileNode->getDoubleValue("collision-length", 0.0));
 
     SGPropertyNode* submodels = scFileNode->getChild("submodels");
 
@@ -307,13 +289,10 @@ void FGAIBase::update(double dt) {
     if (_otype == object_type::otStatic)
         return;
 
-    if (_otype == object_type::otBallistic)
-        CalculateMach();
-
     ft_per_deg_lat = 366468.96 - 3717.12 * cos(pos.getLatitudeRad());
     ft_per_deg_lon = 365228.16 * cos(pos.getLatitudeRad());
 
-    if ((_modeldata)&&(_modeldata->needInitilization()))
+    if ((_modeldata)&&(_modeldata->needInitialization()))
     {
         // process deferred nasal initialization,
         // which must be done in main thread
@@ -477,11 +456,11 @@ void FGAIBase::updateLOD()
                   _model->setRange(modelLowDetailIndex , maxRangeBare, maxRangeDetail); // least detailed
                 } else if (_low_res.valid() && !_high_res.valid()) {
                   // we have only low_res_model model it obviously will have to be displayed from the smallest value
-                  _model->setRange(modelLowDetailIndex, min(maxRangeBare, maxRangeDetail), FLT_MAX );
+                  _model->setRange(modelLowDetailIndex, std::min(maxRangeBare, maxRangeDetail), FLT_MAX );
                   _model->setRange(modelHighDetailIndex, 0,0);
                 } else if (!_low_res.valid() && _high_res.valid()) {
                     // we have only high_res model it obviously will have to be displayed from the smallest value
-                    _model->setRange(modelHighDetailIndex, min(maxRangeBare, maxRangeDetail), FLT_MAX );
+                    _model->setRange(modelHighDetailIndex, std::min(maxRangeBare, maxRangeDetail), FLT_MAX );
                     _model->setRange(modelLowDetailIndex, 0,0);
                 }
             } else {
@@ -661,7 +640,7 @@ bool FGAIBase::init(ModelSearchOrder searchOrder)
 
     // Load models
     _model = new osg::LOD();
-    vector<string> model_list = resolveModelPath(searchOrder);
+    std::vector<string> model_list = resolveModelPath(searchOrder);
     if(model_list.size() == 1 && _modeldata && _modeldata->hasInteriorPath()) {
         // Only one model and interior available (expecting this to be a high_res model)
         _low_res = new osg::PagedLOD(); // Dummy node to keep LOD node happy
@@ -1189,38 +1168,6 @@ const char* FGAIBase::_getSubmodel() const {
 
 int FGAIBase::_getFallbackModelIndex() const {
     return _fallback_model_index;
-}
-
-void FGAIBase::CalculateMach() {
-    // Calculate rho at altitude, using standard atmosphere
-    // For the temperature T and the pressure p,
-    double altitude = altitude_ft;
-
-    if (altitude < 36152) {		// curve fits for the troposphere
-        T = 59 - 0.00356 * altitude;
-        p = 2116 * pow( ((T + 459.7) / 518.6) , 5.256);
-    } else if ( 36152 < altitude && altitude < 82345 ) {    // lower stratosphere
-        T = -70;
-        p = 473.1 * pow( e , 1.73 - (0.000048 * altitude) );
-    } else {                                    //  upper stratosphere
-        T = -205.05 + (0.00164 * altitude);
-        p = 51.97 * pow( ((T + 459.7) / 389.98) , -11.388);
-    }
-
-    rho = p / (1718 * (T + 459.7));
-
-    // calculate the speed of sound at altitude
-    // a = sqrt ( g * R * (T + 459.7))
-    // where:
-    // a = speed of sound [ft/s]
-    // g = specific heat ratio, which is usually equal to 1.4
-    // R = specific gas constant, which equals 1716 ft-lb/slug/R
-    a = sqrt ( 1.4 * 1716 * (T + 459.7));
-
-    // calculate Mach number
-    Mach = speed/a;
-
-    // cout  << "Speed(ft/s) "<< speed <<" Altitude(ft) "<< altitude << " Mach " << Mach << endl;
 }
 
 int FGAIBase::_newAIModelID() {

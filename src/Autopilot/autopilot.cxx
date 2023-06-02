@@ -115,8 +115,8 @@ void readInterfaceProperties( SGPropertyNode_ptr prop_root,
     {
       prop->setDoubleValue( val->getDoubleValue() );
 
-      // TODO should we keep the _attr_ node, as soon as the property browser is
-      //      able to cope with it?
+      // TODO: should we keep the _attr_ node, as soon as the property browser is
+      //       able to cope with it?
       (*it)->removeChild("_attr_", 0);
     }
   }

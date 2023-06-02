@@ -1,35 +1,15 @@
+/*
+ * SPDX-FileName: FGPropertyManager.h
+ * SPDX-FileComment: Based on work originally by David Megginson
+ * SPDX-FileCopyrightText: Copyright (C) 2002  Tony Peden
+ * SPDX-License-Identifier: LGPL-2.0-or-later
+ */
+
 /*%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
- Header:       FGPropertyManager.h
- Author:       Tony Peden
-               Based on work originally by David Megginson
- Date:         2/2002
-
- ------------- Copyright (C) 2002 -------------
-
- This program is free software; you can redistribute it and/or modify it under
- the terms of the GNU Lesser General Public License as published by the Free Software
- Foundation; either version 2 of the License, or (at your option) any later
- version.
-
- This program is distributed in the hope that it will be useful, but WITHOUT
- ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
- details.
-
- You should have received a copy of the GNU Lesser General Public License along with
- this program; if not, write to the Free Software Foundation, Inc., 59 Temple
- Place - Suite 330, Boston, MA  02111-1307, USA.
-
- Further information about the GNU Lesser General Public License can also be found on
- the world wide web at http://www.gnu.org.
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 SENTRY
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%*/
 
-#ifndef FGPROPERTYMANAGER_H
-#define FGPROPERTYMANAGER_H
+#pragma once
 
 /*%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 INCLUDES
@@ -37,14 +17,15 @@ INCLUDES
 
 // This is needed by MSVC9 when included in FlightGear because of
 // the new Vec4d class in props.hxx
-#if defined( HAVE_CONFIG_H )
-# include <config.h>
+#if defined(HAVE_CONFIG_H)
+#include <config.h>
 #endif
 
 #include <string>
+
 #include "simgear/props/propertyObject.hxx"
 #if !PROPS_STANDALONE
-# include "simgear/math/SGMath.hxx"
+#include "simgear/math/SGMath.hxx"
 #endif
 
 #include "FGJSBBase.h"
@@ -69,7 +50,7 @@ CLASS DECLARATION
 
 class FGPropertyNode : public SGPropertyNode
 {
-  public:
+public:
     /// Destructor
     virtual ~FGPropertyNode(void) {}
 
@@ -81,10 +62,10 @@ class FGPropertyNode : public SGPropertyNode
      * @return The node, or 0 if none exists and none was created.
      */
     FGPropertyNode*
-    GetNode (const std::string &path, bool create = false);
+    GetNode(const std::string& path, bool create = false);
 
     FGPropertyNode*
-    GetNode (const std::string &relpath, int index, bool create = false);
+    GetNode(const std::string& relpath, int index, bool create = false);
 
     /**
      * Test whether a given node exists.
@@ -92,17 +73,17 @@ class FGPropertyNode : public SGPropertyNode
      * @param path The path of the node, relative to root.
      * @return true if the node exists, false otherwise.
      */
-    bool HasNode (const std::string &path);
+    bool HasNode(const std::string& path);
 
     /**
      * Get the name of a node
      */
-    std::string GetName( void ) const;
+    const std::string& GetName(void) const { return getNameString(); }
 
     /**
      * Get the name of a node without underscores, etc.
      */
-    std::string GetPrintableName( void ) const;
+    std::string GetPrintableName(void) const;
 
     /**
      * Get the fully qualified name of a node
@@ -117,7 +98,7 @@ class FGPropertyNode : public SGPropertyNode
      *
      * @param path The path to strip off, if found.
      */
-    std::string GetRelativeName( const std::string &path = "/fdm/jsbsim/" ) const;
+    std::string GetRelativeName(const std::string& path = "/fdm/jsbsim/") const;
 
     /**
      * Get a bool value for a property.
@@ -133,7 +114,7 @@ class FGPropertyNode : public SGPropertyNode
      *        does not exist.
      * @return The property's value as a bool, or the default value provided.
      */
-    bool GetBool (const std::string &name, bool defaultValue = false) const;
+    bool GetBool(const std::string& name, bool defaultValue = false) const;
 
 
     /**
@@ -150,7 +131,7 @@ class FGPropertyNode : public SGPropertyNode
      *        does not exist.
      * @return The property's value as an int, or the default value provided.
      */
-    int GetInt (const std::string &name, int defaultValue = 0) const;
+    int GetInt(const std::string& name, int defaultValue = 0) const;
 
 
     /**
@@ -167,7 +148,7 @@ class FGPropertyNode : public SGPropertyNode
      *        does not exist.
      * @return The property's value as a long, or the default value provided.
      */
-    int GetLong (const std::string &name, long defaultValue = 0L) const;
+    int GetLong(const std::string& name, long defaultValue = 0L) const;
 
 
     /**
@@ -184,7 +165,7 @@ class FGPropertyNode : public SGPropertyNode
      *        does not exist.
      * @return The property's value as a float, or the default value provided.
      */
-    float GetFloat (const std::string &name, float defaultValue = 0.0) const;
+    float GetFloat(const std::string& name, float defaultValue = 0.0) const;
 
 
     /**
@@ -201,7 +182,7 @@ class FGPropertyNode : public SGPropertyNode
      *        does not exist.
      * @return The property's value as a double, or the default value provided.
      */
-    double GetDouble (const std::string &name, double defaultValue = 0.0) const;
+    double GetDouble(const std::string& name, double defaultValue = 0.0) const;
 
 
     /**
@@ -218,7 +199,7 @@ class FGPropertyNode : public SGPropertyNode
      *        does not exist.
      * @return The property's value as a string, or the default value provided.
      */
-    std::string GetString (const std::string &name, std::string defaultValue = "") const;
+    std::string GetString(const std::string& name, std::string defaultValue = "") const;
 
 
     /**
@@ -234,7 +215,7 @@ class FGPropertyNode : public SGPropertyNode
      * @param val The new value for the property.
      * @return true if the assignment succeeded, false otherwise.
      */
-    bool SetBool (const std::string &name, bool val);
+    bool SetBool(const std::string& name, bool val);
 
 
     /**
@@ -250,7 +231,7 @@ class FGPropertyNode : public SGPropertyNode
      * @param val The new value for the property.
      * @return true if the assignment succeeded, false otherwise.
      */
-    bool SetInt (const std::string &name, int val);
+    bool SetInt(const std::string& name, int val);
 
 
     /**
@@ -266,7 +247,7 @@ class FGPropertyNode : public SGPropertyNode
      * @param val The new value for the property.
      * @return true if the assignment succeeded, false otherwise.
      */
-    bool SetLong (const std::string &name, long val);
+    bool SetLong(const std::string& name, long val);
 
 
     /**
@@ -282,7 +263,7 @@ class FGPropertyNode : public SGPropertyNode
      * @param val The new value for the property.
      * @return true if the assignment succeeded, false otherwise.
      */
-    bool SetFloat (const std::string &name, float val);
+    bool SetFloat(const std::string& name, float val);
 
 
     /**
@@ -298,7 +279,7 @@ class FGPropertyNode : public SGPropertyNode
      * @param val The new value for the property.
      * @return true if the assignment succeeded, false otherwise.
      */
-    bool SetDouble (const std::string &name, double val);
+    bool SetDouble(const std::string& name, double val);
 
 
     /**
@@ -314,7 +295,7 @@ class FGPropertyNode : public SGPropertyNode
      * @param val The new value for the property.
      * @return true if the assignment succeeded, false otherwise.
      */
-    bool SetString (const std::string &name, const std::string &val);
+    bool SetString(const std::string& name, const std::string& val);
 
 
     ////////////////////////////////////////////////////////////////////////
@@ -334,7 +315,7 @@ class FGPropertyNode : public SGPropertyNode
      * @param name The property name.
      * @param state The state of the archive attribute (defaults to true).
      */
-    void SetArchivable (const std::string &name, bool state = true);
+    void SetArchivable(const std::string& name, bool state = true);
 
 
     /**
@@ -349,7 +330,7 @@ class FGPropertyNode : public SGPropertyNode
      * @param name The property name.
      * @param state The state of the read attribute (defaults to true).
      */
-    void SetReadable (const std::string &name, bool state = true);
+    void SetReadable(const std::string& name, bool state = true);
 
 
     /**
@@ -364,7 +345,7 @@ class FGPropertyNode : public SGPropertyNode
      * @param name The property name.
      * @param state The state of the write attribute (defaults to true).
      */
-    void SetWritable (const std::string &name, bool state = true);
+    void SetWritable(const std::string& name, bool state = true);
 };
 
 typedef SGSharedPtr<FGPropertyNode> FGPropertyNode_ptr;
@@ -372,26 +353,30 @@ typedef SGSharedPtr<const FGPropertyNode> FGConstPropertyNode_ptr;
 
 class FGPropertyManager
 {
-  public:
+public:
     /// Default constructor
     FGPropertyManager(void) { root = new FGPropertyNode; }
 
     /// Constructor
-    explicit FGPropertyManager(FGPropertyNode* _root) : root(_root) {};
+    explicit FGPropertyManager(FGPropertyNode* _root) : root(_root){};
 
     /// Destructor
     virtual ~FGPropertyManager(void) { Unbind(); }
 
     FGPropertyNode* GetNode(void) const { return root; }
-    FGPropertyNode* GetNode(const std::string &path, bool create = false)
-    { return root->GetNode(path, create); }
-    FGPropertyNode* GetNode(const std::string &relpath, int index, bool create = false)
-    { return root->GetNode(relpath, index, create); }
+    FGPropertyNode* GetNode(const std::string& path, bool create = false)
+    {
+        return root->GetNode(path, create);
+    }
+    FGPropertyNode* GetNode(const std::string& relpath, int index, bool create = false)
+    {
+        return root->GetNode(relpath, index, create);
+    }
     bool HasNode(const std::string& path) const
     {
-      std::string newPath = path;
-      if (newPath[0] == '-') newPath.erase(0,1);
-      return root->HasNode(newPath);
+        std::string newPath = path;
+        if (newPath[0] == '-') newPath.erase(0, 1);
+        return root->HasNode(newPath);
     }
 
     /** Property-ify a name
@@ -413,8 +398,20 @@ class FGPropertyManager
      *
      * Classes should use this function to release control of any
      * properties they are managing.
+     *
+     * @param name The property name to untie (full path).
      */
-    void Untie (const std::string &name);
+    void Untie(const std::string& name);
+
+    /**
+     * Untie a property from an external data source.
+     *
+     * Classes should use this function to release control of any
+     * properties they are managing.
+     *
+     * @param property A pointer to the property to untie.
+     */
+    void Untie(SGPropertyNode* property);
 
     /**
      * Unbind all properties bound by this manager to an external data source.
@@ -422,7 +419,7 @@ class FGPropertyManager
      * Classes should use this function to release control of any
      * properties they have bound using this property manager.
      */
-    void Unbind (void);
+    void Unbind(void);
 
     /**
      * Tie a property to an external variable.
@@ -433,24 +430,25 @@ class FGPropertyManager
      * @param name The property name to tie (full path).
      * @param pointer A pointer to the variable.
      */
-    template <typename T> void
-    Tie (const std::string &name, T *pointer)
+    template <typename T>
+    void
+    Tie(const std::string& name, T* pointer)
     {
-      SGPropertyNode* property = root->getNode(name.c_str(), true);
-      if (!property) {
-        cerr << "Could not get or create property " << name << endl;
-        return;
-      }
+        SGPropertyNode* property = root->getNode(name.c_str(), true);
+        if (!property) {
+            std::cerr << "Could not get or create property " << name << std::endl;
+            return;
+        }
 
-      if (!property->tie(SGRawValuePointer<T>(pointer), false))
-        cerr << "Failed to tie property " << name << " to a pointer" << endl;
-      else {
-        tied_properties.push_back(property);
-        if (FGJSBBase::debug_lvl & 0x20) cout << name << endl;
-      }
+        if (!property->tie(SGRawValuePointer<T>(pointer), false))
+            std::cerr << "Failed to tie property " << name << " to a pointer" << std::endl;
+        else {
+            tied_properties.push_back(property);
+            if (FGJSBBase::debug_lvl & 0x20) std::cout << name << std::endl;
+        }
     }
 
-     /**
+    /**
      * Tie a property to a pair of simple functions.
      *
      * Every time the property value is queried, the getter (if any) will
@@ -464,24 +462,25 @@ class FGPropertyManager
      * @param setter The setter function, or 0 if the value is unmodifiable.
      */
 
-    template <typename T> void
-    Tie (const std::string &name, T (*getter)(), void (*setter)(T) = nullptr)
+    template <typename T>
+    void
+    Tie(const std::string& name, T (*getter)(), void (*setter)(T) = nullptr)
     {
-      SGPropertyNode* property = root->getNode(name.c_str(), true);
-      if (!property) {
-        std::cerr << "Could not get or create property " << name << std::endl;
-        return;
-      }
+        SGPropertyNode* property = root->getNode(name.c_str(), true);
+        if (!property) {
+            std::cerr << "Could not get or create property " << name << std::endl;
+            return;
+        }
 
-      if (!property->tie(SGRawValueFunctions<T>(getter, setter), false))
-        std::cerr << "Failed to tie property " << name << " to functions"
-                  << std::endl;
-      else {
-        if (!setter) property->setAttribute(SGPropertyNode::WRITE, false);
-        if (!getter) property->setAttribute(SGPropertyNode::READ, false);
-        tied_properties.push_back(property);
-        if (FGJSBBase::debug_lvl & 0x20) std::cout << name << std::endl;
-      }
+        if (!property->tie(SGRawValueFunctions<T>(getter, setter), false))
+            std::cerr << "Failed to tie property " << name << " to functions"
+                      << std::endl;
+        else {
+            if (!setter) property->setAttribute(SGPropertyNode::WRITE, false);
+            if (!getter) property->setAttribute(SGPropertyNode::READ, false);
+            tied_properties.push_back(property);
+            if (FGJSBBase::debug_lvl & 0x20) std::cout << name << std::endl;
+        }
     }
 
     /**
@@ -499,26 +498,27 @@ class FGPropertyManager
      * @param getter The getter function, or 0 if the value is unreadable.
      * @param setter The setter function, or 0 if the value is unmodifiable.
      */
-    template <typename T> void
-    Tie (const std::string &name, int index, T (*getter)(int),
-         void (*setter)(int, T) = nullptr)
+    template <typename T>
+    void
+    Tie(const std::string& name, int index, T (*getter)(int),
+        void (*setter)(int, T) = nullptr)
     {
-      SGPropertyNode* property = root->getNode(name.c_str(), true);
-      if (!property) {
-        std::cerr << "Could not get or create property " << name << std::endl;
-        return;
-      }
+        SGPropertyNode* property = root->getNode(name.c_str(), true);
+        if (!property) {
+            std::cerr << "Could not get or create property " << name << std::endl;
+            return;
+        }
 
-      if (!property->tie(SGRawValueFunctionsIndexed<T>(index, getter, setter),
-                                                       false))
-        std::cerr << "Failed to tie property " << name << " to indexed functions"
-                  << std::endl;
-      else {
-        if (!setter) property->setAttribute(SGPropertyNode::WRITE, false);
-        if (!getter) property->setAttribute(SGPropertyNode::READ, false);
-        tied_properties.push_back(property);
-        if (FGJSBBase::debug_lvl & 0x20) std::cout << name << std::endl;
-      }
+        if (!property->tie(SGRawValueFunctionsIndexed<T>(index, getter, setter),
+                           false))
+            std::cerr << "Failed to tie property " << name << " to indexed functions"
+                      << std::endl;
+        else {
+            if (!setter) property->setAttribute(SGPropertyNode::WRITE, false);
+            if (!getter) property->setAttribute(SGPropertyNode::READ, false);
+            tied_properties.push_back(property);
+            if (FGJSBBase::debug_lvl & 0x20) std::cout << name << std::endl;
+        }
     }
 
     /**
@@ -537,25 +537,26 @@ class FGPropertyManager
      * @param setter The object's setter method, or 0 if the value is
      *        unmodifiable.
      */
-    template <class T, class V> void
-    Tie (const std::string &name, T * obj, V (T::*getter)() const,
-         void (T::*setter)(V) = nullptr)
+    template <class T, class V>
+    void
+    Tie(const std::string& name, T* obj, V (T::*getter)() const,
+        void (T::*setter)(V) = nullptr)
     {
-      SGPropertyNode* property = root->getNode(name.c_str(), true);
-      if (!property) {
-        std::cerr << "Could not get or create property " << name << std::endl;
-        return;
-      }
+        SGPropertyNode* property = root->getNode(name.c_str(), true);
+        if (!property) {
+            std::cerr << "Could not get or create property " << name << std::endl;
+            return;
+        }
 
-      if (!property->tie(SGRawValueMethods<T,V>(*obj, getter, setter), false))
-        std::cerr << "Failed to tie property " << name << " to object methods"
-                  << std::endl;
-      else {
-        if (!setter) property->setAttribute(SGPropertyNode::WRITE, false);
-        if (!getter) property->setAttribute(SGPropertyNode::READ, false);
-        tied_properties.push_back(property);
-        if (FGJSBBase::debug_lvl & 0x20) std::cout << name << std::endl;
-      }
+        if (!property->tie(SGRawValueMethods<T, V>(*obj, getter, setter), false))
+            std::cerr << "Failed to tie property " << name << " to object methods"
+                      << std::endl;
+        else {
+            if (!setter) property->setAttribute(SGPropertyNode::WRITE, false);
+            if (!getter) property->setAttribute(SGPropertyNode::READ, false);
+            tied_properties.push_back(property);
+            if (FGJSBBase::debug_lvl & 0x20) std::cout << name << std::endl;
+        }
     }
 
     /**
@@ -574,35 +575,38 @@ class FGPropertyManager
      * @param getter The getter method, or 0 if the value is unreadable.
      * @param setter The setter method, or 0 if the value is unmodifiable.
      */
-    template <class T, class V> void
-    Tie (const std::string &name, T * obj, int index, V (T::*getter)(int) const,
-         void (T::*setter)(int, V) = nullptr)
+    template <class T, class V>
+    void
+    Tie(const std::string& name, T* obj, int index, V (T::*getter)(int) const,
+        void (T::*setter)(int, V) = nullptr)
     {
-      SGPropertyNode* property = root->getNode(name.c_str(), true);
-      if (!property) {
-        std::cerr << "Could not get or create property " << name << std::endl;
-        return;
-      }
+        SGPropertyNode* property = root->getNode(name.c_str(), true);
+        if (!property) {
+            std::cerr << "Could not get or create property " << name << std::endl;
+            return;
+        }
 
-      if (!property->tie(SGRawValueMethodsIndexed<T,V>(*obj, index, getter, setter),
-                                                       false))
-        std::cerr << "Failed to tie property " << name
-                  << " to indexed object methods" << std::endl;
-      else {
-        if (!setter) property->setAttribute(SGPropertyNode::WRITE, false);
-        if (!getter) property->setAttribute(SGPropertyNode::READ, false);
-        tied_properties.push_back(property);
-        if (FGJSBBase::debug_lvl & 0x20) std::cout << name << std::endl;
-      }
-   }
+        if (!property->tie(SGRawValueMethodsIndexed<T, V>(*obj, index, getter, setter),
+                           false))
+            std::cerr << "Failed to tie property " << name
+                      << " to indexed object methods" << std::endl;
+        else {
+            if (!setter) property->setAttribute(SGPropertyNode::WRITE, false);
+            if (!getter) property->setAttribute(SGPropertyNode::READ, false);
+            tied_properties.push_back(property);
+            if (FGJSBBase::debug_lvl & 0x20) std::cout << name << std::endl;
+        }
+    }
 
-    template <class T> simgear::PropertyObject<T>
-    CreatePropertyObject(const std::string &path)
-    { return simgear::PropertyObject<T>(root->GetNode(path, true)); }
+    template <class T>
+    simgear::PropertyObject<T>
+    CreatePropertyObject(const std::string& path)
+    {
+        return simgear::PropertyObject<T>(root->GetNode(path, true));
+    }
 
-  private:
+private:
     std::vector<SGPropertyNode_ptr> tied_properties;
     FGPropertyNode_ptr root;
 };
-}
-#endif // FGPROPERTYMANAGER_H
+} // namespace JSBSim

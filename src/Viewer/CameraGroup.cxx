@@ -1,19 +1,9 @@
-// Copyright (C) 2008  Tim Moore
-// Copyright (C) 2011  Mathias Froehlich
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+/*
+ * SPDX-FileName: CameraGroup.cxx
+ * SPDX-FileCopyrightText: Copyright (C) 2008  Tim Moore
+ * SPDX-FileContributor: Copyright (C) 2011  Mathias Froehlich
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
 
 #include "CameraGroup.hxx"
 
@@ -23,6 +13,7 @@
 #include "FGEventHandler.hxx"
 #include "WindowBuilder.hxx"
 #include "WindowSystemAdapter.hxx"
+#include "splash.hxx"
 #include "sview.hxx"
 #include "VRManager.hxx"
 
@@ -211,7 +202,7 @@ void CameraGroup::update(const osg::Vec3d& position,
 
     for (const auto &info : _cameras) {
         osg::Matrix view_matrix;
-        if (info->flags & CameraInfo::GUI)
+        if (info->flags & (CameraInfo::SPLASH | CameraInfo::GUI))
             view_matrix = osg::Matrix::identity();
         else if ((info->flags & CameraInfo::VIEW_ABSOLUTE) != 0)
             view_matrix = info->viewOffset;
@@ -219,7 +210,7 @@ void CameraGroup::update(const osg::Vec3d& position,
             view_matrix = masterView * info->viewOffset;
 
         osg::Matrix proj_matrix;
-        if (info->flags & CameraInfo::GUI) {
+        if (info->flags & (CameraInfo::SPLASH | CameraInfo::GUI)) {
             const osg::GraphicsContext::Traits *traits =
                 info->compositor->getGraphicsContext()->getTraits();
             proj_matrix = osg::Matrix::ortho2D(0, traits->width, 0, traits->height);
@@ -254,7 +245,8 @@ void CameraGroup::update(const osg::Vec3d& position,
         }
 
         osg::Matrix new_proj_matrix = proj_matrix;
-        if ((info->flags & CameraInfo::GUI) == 0 &&
+        if ((info->flags & CameraInfo::SPLASH) == 0 &&
+            (info->flags & CameraInfo::GUI) == 0 &&
             (info->flags & CameraInfo::FIXED_NEAR_FAR) == 0) {
             makeNewProjMat(proj_matrix, _zNear, _zFar, new_proj_matrix);
         }
@@ -741,6 +733,78 @@ void CameraGroup::removeCamera(CameraInfo *info)
     }
 }
 
+void CameraGroup::buildSplashCamera(SGPropertyNode* cameraNode,
+                                    GraphicsWindow* window)
+{
+    WindowBuilder* wBuild = WindowBuilder::getWindowBuilder();
+    const SGPropertyNode* windowNode = (cameraNode
+                                            ? cameraNode->getNode("window")
+                                            : 0);
+    if (!window && windowNode) {
+        // New style window declaration / definition
+        window = wBuild->buildWindow(windowNode, true /*isMainWindow*/);
+    }
+
+    if (!window) { // buildWindow can fail
+        SG_LOG(SG_VIEW, SG_WARN, "CameraGroup::buildSplashCamera: failed to build a window");
+        return;
+    }
+
+    Camera* camera = new Camera;
+    camera->setName("SplashCamera");
+    camera->setAllowEventFocus(false);
+    camera->setGraphicsContext(window->gc.get());
+    // If a viewport isn't set on the camera, then it's hard to dig it
+    // out of the SceneView objects in the viewer, and the coordinates
+    // of mouse events are somewhat bizzare.
+    osg::Viewport* viewport = new osg::Viewport(
+        0, 0, window->gc->getTraits()->width, window->gc->getTraits()->height);
+    camera->setViewport(viewport);
+    camera->setClearMask(0);
+    camera->setInheritanceMask(CullSettings::ALL_VARIABLES
+                               & ~(CullSettings::COMPUTE_NEAR_FAR_MODE
+                                   | CullSettings::CULLING_MODE
+                                   | CullSettings::CLEAR_MASK
+                                   ));
+    camera->setComputeNearFarMode(osg::CullSettings::DO_NOT_COMPUTE_NEAR_FAR);
+    camera->setCullingMode(osg::CullSettings::NO_CULLING);
+    camera->setProjectionResizePolicy(osg::Camera::FIXED);
+
+    // The camera group will always update the camera
+    camera->setReferenceFrame(Transform::ABSOLUTE_RF);
+
+    // XXX Camera needs to be drawn just before GUI; eventually the render order
+    // should be assigned by a camera manager.
+    camera->setRenderOrder(osg::Camera::POST_RENDER, 9999);
+
+    // Add splash screen!
+    camera->addChild(globals->get_renderer()->getSplash());
+
+    Pass* pass = new Pass;
+    pass->camera = camera;
+    pass->useMastersSceneData = false;
+
+    // For now we just build a simple Compositor directly from C++ space that
+    // encapsulates a single osg::Camera. This could be improved by letting
+    // users change the Compositor config in XML space, for example to be able
+    // to add post-processing to a HUD.
+    // However, since many other parts of FG require direct access to the GUI
+    // osg::Camera object, this is fine for now.
+    Compositor* compositor = new Compositor(_viewer, window->gc, viewport);
+    compositor->addPass(pass);
+
+    const int cameraFlags = CameraInfo::SPLASH;
+    CameraInfo* info = new CameraInfo(cameraFlags);
+    info->name = "Splash camera";
+    info->viewOffset = osg::Matrix::identity();
+    info->projOffset = osg::Matrix::identity();
+    info->compositor.reset(compositor);
+    _cameras.push_back(info);
+
+    // Disable statistics for the splash camera.
+    camera->setStats(0);
+}
+
 void CameraGroup::buildGUICamera(SGPropertyNode* cameraNode,
                                  GraphicsWindow* window)
 {
@@ -874,6 +938,8 @@ CameraGroup* CameraGroup::buildCameraGroup(osgViewer::View* view,
             cgroup->buildCamera(pNode);
         } else if (name == "window") {
             WindowBuilder::getWindowBuilder()->buildWindow(pNode);
+        } else if (name == "splash") {
+            cgroup->buildSplashCamera(pNode);
         } else if (name == "gui") {
             cgroup->buildGUICamera(pNode);
         }
@@ -1033,8 +1099,8 @@ void reloadCompositors(CameraGroup *cgroup)
     Compositor::resetOrderOffset();
 
     for (auto &info : cgroup->_cameras) {
-        // Ignore the GUI camera
-        if (info->flags & CameraInfo::GUI)
+        // Ignore the splash & GUI camera
+        if (info->flags & (CameraInfo::SPLASH | CameraInfo::GUI))
             continue;
         // Get the viewport and the graphics context from the old Compositor
         osg::ref_ptr<osg::Viewport> viewport = info->compositor->getViewport();
@@ -1082,7 +1148,7 @@ void CameraGroup::buildDefaultGroup(osgViewer::View* viewer)
     if (oldSyntax) {
         for (int i = 0; i < renderingNode->nChildren(); ++i) {
             SGPropertyNode* propNode = renderingNode->getChild(i);
-            const string propName = propNode->getNameString();
+            const std::string propName = propNode->getNameString();
             if (propName == "window" || propName == "camera") {
                 SGPropertyNode* copiedNode
                     = cgroupNode->getNode(propName, propNode->getIndex(), true);
@@ -1112,6 +1178,21 @@ void CameraGroup::buildDefaultGroup(osgViewer::View* viewer)
         if (nameNode)
             setValue(cgroupNode->getNode("gui/window/name", true),
                      nameNode->getStringValue());
+    }
+
+    SGPropertyNode* splashWindowNameNode = cgroupNode->getNode("splash/window/name");
+    if (!splashWindowNameNode) {
+        // Find the first camera with a window name
+        SGPropertyNodeVec cameras(cgroupNode->getChildren("camera"));
+        for (auto it = cameras.begin(); it != cameras.end(); ++it) {
+            SGPropertyNode* nameNode = (*it)->getNode("window/name");
+            if (nameNode) {
+                // Use that window name for the splash
+                setValue(cgroupNode->getNode("splash/window/name", true),
+                         nameNode->getStringValue());
+                break;
+            }
+        }
     }
 
     CameraGroup* cgroup = buildCameraGroup(viewer, cgroupNode);

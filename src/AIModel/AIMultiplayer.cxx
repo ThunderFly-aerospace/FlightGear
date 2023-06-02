@@ -1,29 +1,12 @@
-// FGAIMultiplayer - FGAIBase-derived class creates an AI multiplayer aircraft
-//
-// Based on FGAIAircraft
-// Written by David Culp, started October 2003.
-// Also by Gregor Richards, started December 2005.
-//
-// Copyright (C) 2003  David P. Culp - davidculp2@comcast.net
-// Copyright (C) 2005  Gregor Richards
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+/*
+ * SPDX-FileName: AIMultiplayer.cxx
+ * SPDX-FileComment: AIBase-derived class creates an AI multiplayer aircraft
+ * SPDX-FileCopyrightText: Copyright (C) 2003  David P. Culp - davidculp2@comcast.net
+ * SPDX-FileContributor: Also by Gregor Richards, started December 2005.
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
 
-#ifdef HAVE_CONFIG_H
-#  include <config.h>
-#endif
+#include <config.h>
 
 #include <string>
 #include <stdio.h>
@@ -53,6 +36,7 @@ bool FGAIMultiplayer::init(ModelSearchOrder searchOrder)
 {
     props->setStringValue("sim/model/path", model_path);
     props->setIntValue("sim/model/fallback-model-index", _getFallbackModelIndex());
+
     //refuel_node = fgGetNode("systems/refuel/contact", true);
     isTanker = false; // do this until this property is
                       // passed over the net
@@ -61,11 +45,17 @@ bool FGAIMultiplayer::init(ModelSearchOrder searchOrder)
     const string str2 = "MOBIL";
 
     string::size_type loc1= str1.find( str2, 0 );
-    if ( (loc1 != string::npos && str2 != "") ){
+    if ( (loc1 != string::npos) ){
         // cout << " string found " << str2 << " in " << str1 << endl;
         isTanker = true;
         // cout << "isTanker " << isTanker << " " << mCallSign <<endl;
     }
+    // ensure that these are created prior to calling base class init 
+    // as otherwise the MP list will break
+    m_lagPPSAveragedNode = props->getNode("lag/pps-averaged", true);
+    m_lagPPSAveragedNode->setDoubleValue(0);
+    m_lagModAveragedNode = props->getNode("lag/lag-mod-averaged", true);
+    m_lagModAveragedNode->setDoubleValue(0);
 
     // load model
     bool result = FGAIBase::init(searchOrder);
@@ -80,7 +70,8 @@ bool FGAIMultiplayer::init(ModelSearchOrder searchOrder)
     return result;
 }
 
-void FGAIMultiplayer::bind() {
+void FGAIMultiplayer::bind()
+{
     FGAIBase::bind();
 
     //2018.1 mp-clock-mode indicates the clock mode that the client is running, so for backwards
@@ -266,7 +257,7 @@ void FGAIMultiplayer::FGAIMultiplayerExtrapolate(
     props->setDoubleValue("lag/norm-vel", normVel);
     props->setDoubleValue("lag/norm-angular-vel", normAngularVel);
     
-    // not doing rotationnal prediction for small speed or rotation rate,
+    // not doing rotational prediction for small speed or rotation rate,
     // to avoid agitated parked plane
     
     if (( normAngularVel > 0.05 ) || ( normVel > 1.0 ))
@@ -379,12 +370,8 @@ static void s_MotionLogging(const std::string& _callsign, double tInterp, SGVec3
                 n->setStringValue(buffer);
             }
 
-            SGGeod  user_pos_geod = SGGeod::fromDegFt(
-                    fgGetDouble("/position/longitude-deg"),
-                    fgGetDouble("/position/latitude-deg"),
-                    fgGetDouble("/position/altitude-ft")
-                    );
-            SGVec3d user_pos = SGVec3d::fromGeod(user_pos_geod);
+            SGGeod  user_pos_geod = globals->get_aircraft_position();
+            SGVec3d user_pos = globals->get_aircraft_position_cart();
 
             double user_to_mp_distance = SGGeodesy::distanceM(user_pos_geod, pos_geod);
             double user_to_mp_bearing = SGGeodesy::courseDeg(user_pos_geod, pos_geod);
@@ -489,8 +476,8 @@ void FGAIMultiplayer::update(double dt)
             mTimeOffset = curentPkgTime - curtime - lag;
             lastTime = curentPkgTime;
             lagModAveraged = remainder((curentPkgTime - curtime), 3600.0);
-            props->setDoubleValue("lag/pps-averaged", lagPpsAveraged);
-            props->setDoubleValue("lag/lag-mod-averaged", lagModAveraged);
+            m_lagPPSAveragedNode->setDoubleValue(lagPpsAveraged);
+            m_lagModAveragedNode->setDoubleValue(lagModAveraged);
         }
         else
         {
@@ -500,8 +487,8 @@ void FGAIMultiplayer::update(double dt)
                 lastTime = curentPkgTime;
                 rawLagMod = remainder(rawLag, 3600.0);
                 lagModAveraged = lagModAveraged *0.99 + 0.01 * rawLagMod;
-                props->setDoubleValue("lag/pps-averaged", lagPpsAveraged);
-                props->setDoubleValue("lag/lag-mod-averaged", lagModAveraged);
+                m_lagPPSAveragedNode->setDoubleValue(lagPpsAveraged);
+                m_lagModAveragedNode->setDoubleValue(lagModAveraged);
             }
 
             double offset = 0.0;
@@ -606,7 +593,7 @@ void FGAIMultiplayer::update(double dt)
     
     if (nextIt != mMotionInfo.end() && nextIt->first >= tInterp)
     {
-        // Ok, we need a time prevous to the last available packet,
+        // Ok, we need a time previous to the last available packet,
         // that is good ...
         // the case tInterp = curentPkgTime need to be in the interpolation, to avoid a bug zeroing the position
 
@@ -830,12 +817,12 @@ FGAIMultiplayer::addMotionInfo(FGExternalMotionData& motionInfo,
             // m_simple_time_offset_smoothed will usually be too big to be
             // useful here.
             //
-            props->setDoubleValue("lag/lag-mod-averaged", 0);
+            m_lagModAveragedNode->setDoubleValue(0.0);
         }
         else
         {
             m_simple_time_compensation = 0;
-            props->setDoubleValue("lag/lag-mod-averaged", m_simple_time_offset_smoothed);
+            m_lagModAveragedNode->setDoubleValue(m_simple_time_offset_smoothed);
         }
         
         m_node_simple_time_latest->setDoubleValue(motionInfo.time);
@@ -851,7 +838,7 @@ FGAIMultiplayer::addMotionInfo(FGExternalMotionData& motionInfo,
             {
                 double ep = 0.05;
                 lagPpsAveraged = (1-ep) * lagPpsAveraged + ep * (1/dt);
-                props->setDoubleValue("lag/pps-averaged", lagPpsAveraged);
+                m_lagPPSAveragedNode->setDoubleValue(lagPpsAveraged);
             }
         }
 
@@ -862,7 +849,7 @@ FGAIMultiplayer::addMotionInfo(FGExternalMotionData& motionInfo,
         // wildly different times from us, if simple-time mode is enabled.
         //
         // So most code with an <iterator> into mMotionInfo that needs to
-        // use the MP packet's time, will actuall use iterator->first, not
+        // use the MP packet's time, will actually use iterator->first, not
         // iterator->second.time..
         //
         mMotionInfo[t_key] = motionInfo;

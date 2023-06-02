@@ -1,22 +1,8 @@
-
 /*
- MPServerResolver.cxx - mpserver names lookup via DNS
- Written and copyright by Torsten Dreyer - November 2016
-
- This file is part of FlightGear.
-
- FlightGear is free software: you can redistribute it and/or modify
- it under the terms of the GNU General Public License as published by
- the Free Software Foundation, either version 2 of the License, or
- (at your option) any later version.
-
- FlightGear is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License
- along with FlightGear.  If not, see <http://www.gnu.org/licenses/>.
+ * SPDX-FileName: MPServerResolver.cxx
+ * SPDX-FileComment: mpserver names lookup via DNS. This file is part of FlightGear.
+ * SPDX-FileCopyrightText: Written and copyright by Torsten Dreyer - November 2016
+ * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
 #include <algorithm>
@@ -33,13 +19,13 @@ using namespace simgear;
 /**
  * Build a name=value map from base64 encoded JSON string
  */
-class MPServerProperties : public std::map<string, string> {
+class MPServerProperties : public std::map<std::string, std::string> {
 public:
-  MPServerProperties (string b64)
+  MPServerProperties (std::string b64)
   {
     std::vector<unsigned char> b64dec;
     simgear::strutils::decodeBase64 (b64, b64dec);
-    auto jsonString = string ((char*) b64dec.data (), b64dec.size ());
+    auto jsonString = std::string ((char*) b64dec.data (), b64dec.size ());
     cJSON * json = ::cJSON_Parse (jsonString.c_str ());
     if (json) {
       for (int i = 0; i < ::cJSON_GetArraySize (json); i++) {
@@ -60,7 +46,7 @@ public:
     INIT, LOADING_SRV_RECORDS, LOAD_NEXT_TXT_RECORD, LOADING_TXT_RECORDS, DONE,
   } _state = INIT;
 
-  FGDNSClient * _dnsClient = globals->get_subsystem<FGDNSClient> ();
+  FGDNSClient* _dnsClient = globals->get_subsystem<FGDNSClient>();
   DNS::Request_ptr _dnsRequest;
   PropertyList _serverNodes;
   PropertyList::const_iterator _serverNodes_it;
@@ -198,6 +184,6 @@ MPServerResolver::run ()
   }
 
   // Relinguish control, call me back on the next frame
-  globals->get_event_mgr ()->addEvent ("MPServerResolver_update", this, &MPServerResolver::run, .0);
+  globals->get_event_mgr ()->addEvent ("MPServerResolver_update", [this](){ this->run(); }, .0);
 }
 

@@ -43,8 +43,7 @@
 
  **************************************************************************/
 
-#ifndef _TRAFFICMGR_HXX_
-#define _TRAFFICMGR_HXX_
+#pragma once
 
 #include <set>
 #include <memory>
@@ -55,6 +54,7 @@
 
 #include "SchedFlight.hxx"
 #include "Schedule.hxx"
+
 
 class Heuristic
 {
@@ -111,8 +111,8 @@ private:
     bool metarReady(double dt);
 
 public:
-    FGTrafficManager();
-    ~FGTrafficManager();
+    explicit FGTrafficManager();
+    virtual ~FGTrafficManager();
 
     // Subsystem API.
     void init() override;
@@ -124,5 +124,3 @@ public:
     FGScheduledFlightVecIterator getFirstFlight(const std::string &ref) { return flights[ref].begin(); }
     FGScheduledFlightVecIterator getLastFlight(const std::string &ref) { return flights[ref].end(); }
 };
-
-#endif

@@ -54,8 +54,8 @@ if (NOT SYSTEM_CPPUNIT)
     add_library(CppUnitLib STATIC ${CPPUNIT_SOURCES} ${CPPUNIT_HEADERS})
 
     target_include_directories(CppUnitLib PUBLIC "${PROJECT_SOURCE_DIR}/3rdparty/cppunit/include")
-
-    set(CPPUNIT_LIBRARIES CppUnitLib)
+elseif(NOT TARGET CppUnitLib)
+    message(FATAL_ERROR "CppUnit: system CppUnit library not found correctly")
 else()
     message(STATUS "CppUnit: Linking to the system supplied CppUnit library")
 endif()
@@ -69,7 +69,9 @@ include(Dart)
 # System test suites.
 add_test(AeroMeshSystemTests ${TESTSUITE_OUTPUT_DIR}/fgfs_test_suite --ctest -s AeroMeshTests)
 #add_test(GPSSystemTests ${TESTSUITE_OUTPUT_DIR}/fgfs_test_suite --ctest -s GPSTests)
+add_test(InstancedSubsystemSystemTests ${TESTSUITE_OUTPUT_DIR}/run_test_suite --ctest -s InstancedSubsystemTests)
 #add_test(NavaidsSystemTests ${TESTSUITE_OUTPUT_DIR}/fgfs_test_suite --ctest -s NavaidsTests)
+add_test(NonInstancedSubsystemSystemTests ${TESTSUITE_OUTPUT_DIR}/run_test_suite --ctest -s NonInstancedSubsystemTests)
 
 # Unit test suites.
 add_test(AddonManagementUnitTests ${TESTSUITE_OUTPUT_DIR}/fgfs_test_suite --ctest -u AddonManagementTests)
@@ -149,7 +151,7 @@ target_include_directories(fgfs_test_suite PUBLIC ${PROJECT_SOURCE_DIR})
 target_compile_definitions(fgfs_test_suite PUBLIC BUILDING_TESTSUITE)
 
 # Additional libraries just for the test suite.
-target_link_libraries(fgfs_test_suite ${CPPUNIT_LIBRARIES})
+target_link_libraries(fgfs_test_suite CppUnitLib)
 
 # target to run the tests
 if (MSVC)

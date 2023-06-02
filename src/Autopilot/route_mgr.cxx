@@ -1,26 +1,8 @@
 // route_mgr.cxx - manage a route (i.e. a collection of waypoints)
-//
-// Written by Curtis Olson, started January 2004.
-//            Norman Vine
-//            Melchior FRANZ
-//
-// Copyright (C) 2004  Curtis L. Olson  - http://www.flightgear.org/~curt
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-//
-// $Id$
+/*
+ * SPDX-FileCopyrightText: (C) 2004 Curtis L. Olson http://www.flightgear.org/~curt
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
 
 
 #include <config.h>
@@ -49,7 +31,6 @@
 #include "Airports/runways.hxx"
 #include <GUI/new_gui.hxx>
 #include <GUI/dialog.hxx>
-#include <Main/util.hxx>        // fgValidatePath()
 #include <GUI/MessageBox.hxx>
 
 #define RM "/autopilot/route-manager/"
@@ -60,16 +41,16 @@ namespace su = simgear::strutils;
 
 static bool commandLoadFlightPlan(const SGPropertyNode* arg, SGPropertyNode *)
 {
-  FGRouteMgr* self = (FGRouteMgr*) globals->get_subsystem("route-manager");
+  auto self = globals->get_subsystem<FGRouteMgr>();
   SGPath path = SGPath::fromUtf8(arg->getStringValue("path"));
   return self->loadRoute(path);
 }
 
 static bool commandSaveFlightPlan(const SGPropertyNode* arg, SGPropertyNode *)
 {
-  FGRouteMgr* self = (FGRouteMgr*) globals->get_subsystem("route-manager");
+  auto self = globals->get_subsystem<FGRouteMgr>();
   SGPath path = SGPath::fromUtf8(arg->getStringValue("path"));
-  SGPath authorizedPath = fgValidatePath(path, true /* write */);
+  const SGPath authorizedPath = SGPath(path).validate(true /* write */);
 
   if (!authorizedPath.isNull()) {
     return self->saveRoute(authorizedPath);
@@ -89,7 +70,7 @@ static bool commandSaveFlightPlan(const SGPropertyNode* arg, SGPropertyNode *)
 
 static bool commandActivateFlightPlan(const SGPropertyNode* arg, SGPropertyNode *)
 {
-  FGRouteMgr* self = (FGRouteMgr*) globals->get_subsystem("route-manager");
+  auto self = globals->get_subsystem<FGRouteMgr>();
   bool activate = arg->getBoolValue("activate", true);
   if (activate) {
     self->activate();
@@ -102,14 +83,14 @@ static bool commandActivateFlightPlan(const SGPropertyNode* arg, SGPropertyNode 
 
 static bool commandClearFlightPlan(const SGPropertyNode*, SGPropertyNode *)
 {
-  FGRouteMgr* self = (FGRouteMgr*) globals->get_subsystem("route-manager");
+  auto self = globals->get_subsystem<FGRouteMgr>();
   self->clearRoute();
   return true;
 }
 
 static bool commandSetActiveWaypt(const SGPropertyNode* arg, SGPropertyNode *)
 {
-  FGRouteMgr* self = (FGRouteMgr*) globals->get_subsystem("route-manager");
+  auto self = globals->get_subsystem<FGRouteMgr>();
   int index = arg->getIntValue("index");
   if ((index < 0) || (index >= self->numLegs())) {
     return false;
@@ -121,7 +102,7 @@ static bool commandSetActiveWaypt(const SGPropertyNode* arg, SGPropertyNode *)
 
 static bool commandInsertWaypt(const SGPropertyNode* arg, SGPropertyNode *)
 {
-    FGRouteMgr* self = globals->get_subsystem<FGRouteMgr>();
+    auto self = globals->get_subsystem<FGRouteMgr>();
     const bool haveIndex = arg->hasChild("index");
     int index = arg->getIntValue("index");
 
@@ -235,7 +216,7 @@ static bool commandInsertWaypt(const SGPropertyNode* arg, SGPropertyNode *)
 
 static bool commandDeleteWaypt(const SGPropertyNode* arg, SGPropertyNode *)
 {
-  FGRouteMgr* self = (FGRouteMgr*) globals->get_subsystem("route-manager");
+  auto self = globals->get_subsystem<FGRouteMgr>();
   int index = arg->getIntValue("index");
   self->removeLegAtIndex(index);
   return true;
@@ -373,7 +354,8 @@ void FGRouteMgr::init() {
     
   _edited = fgGetNode(RM "signals/edited", true);
   _flightplanChanged = fgGetNode(RM "signals/flightplan-changed", true);
-  
+  _isRoute = fgGetNode(RM "is-route", true);
+
   _currentWpt = fgGetNode(RM "current-wp", true);
   _currentWpt->setAttribute(SGPropertyNode::LISTENER_SAFE, true);
   _currentWpt->tie(SGRawValueMethods<FGRouteMgr, int>
@@ -412,6 +394,8 @@ void FGRouteMgr::postinit()
     loadRoute(path);
   }
   
+  _isRoute->setBoolValue(_plan->isRoute());
+
 // this code only matters for the --wp option now - perhaps the option
 // should be deprecated in favour of an explicit flight-plan file?
 // then the global initial waypoint list could die.
@@ -487,7 +471,7 @@ void FGRouteMgr::setFlightPlan(const FlightPlanRef& plan)
   
   _plan = plan;
   _plan->addDelegate(this);
-  
+  _isRoute->setBoolValue(_plan->isRoute());
   _flightplanChanged->fireValueChanged();
   
 // fire all the callbacks!
@@ -674,7 +658,7 @@ void FGRouteMgr::update_mirror()
 {
     _routePath.reset(); // wipe this so we re-compute on next update()
   mirror->removeChildren("wp");
-  NewGUI * gui = (NewGUI *)globals->get_subsystem("gui");
+  auto gui = globals->get_subsystem<NewGUI>();
   FGDialog* rmDlg = gui ? gui->getDialog("route-manager") : NULL;
 
   if (!_plan) {
@@ -768,7 +752,7 @@ void FGRouteMgr::InputListener::valueChanged(SGPropertyNode *prop)
         mgr->loadRoute(path);
     } else if (input == "@SAVE") {
         SGPath path = SGPath::fromUtf8(mgr->_pathNode->getStringValue());
-        SGPath authorizedPath = fgValidatePath(path, true /* write */);
+        const SGPath authorizedPath = SGPath(path).validate(true /* write */);
 
         if (!authorizedPath.isNull()) {
             mgr->saveRoute(authorizedPath);

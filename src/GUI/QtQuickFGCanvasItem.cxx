@@ -188,7 +188,7 @@ void QtQuickFGCanvasItem::wheelEvent(QWheelEvent *event)
     canvasEvent->time = event->timestamp() / 1000.0;
     canvasEvent->type = sc::Event::WHEEL;
 
-    // TODO - check if using pixelDelta is beneficial at all.
+    // TODO: check if using pixelDelta is beneficial at all.
     canvasEvent->delta.set(event->angleDelta().x(),
                            event->angleDelta().y());
 }
@@ -212,7 +212,7 @@ void QtQuickFGCanvasItem::setCanvas(QString canvas)
     _canvasName = canvas;
 
     if (!_canvasName.isEmpty()) {
-        CanvasMgr* canvasManager = globals->get_subsystem<CanvasMgr>();
+        auto canvasManager = globals->get_subsystem<CanvasMgr>();
         _canvas = canvasManager->createCanvas("");
 
         SGPropertyNode* cprops = _canvas->getProps();
@@ -232,7 +232,7 @@ void QtQuickFGCanvasItem::initCanvasNasalModules()
     if( !nasal )
       return;
 
-    FGNasalSys *nas = globals->get_subsystem<FGNasalSys>();
+    auto nas = globals->get_subsystem<FGNasalSys>();
     if( !nas )
       SG_LOG( SG_GENERAL,
               SG_ALERT,

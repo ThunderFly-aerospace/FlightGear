@@ -1,21 +1,9 @@
-// FGAICarrier - FGAIShip-derived class creates an AI aircraft carrier
-//
-// Written by David Culp, started October 2004.
-// - davidculp2@comcast.net
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+/*
+ * SPDX-FileName: AICarrier.cxx
+ * SPDX-FileComment: AIShip-derived class creates an AI aircraft carrier
+ * SPDX-FileCopyrightText: Written by David Culp, started October 2004 - davidculp2@comcast.net
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
 
 #include <config.h>
 
@@ -99,7 +87,7 @@ void FGAICarrier::readFromScenario(SGPropertyNode* scFileNode) {
   std::vector<SGPropertyNode_ptr> props = scFileNode->getChildren("parking-pos");
   std::vector<SGPropertyNode_ptr>::const_iterator it;
   for (it = props.begin(); it != props.end(); ++it) {
-    const string name = (*it)->getStringValue("name", "unnamed");
+    const std::string name = (*it)->getStringValue("name", "unnamed");
     // Transform to the right coordinate frame, configuration is done in
     // the usual x-back, y-right, z-up coordinates, computations
     // in the simulation usual body x-forward, y-right, z-down coordinates
@@ -141,11 +129,11 @@ void FGAICarrier::setDeckAltitudeFt(const double altitude_feet) {
     _deck_altitude_ft = altitude_feet;
 }
 
-void FGAICarrier::setSign(const string& s) {
+void FGAICarrier::setSign(const std::string& s) {
     _sign = s;
 }
 
-void FGAICarrier::setTACANChannelID(const string& id) {
+void FGAICarrier::setTACANChannelID(const std::string& id) {
     _TACAN_channel_id = id;
 }
 
@@ -474,7 +462,7 @@ void FGAICarrier::bind(){
     }
 }
 
-bool FGAICarrier::getParkPosition(const string& id, SGGeod& geodPos,
+bool FGAICarrier::getParkPosition(const std::string& id, SGGeod& geodPos,
                                   double& hdng, SGVec3d& uvw)
 {
 
@@ -711,7 +699,7 @@ void FGAICarrier::UpdateElevator(double dt) {
     //low pass filter
     _elevator_pos_norm = (_elevator_pos_norm_raw * _elevator_time_constant) + (_elevator_pos_norm * (1 - _elevator_time_constant));
 
-    //sanitise the output
+    //sanitize the output
     if (_elevator_pos_norm_raw >= 1.0) {
         _elevator_pos_norm_raw = 1.0;
     } else if (_elevator_pos_norm_raw <= 0.0) {
@@ -724,7 +712,7 @@ void FGAICarrier::UpdateElevator(double dt) {
 
 void FGAICarrier::UpdateJBD(double dt) {
 
-    const string launchbar_state = _launchbar_state_node->getStringValue();
+    const std::string launchbar_state = _launchbar_state_node->getStringValue();
     double step = 0;
 
     if (launchbar_state == "Engaged"){
@@ -754,7 +742,7 @@ void FGAICarrier::UpdateJBD(double dt) {
     //low pass filter
     _jbd_elevator_pos_norm = (_jbd_elevator_pos_norm_raw * _jbd_time_constant) + (_jbd_elevator_pos_norm * (1 - _jbd_time_constant));
 
-    //sanitise the output
+    //sanitize the output
     if (_jbd_elevator_pos_norm >= 1.0) {
         _jbd_elevator_pos_norm = 1.0;
     } else if (_jbd_elevator_pos_norm <= 0.0) {
@@ -801,7 +789,7 @@ std::pair<bool, SGGeod> FGAICarrier::initialPositionForCarrier(const std::string
 
 SGSharedPtr<FGAICarrier> FGAICarrier::findCarrierByNameOrPennant(const std::string& namePennant)
 {
-    const FGAIManager* aiManager = globals->get_subsystem<FGAIManager>();
+    const auto aiManager = globals->get_subsystem<FGAIManager>();
     if (!aiManager) {
         return {};
     }
@@ -847,7 +835,7 @@ void FGAICarrier::extractCarriersFromScenario(SGPropertyNode_ptr xmlNode, SGProp
             carrierNode->addChild("pennant-number")->setStringValue(pennant);
         }
 
-        // extact parkings
+        // extract parkings
         for (auto p : c->getChildren("parking-pos")) {
             carrierNode->addChild("parking-pos")->setStringValue(p->getStringValue("name"));
         }

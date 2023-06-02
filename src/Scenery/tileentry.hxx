@@ -40,6 +40,7 @@
 #include <simgear/bucket/newbucket.hxx>
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/scene/util/OrthophotoManager.hxx>
+#include <simgear/scene/util/SGReaderWriterOptions.hxx>
 
 #include <osg/ref_ptr>
 #include <osgDB/ReaderWriter>
@@ -94,11 +95,6 @@ public:
     // properly drawn relative to our (0,0,0) point
     void prep_ssg_node(float vis);
 
-    /**
-     * Transition to OSG database pager
-     */
-    static osg::Node* loadTileByFileName(const std::string& index_str,
-                                         const osgDB::Options*);
     /**
      * Return true if the tile entry is loaded, otherwise return false
      * indicating that the loading thread is still working on this.
@@ -166,7 +162,7 @@ class STGTileEntry : public TileEntry {
 
 class VPBTileEntry : public TileEntry { 
     public:
-        VPBTileEntry ( const SGBucket& b );
+        VPBTileEntry ( const SGBucket& b, osg::ref_ptr<simgear::SGReaderWriterOptions> options );
         ~VPBTileEntry();
         inline TileEntry::Extension getExtension() { return TileEntry::Extension::VPB; };
 };

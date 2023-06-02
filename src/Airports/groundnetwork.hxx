@@ -1,36 +1,20 @@
-// groundnet.hxx - A number of classes to handle taxiway
-// assignments by the AI code
-//
-// Written by Durk Talsma, started June 2005.
-//
-// Copyright (C) 2004 Durk Talsma.
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-//
-// $Id$
+/*
+ * SPDX-FileName: groundnet.hxx
+ * SPDX-FileComment: A number of classes to handle taxiway assignments by the AI code
+ * SPDX-FileCopyrightText: Copyright (C) 2004 Durk Talsma
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
 
-#ifndef _GROUNDNETWORK_HXX_
-#define _GROUNDNETWORK_HXX_
-
-#include <simgear/compiler.h>
+#pragma once
 
 #include <string>
 #include <unordered_map>
 
+#include <simgear/compiler.h>
+
 #include "gnnode.hxx"
 #include "parking.hxx"
+
 
 class FGAirportDynamicsXMLLoader;
 
@@ -43,14 +27,26 @@ private:
     int id;
     time_t blocktime;
     time_t touch;
+
 public:
-    Block(int i, time_t bt, time_t curr) { id = i; blocktime= bt; touch = curr; };
-    ~Block() {};
-    int getId() { return id; };
-    void updateTimeStamps(time_t bt, time_t now) { blocktime = (bt < blocktime) ? bt : blocktime; touch = now; };
-    time_t getBlockTime() const { return blocktime; };
-    time_t getTimeStamp() { return touch; };
-    bool operator< (const Block &other) const { return blocktime < other.blocktime; };
+    Block(int i, time_t bt, time_t curr) : blocktime{bt}, touch{curr}
+    {
+        id = i;
+    }
+
+    ~Block() {}
+
+    int getId() { return id; }
+
+    void updateTimeStamps(time_t bt, time_t now)
+    {
+        blocktime = (bt < blocktime) ? bt : blocktime;
+        touch = now;
+    }
+
+    time_t getBlockTime() const { return blocktime; }
+    time_t getTimeStamp() { return touch; }
+    bool operator<(const Block& other) const { return blocktime < other.blocktime; }
 };
 
 /***************************************************************************************
@@ -63,49 +59,54 @@ private:
     // the ground-network owns the nodes
     const FGTaxiNode* startNode;
     const FGTaxiNode* endNode;
-    
+
     bool isActive;
     BlockList blockTimes;
 
     int index;
-    FGTaxiSegment *oppositeDirection; // also deliberatley weak
+    FGTaxiSegment* oppositeDirection; // also deliberately weak
 
     friend class FGGroundNetwork;
+
 public:
     FGTaxiSegment(FGTaxiNode* start, FGTaxiNode* end);
-  
-    void setIndex        (int val) {
-        index     = val;
-    };
-  
+
+    void setIndex(int val)
+    {
+        index = val;
+    }
+
     void setDimensions(double elevation);
     void block(int id, time_t blockTime, time_t now);
-    void unblock(time_t now); 
+    void unblock(time_t now);
     bool hasBlock(time_t now);
 
     FGTaxiNodeRef getEnd() const;
     FGTaxiNodeRef getStart() const;
-  
+
     double getLength() const;
-  
+
     // compute the center of the arc
     SGGeod getCenter() const;
-  
+
     double getHeading() const;
-    
-    int getIndex() {
-      return index;
-    };
+
+    int getIndex()
+    {
+        return index;
+    }
 
     int getPenalty(int nGates);
 
-    bool operator<(const FGTaxiSegment &other) const {
+    bool operator<(const FGTaxiSegment& other) const
+    {
         return index < other.index;
-    };
+    }
 
-    FGTaxiSegment *opposite() {
+    FGTaxiSegment* opposite()
+    {
         return oppositeDirection;
-    };
+    }
 };
 
 /***************************************************************************************
@@ -121,50 +122,55 @@ private:
     intVec::iterator currRoute;
 
 public:
-    FGTaxiRoute() {
+    FGTaxiRoute()
+    {
         distance = 0;
         currNode = nodes.begin();
         currRoute = routes.begin();
-    };
+    }
 
     FGTaxiRoute(const FGTaxiNodeVector& nds, const intVec& rts, double dist, int dpth);
 
 
-    FGTaxiRoute& operator= (const FGTaxiRoute &other) {
+    FGTaxiRoute& operator=(const FGTaxiRoute& other)
+    {
         nodes = other.nodes;
         routes = other.routes;
         distance = other.distance;
         currNode = nodes.begin();
         currRoute = routes.begin();
         return *this;
-    };
+    }
 
-    FGTaxiRoute(const FGTaxiRoute& copy) :
-            nodes(copy.nodes),
-            routes(copy.routes),
-            distance(copy.distance),
-            currNode(nodes.begin()),
-            currRoute(routes.begin())
-    {};
+    FGTaxiRoute(const FGTaxiRoute& copy) : nodes(copy.nodes),
+                                           routes(copy.routes),
+                                           distance(copy.distance),
+                                           currNode(nodes.begin()),
+                                           currRoute(routes.begin()) {}
 
-    bool operator< (const FGTaxiRoute &other) const {
+    bool operator<(const FGTaxiRoute& other) const
+    {
         return distance < other.distance;
-    };
-    bool empty () {
+    }
+    bool empty()
+    {
         return nodes.empty();
-    };
-    bool next(FGTaxiNodeRef& nde, int *rte);
-  
-    void first() {
+    }
+    bool next(FGTaxiNodeRef& nde, int* rte);
+
+    void first()
+    {
         currNode = nodes.begin();
         currRoute = routes.begin();
-    };
-    int size() {
+    }
+    int size()
+    {
         return nodes.size();
-    };
-    int nodesLeft() {
+    }
+    int nodesLeft()
+    {
         return nodes.end() - currNode;
-    };
+    }
 };
 
 /**************************************************************************************
@@ -179,10 +185,10 @@ private:
     bool networkInitialized;
 
     int version;
-  
+
     FGTaxiSegmentVector segments;
 
-    FGAirport *parent;
+    FGAirport* parent;
 
     FGParkingList m_parkings;
     FGTaxiNodeVector m_nodes;
@@ -200,54 +206,65 @@ private:
     void addSegment(const FGTaxiNodeRef& from, const FGTaxiNodeRef& to);
     void addParking(const FGParkingRef& park);
 
-    void addAwosFreq     (int val) {
+    void addAwosFreq(int val)
+    {
         freqAwos.push_back(val);
-    };
-    void addUnicomFreq   (int val) {
+    }
+    void addUnicomFreq(int val)
+    {
         freqUnicom.push_back(val);
-    };
-    void addClearanceFreq(int val) {
+    }
+    void addClearanceFreq(int val)
+    {
         freqClearance.push_back(val);
-    };
-    void addGroundFreq   (int val) {
+    }
+    void addGroundFreq(int val)
+    {
         freqGround.push_back(val);
-    };
-    void addTowerFreq    (int val) {
+    }
+    void addTowerFreq(int val)
+    {
         freqTower.push_back(val);
-    };
-    void addApproachFreq (int val) {
+    }
+    void addApproachFreq(int val)
+    {
         freqApproach.push_back(val);
-    };
+    }
 
-    intVec freqAwos;     // </AWOS>
-    intVec freqUnicom;   // </UNICOM>
-    intVec freqClearance;// </CLEARANCE>
-    intVec freqGround;   // </GROUND>
-    intVec freqTower;    // </TOWER>
-    intVec freqApproach; // </APPROACH>
+    intVec freqAwos;      // </AWOS>
+    intVec freqUnicom;    // </UNICOM>
+    intVec freqClearance; // </CLEARANCE>
+    intVec freqGround;    // </GROUND>
+    intVec freqTower;     // </TOWER>
+    intVec freqApproach;  // </APPROACH>
 
     using NodeFromSegmentMap = std::unordered_multimap<FGTaxiNode*, FGTaxiSegment*>;
 
-    /// this map exists specifcially to make blockSegmentsEndingAt not be a bottleneck
+    /// this map exists specifically to make blockSegmentsEndingAt not be a bottleneck
     NodeFromSegmentMap m_segmentsEndingAtNodeMap;
 
 public:
-    FGGroundNetwork(FGAirport* pr);
-    ~FGGroundNetwork();
-    
-    void setVersion (int v) { version = v;};
-    int getVersion() { return version; };
+    explicit FGGroundNetwork(FGAirport* pr);
+    virtual ~FGGroundNetwork();
+
+    void setVersion(int v) { version = v; }
+    int getVersion() { return version; }
 
     void init();
-    bool exists() {
+    bool exists()
+    {
         return hasNetwork;
-    };
+    }
 
     FGAirport* airport() const
-    { return parent; }
+    {
+        return parent;
+    }
 
     FGTaxiNodeRef findNearestNode(const SGGeod& aGeod) const;
-    FGTaxiNodeRef findNearestNodeOnRunway(const SGGeod& aGeod, FGRunway* aRunway = NULL) const;
+    FGTaxiNodeRef findNearestNodeOnRunwayEntry(const SGGeod& aGeod) const;
+    /**Returns the nearest node in that is in direction of runway heading. Falls back to ones behind aircraft*/
+    FGTaxiNodeRef findNearestNodeOnRunwayExit(const SGGeod& aGeod, FGRunway* aRunway = NULL) const;
 
     FGTaxiNodeRef findNearestNodeOffRunway(const SGGeod& aGeod, FGRunway* aRunway, double distanceM) const;
 
@@ -265,29 +282,25 @@ public:
      * It is permitted to pass HULL for the 'to' indicating that any
      * segment originating at 'from' is acceptable.
      */
-    FGTaxiSegment *findSegment(const FGTaxiNode* from, const FGTaxiNode* to) const;
+    FGTaxiSegment* findSegment(const FGTaxiNode* from, const FGTaxiNode* to) const;
     /** Find the taxiway segment best matching the heading*/
-    FGTaxiSegment *findSegmentByHeading(const FGTaxiNode* from, const double heading) const;
-    FGTaxiSegment *findSegment(unsigned int idx) const;
+    FGTaxiSegment* findSegmentByHeading(const FGTaxiNode* from, const double heading) const;
+    FGTaxiSegment* findSegment(unsigned int idx) const;
     /**
      * Find the segments connected to the node.
     */
     FGTaxiNodeVector findSegmentsFrom(const FGTaxiNodeRef& from) const;
 
-  
-    FGTaxiRoute findShortestRoute(FGTaxiNode* start, FGTaxiNode* end, bool fullSearch=true);
+
+    FGTaxiRoute findShortestRoute(FGTaxiNode* start, FGTaxiNode* end, bool fullSearch = true);
 
 
-    void blockSegmentsEndingAt(FGTaxiSegment* seg, int blockId,
-                               time_t blockTime, time_t now);
+    void blockSegmentsEndingAt(const FGTaxiSegment* seg, int blockId, time_t blockTime, time_t now);
 
-    void addVersion(int v) {version = v; };
+    void addVersion(int v) { version = v; };
     void unblockAllSegments(time_t now);
 
+    const intVec& getApproachFrequencies() const;
     const intVec& getTowerFrequencies() const;
     const intVec& getGroundFrequencies() const;
-    
 };
-
-
-#endif

@@ -43,7 +43,7 @@ KLN89DirPage::~KLN89DirPage() {
 }
 
 void KLN89DirPage::Update(double dt) {
-	// TODO - this can apparently be "ACTIVATE:" under some circumstances
+	// TODO: this can apparently be "ACTIVATE:" under some circumstances
 	_kln89->DrawText("DIRECT TO:", 2, 2, 3);
 	
 	if(_kln89->_mode == KLN89_MODE_CRSR) {

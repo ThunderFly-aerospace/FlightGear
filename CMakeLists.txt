@@ -7,9 +7,11 @@ include (CheckCXXSourceCompiles)
 include (CheckIncludeFile)
 include (CheckIncludeFileCXX)
 
-# OpenGL VND policy : use the old definition for now, until we can audit this
+# OpenGL VND policy : we need to use NEW, so we will set
+# OpenGL_GL_PREFERENCE to LEGACY
 if(POLICY CMP0072)
-    cmake_policy(SET CMP0072 OLD)
+    cmake_policy(SET CMP0072 NEW)
+    set(OpenGL_GL_PREFERENCE "LEGACY") # using libGL.so
 endif()
 
 if(POLICY CMP0116)
@@ -113,7 +115,7 @@ IF(APPLE)
 elseif(WIN32)
     set(EVENT_INPUT_DEFAULT 1)
     set(ENABLE_VR_DEFAULT 1)
-    list(APPEND PLATFORM_LIBS "Shlwapi.lib")
+    list(APPEND PLATFORM_LIBS "Shlwapi.lib" "Version.lib")
 
     set(CMAKE_INSTALL_SYSTEM_RUNTIME_DESTINATION "bin")
     set(CMAKE_INSTALL_UCRT_LIBRARIES TRUE)
@@ -156,7 +158,7 @@ elseif(${CMAKE_SYSTEM_NAME} MATCHES "Linux" OR
 endif()
 
 if (ENABLE_VR_DEFAULT)
-    find_package(osgXR 0.3.3 QUIET)
+    find_package(osgXR 0.5.0 QUIET)
     if (osgXR_FOUND)
         set(SYSTEM_OSGXR_DEFAULT 1)
     endif()
@@ -181,7 +183,7 @@ option(SYSTEM_SPEEX      "Set to ON to build IAXClient with the system's speex a
 option(SYSTEM_GSM        "Set to ON to build IAXClient with the system's GSM library" ${SYSTEM_GSM_DEFAULT})
 option(SYSTEM_FLITE      "Set to ON to build Flightgear with the system's Flite library" ${SYSTEM_FLITE_DEFAULT})
 option(SYSTEM_HTS_ENGINE "Set to ON to build Flightgear with the system's HTS Engine library" ${SYSTEM_HTS_ENGINE_DEFAULT})
-option(SYSTEM_CPPUNIT    "Set to ON to build Flightgear with the system's CppUnit library")
+option(SYSTEM_CPPUNIT    "Set to ON to build Flightgear with the system's CppUnit library" OFF)
 
 # additional utilities
 option(ENABLE_FGELEV     "Set to ON to build the fgelev application (default)" ON)
@@ -201,6 +203,7 @@ option(ENABLE_HID_INPUT  "Set to ON to build HID-based input code" ${EVENT_INPUT
 option(ENABLE_PLIB_JOYSTICK  "Set to ON to enable legacy joystick code (default)" ON)
 option(ENABLE_SWIFT      "Set to ON to build the swift module" ON)
 option(ENABLE_SENTRY     "Set to ON to build the Sentry.io crash reporting" ON)
+option(ENABLE_PUICOMPAT        "Set to ON to enable compat GUI" OFF)
 
 # Test-suite options.
 option(ENABLE_AUTOTESTING "Set to ON to execute the test suite after building the test_suite target (default)" ON)
@@ -263,6 +266,7 @@ endif(EVENT_INPUT)
 include(SetupSwiftLibraries)
 
 if (SYSTEM_CPPUNIT)
+    message(STATUS "Looking for system CppUnit")
     find_package(CppUnit REQUIRED)
 endif()
 
@@ -432,10 +436,7 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "Ap
     set(CMAKE_C_FLAGS_RELWITHDEBINFO  "-O3 -g -DNDEBUG")
 
     set(SIMD_COMPILER_FLAGS "-msse2 -mfpmath=sse -ftree-vectorize -ftree-slp-vectorize")
-
-  set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libc++")
-   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
-   set(WARNING_FLAGS_C "-Wall")
+    set(WARNING_FLAGS_C "-Wall")
 endif()
 
 # ASan is enabled in SimGear's configuration, in case you are

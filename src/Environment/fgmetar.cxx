@@ -1,24 +1,9 @@
-// metar interface class
-//
-// Written by Melchior FRANZ, started January 2005.
-//
-// Copyright (C) 2005  Melchior FRANZ - mfranz@aon.at
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-//
-// $Id$
+/*
+ * SPDX-FileName: fgmetar.cxx
+ * SPDX-FileComment: metar interface class
+ * SPDX-FileCopyrightText: Copyright (C) 2005  Melchior FRANZ - mfranz@aon.at
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
 
 /**
  * @file fgmetar.cxx
@@ -46,7 +31,7 @@
 
 const double CAVOK_VISIBILITY = 9999.0;
 
-FGMetar::FGMetar(const string& icao) :
+FGMetar::FGMetar(const std::string& icao) :
 	SGMetar(icao),
 	_snow_cover(false)
 {
@@ -61,7 +46,7 @@ FGMetar::FGMetar(const string& icao) :
 		if (_max_visibility.getVisibility_m() == SGMetarNaN)
 			_min_visibility.set(CAVOK_VISIBILITY);
 
-		vector<SGMetarCloud> cv = _clouds;;
+		std::vector<SGMetarCloud> cv = _clouds;;
 		if (cv.empty()) {
 			SGMetarCloud cl;
 			cl.set(5500 * SG_FEET_TO_METER, SGMetarCloud::COVERAGE_SCATTERED);
@@ -108,8 +93,8 @@ FGMetar::FGMetar(const string& icao) :
 		_gust_speed = 0.0;
 
 	// clouds
-	vector<SGMetarCloud> cv = _clouds;
-	vector<SGMetarCloud>::iterator cloud, cv_end = cv.end();
+	std::vector<SGMetarCloud> cv = _clouds;
+	std::vector<SGMetarCloud>::iterator cloud, cv_end = cv.end();
 
 	for (i = 0, cloud = cv.begin(); cloud != cv_end; ++cloud, i++) {
 		SGMetarCloud::Coverage cov = cloud->getCoverage();
@@ -135,8 +120,8 @@ FGMetar::FGMetar(const string& icao) :
 		_pressure = 30.0 * SG_INHG_TO_PA;
 
 	// snow cover
-	map<string, SGMetarRunway> rm = getRunways();
-	map<string, SGMetarRunway>::const_iterator runway, rm_end = rm.end();
+	std::map<std::string, SGMetarRunway> rm = getRunways();
+	std::map<std::string, SGMetarRunway>::const_iterator runway, rm_end = rm.end();
 	for (runway = rm.begin(); runway != rm_end; ++runway) {
 		SGMetarRunway rwy = runway->second;
 		if (rwy.getDeposit() >= 3 ) {

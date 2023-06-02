@@ -1,25 +1,9 @@
-// AV400.cxx -- Garmin 400 series protocal class
-//
-// Written by Curtis Olson, started August 2006.
-//
-// Copyright (C) 2006  Curtis L. Olson - http://www.flightgear.org/~curt
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-//
-// $Id$
-
+/*
+ * SPDX-FileName: AV400.cxx
+ * SPDX-FileComment: Garmin 400 series protocol class
+ * SPDX-FileCopyrightText: Copyright (C) 2006  Curtis L. Olson - http://www.flightgear.org/~curt
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
 
 #ifdef HAVE_CONFIG_H
 #  include "config.h"
@@ -132,7 +116,7 @@ bool FGAV400::gen_message() {
     sprintf( msg_type2, "w01%c\r\n", (char)65 );
 
     // assemble message
-    string sentence;
+    std::string sentence;
     sentence += '\002';         // STX
     sentence += msg_z;          // altitude
     sentence += msg_A;          // latitude
@@ -164,32 +148,32 @@ bool FGAV400::gen_message() {
 bool FGAV400::parse_message() {
     SG_LOG( SG_IO, SG_INFO, "parse garmin message" );
 
-    string msg = buf;
+    std::string msg = buf;
     msg = msg.substr( 0, length );
     SG_LOG( SG_IO, SG_INFO, "entire message = " << msg );
 
-    string::size_type begin_line, end_line, begin, end;
+    std::string::size_type begin_line, end_line, begin, end;
     begin_line = begin = 0;
 
     // extract out each line
     end_line = msg.find("\n", begin_line);
-    while ( end_line != string::npos ) {
-	string line = msg.substr(begin_line, end_line - begin_line);
+    while ( end_line != std::string::npos ) {
+	std::string line = msg.substr(begin_line, end_line - begin_line);
 	begin_line = end_line + 1;
 	SG_LOG( SG_IO, SG_INFO, "  input line = " << line );
 
 	// leading character
-	string start = msg.substr(begin, 1);
+	std::string start = msg.substr(begin, 1);
 	++begin;
 	SG_LOG( SG_IO, SG_INFO, "  start = " << start );
 
 	// sentence
 	end = msg.find(",", begin);
-	if ( end == string::npos ) {
+	if ( end == std::string::npos ) {
 	    return false;
 	}
     
-	string sentence = msg.substr(begin, end - begin);
+	std::string sentence = msg.substr(begin, end - begin);
 	begin = end + 1;
 	SG_LOG( SG_IO, SG_INFO, "  sentence = " << sentence );
 
@@ -199,31 +183,31 @@ bool FGAV400::parse_message() {
 	if ( sentence == "GPRMC" ) {
 	    // time
 	    end = msg.find(",", begin);
-	    if ( end == string::npos ) {
+	    if ( end == std::string::npos ) {
 		return false;
 	    }
     
-	    string utc = msg.substr(begin, end - begin);
+	    std::string utc = msg.substr(begin, end - begin);
 	    begin = end + 1;
 	    SG_LOG( SG_IO, SG_INFO, "  utc = " << utc );
 
 	    // junk
 	    end = msg.find(",", begin);
-	    if ( end == string::npos ) {
+	    if ( end == std::string::npos ) {
 		return false;
 	    }
     
-	    string junk = msg.substr(begin, end - begin);
+	    std::string junk = msg.substr(begin, end - begin);
 	    begin = end + 1;
 	    SG_LOG( SG_IO, SG_INFO, "  junk = " << junk );
 
 	    // lat val
 	    end = msg.find(",", begin);
-	    if ( end == string::npos ) {
+	    if ( end == std::string::npos ) {
 		return false;
 	    }
     
-	    string lat_str = msg.substr(begin, end - begin);
+	    std::string lat_str = msg.substr(begin, end - begin);
 	    begin = end + 1;
 
 	    lat_deg = atof( lat_str.substr(0, 2).c_str() );
@@ -231,11 +215,11 @@ bool FGAV400::parse_message() {
 
 	    // lat dir
 	    end = msg.find(",", begin);
-	    if ( end == string::npos ) {
+	    if ( end == std::string::npos ) {
 		return false;
 	    }
     
-	    string lat_dir = msg.substr(begin, end - begin);
+	    std::string lat_dir = msg.substr(begin, end - begin);
 	    begin = end + 1;
 
 	    lat = lat_deg + ( lat_min / 60.0 );
@@ -248,11 +232,11 @@ bool FGAV400::parse_message() {
 
 	    // lon val
 	    end = msg.find(",", begin);
-	    if ( end == string::npos ) {
+	    if ( end == std::string::npos ) {
 		return false;
 	    }
     
-	    string lon_str = msg.substr(begin, end - begin);
+	    std::string lon_str = msg.substr(begin, end - begin);
 	    begin = end + 1;
 
 	    lon_deg = atof( lon_str.substr(0, 3).c_str() );
@@ -260,11 +244,11 @@ bool FGAV400::parse_message() {
 
 	    // lon dir
 	    end = msg.find(",", begin);
-	    if ( end == string::npos ) {
+	    if ( end == std::string::npos ) {
 		return false;
 	    }
     
-	    string lon_dir = msg.substr(begin, end - begin);
+	    std::string lon_dir = msg.substr(begin, end - begin);
 	    begin = end + 1;
 
 	    lon = lon_deg + ( lon_min / 60.0 );
@@ -287,11 +271,11 @@ bool FGAV400::parse_message() {
 
 	    // speed
 	    end = msg.find(",", begin);
-	    if ( end == string::npos ) {
+	    if ( end == std::string::npos ) {
 		return false;
 	    }
     
-	    string speed_str = msg.substr(begin, end - begin);
+	    std::string speed_str = msg.substr(begin, end - begin);
 	    begin = end + 1;
 	    speed = atof( speed_str.c_str() );
 	    fdm.set_V_calibrated_kts( speed );
@@ -300,11 +284,11 @@ bool FGAV400::parse_message() {
 
 	    // heading
 	    end = msg.find(",", begin);
-	    if ( end == string::npos ) {
+	    if ( end == std::string::npos ) {
 		return false;
 	    }
     
-	    string hdg_str = msg.substr(begin, end - begin);
+	    std::string hdg_str = msg.substr(begin, end - begin);
 	    begin = end + 1;
 	    heading = atof( hdg_str.c_str() );
 	    fdm.set_Euler_Angles( fdm.get_Phi(), 
@@ -314,21 +298,21 @@ bool FGAV400::parse_message() {
 	} else if ( sentence == "PGRMZ" ) {
 	    // altitude
 	    end = msg.find(",", begin);
-	    if ( end == string::npos ) {
+	    if ( end == std::string::npos ) {
 		return false;
 	    }
     
-	    string alt_str = msg.substr(begin, end - begin);
+	    std::string alt_str = msg.substr(begin, end - begin);
 	    altitude = atof( alt_str.c_str() );
 	    begin = end + 1;
 
 	    // altitude units
 	    end = msg.find(",", begin);
-	    if ( end == string::npos ) {
+	    if ( end == std::string::npos ) {
 		return false;
 	    }
     
-	    string alt_units = msg.substr(begin, end - begin);
+	    std::string alt_units = msg.substr(begin, end - begin);
 	    begin = end + 1;
 
 	    if ( alt_units != "F" && alt_units != "f" ) {

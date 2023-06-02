@@ -1,22 +1,8 @@
-// FGAIGroundVehicle - FGAIShip-derived class creates an AI Ground Vehicle
-// by adding a ground following utility
-//
-// Written by Vivian Meazza, started August 2009.
-// - vivian.meazza at lineone.net
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+/*
+ * SPDX-FileName: AIEscort.hxx
+ * SPDX-FileCopyrightText: Written by Vivian Meazza, started August 2009 - vivian.meazza at lineone.net
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
 
 #pragma once
 
@@ -33,13 +19,14 @@
 #include "AIBase.hxx"
 #include "AIManager.hxx"
 
+
 class FGAIEscort : public FGAIShip
 {
 public:
     FGAIEscort();
     virtual ~FGAIEscort() = default;
 
-    string_view getTypeString(void) const override { return "escort"; }
+    std::string_view getTypeString(void) const override { return "escort"; }
     void readFromScenario(SGPropertyNode* scFileNode) override;
 
     bool init(ModelSearchOrder searchOrder) override;
@@ -69,7 +56,7 @@ private:
     SGVec3d getCartHitchPosAt(const SGVec3d& off) const;
 
     void calcRangeBearing(double lat, double lon, double lat2, double lon2,
-        double &range, double &bearing) const;
+                          double& range, double& bearing) const;
     double calcTrueBearingDeg(double bearing, double heading);
 
     SGGeod _selectedpos;

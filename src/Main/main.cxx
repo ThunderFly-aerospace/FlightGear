@@ -1,24 +1,9 @@
-// main.cxx -- top level sim routines
-//
-// Written by Curtis Olson, started May 1997.
-//
-// Copyright (C) 1997 - 2002  Curtis L. Olson  - http://www.flightgear.org/~curt
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-//
-// $Id$
+/*
+ * SPDX-FileName: main.cxx
+ * SPDX-FileComment: top level sim routines
+ * SPDX-FileCopyrightText: Copyright (C) 1997 - 2002  Curtis L. Olson  - http://www.flightgear.org/~curt
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
 
 #include <config.h>
 
@@ -60,6 +45,7 @@
 #include <Scenery/scenery.hxx>
 #include <Sound/soundmanager.hxx>
 #include <Time/TimeManager.hxx>
+#include <Viewer/CameraGroup.hxx>
 #include <Viewer/GraphicsPresets.hxx>
 #include <Viewer/WindowSystemAdapter.hxx>
 #include <Viewer/renderer.hxx>
@@ -101,26 +87,21 @@ using std::vector;
 extern int _bootstrap_OSInit;
 
 static SGPropertyNode_ptr frame_signal;
-static SGPropertyNode_ptr nasal_gc_threaded;
-static SGPropertyNode_ptr nasal_gc_threaded_wait;
 
 #ifdef NASAL_BACKGROUND_GC_THREAD
-extern "C" {
-    extern void startNasalBackgroundGarbageCollection();
-    extern void stopNasalBackgroundGarbageCollection();
-    extern void performNasalBackgroundGarbageCollection();
-    extern void awaitNasalGarbageCollectionComplete(bool can_wait);
-}
-#endif
+static SGPropertyNode_ptr nasal_gc_threaded;
+static SGPropertyNode_ptr nasal_gc_threaded_wait;
 static  SGSharedPtr<simgear::Notifications::MainLoopNotification> mln_begin(new simgear::Notifications::MainLoopNotification(simgear::Notifications::MainLoopNotification::Type::Begin));
 static  SGSharedPtr<simgear::Notifications::MainLoopNotification> mln_end(new simgear::Notifications::MainLoopNotification(simgear::Notifications::MainLoopNotification::Type::End));
 static  SGSharedPtr<simgear::Notifications::MainLoopNotification> mln_started(new simgear::Notifications::MainLoopNotification(simgear::Notifications::MainLoopNotification::Type::Started));
 static  SGSharedPtr<simgear::Notifications::MainLoopNotification> mln_stopped(new simgear::Notifications::MainLoopNotification(simgear::Notifications::MainLoopNotification::Type::Stopped));
 static  SGSharedPtr<simgear::Notifications::NasalGarbageCollectionConfigurationNotification> ngccn;
+#endif
 // This method is usually called after OSG has finished rendering a frame in what OSG calls an idle handler and
 // is reposonsible for invoking all of the relevant per frame processing; most of which is handled by subsystems.
 static void fgMainLoop( void )
 {
+#ifdef NASAL_BACKGROUND_GC_THREAD
     //
     // the Nasal GC will automatically run when (during allocation) it discovers that more space is needed.
     // This has a cost of between 5ms and 50ms (depending on the amount of currently active Nasal).
@@ -147,6 +128,7 @@ static void fgMainLoop( void )
          simgear::Emesary::GlobalTransmitter::instance()->NotifyAll(ngccn);
 
      simgear::Emesary::GlobalTransmitter::instance()->NotifyAll(mln_begin);
+#endif
 
     if (sglog().has_popup()) {
         std::string s = sglog().get_popup();
@@ -155,20 +137,24 @@ static void fgMainLoop( void )
 
     frame_signal->fireValueChanged();
 
-    auto timeManager = globals->get_subsystem<TimeManager>();
+    // Fetch the subsystem manager.
+    auto mgr = globals->get_subsystem_mgr();
+
     // compute simulated time (allowing for pause, warp, etc) and
     // real elapsed time
     double sim_dt, real_dt;
-    timeManager->computeTimeDeltas(sim_dt, real_dt);
+    mgr->get_subsystem<TimeManager>()->computeTimeDeltas(sim_dt, real_dt);
 
     // update all subsystems
-    globals->get_subsystem_mgr()->update(sim_dt);
+    mgr->update(sim_dt);
 
     // flush commands waiting in the queue
     SGCommandMgr::instance()->executedQueuedCommands();
     simgear::AtomicChangeListener::fireChangeListeners();
 
-     simgear::Emesary::GlobalTransmitter::instance()->NotifyAll(mln_end);
+#ifdef NASAL_BACKGROUND_GC_THREAD
+    simgear::Emesary::GlobalTransmitter::instance()->NotifyAll(mln_end);
+#endif
 }
 
 static void initTerrasync()
@@ -187,9 +173,8 @@ static void initTerrasync()
     // hence not downloaded again.
     fgSetString("/sim/terrasync/installation-dir", (globals->get_fg_root() / "Scenery").utf8Str());
 
-    simgear::SGTerraSync* terra_sync = new simgear::SGTerraSync();
+    auto terra_sync = globals->get_subsystem_mgr()->add<simgear::SGTerraSync>();
     terra_sync->setRoot(globals->get_props());
-    globals->add_subsystem("terrasync", terra_sync, SGSubsystemMgr::GENERAL);
 
     terra_sync->bind();
     terra_sync->init();
@@ -277,9 +262,11 @@ void registerMainLoop()
 {
     // stash current frame signal property
     frame_signal = fgGetNode("/sim/signals/frame", true);
+
+#ifdef NASAL_BACKGROUND_GC_THREAD
     nasal_gc_threaded = fgGetNode("/sim/nasal-gc-threaded", true);
     nasal_gc_threaded_wait = fgGetNode("/sim/nasal-gc-threaded-wait", true);
-
+#endif
     // init the Emesary receiver for Nasal
     nasal::initMainLoopRecipient();
 
@@ -290,8 +277,10 @@ void unregisterMainLoopProperties()
 {
     nasal::shutdownMainLoopRecipient();
     frame_signal.reset();
+#ifdef NASAL_BACKGROUND_GC_THREAD
     nasal_gc_threaded.reset();
     nasal_gc_threaded_wait.reset();
+#endif
 }
 
 } // namespace flightgear
@@ -310,9 +299,12 @@ static void fgIdleFunction ( void ) {
     // our initializations out of the idle callback so that we can get a
     // splash screen up and running right away.
 
+    // Fetch the subsystem manager.
+    auto mgr = globals->get_subsystem_mgr();
+
     if ( idle_state == 0 ) {
-        if (guiInit())
-        {
+        auto camera = flightgear::getGUICamera(flightgear::CameraGroup::getDefault());
+        if (guiInit(camera->getGraphicsContext())) {
             checkOpenGLVersion();
             fgSetVideoOptions();
             idle_state+=2;
@@ -335,7 +327,7 @@ static void fgIdleFunction ( void ) {
     } else if ( idle_state == 4 ) {
         idle_state++;
 
-        globals->add_new_subsystem<TimeManager>(SGSubsystemMgr::INIT);
+        mgr->add<TimeManager>();
 
         // Do some quick general initializations
         if( !fgInitGeneral()) {
@@ -365,16 +357,16 @@ static void fgIdleFunction ( void ) {
 
         simgear::SGModelLib::init(globals->get_fg_root().utf8Str(), globals->get_props());
 
-        auto timeManager = globals->get_subsystem<TimeManager>();
+        auto timeManager = mgr->get_subsystem<TimeManager>();
         timeManager->init();
 
         ////////////////////////////////////////////////////////////////////
         // Initialize the TG scenery subsystem.
         ////////////////////////////////////////////////////////////////////
 
-        globals->add_new_subsystem<FGScenery>(SGSubsystemMgr::DISPLAY);
-        globals->get_scenery()->init();
-        globals->get_scenery()->bind();
+        auto scenery = mgr->add<FGScenery>();
+        scenery->init();
+        scenery->bind();
 
         fgSplashProgress("creating-subsystems");
     } else if (( idle_state == 7 ) || (idle_state == 2007)) {
@@ -388,7 +380,7 @@ static void fgIdleFunction ( void ) {
         } catch (std::exception& e) {
             // attempt to trace location of illegal argument / invalid string
             // position errors on startup
-            flightgear::sentryReportException(string{"Creating subsystems: caught:"} + e.what());
+            flightgear::sentryReportException(std::string{"Creating subsystems: caught:"} + e.what());
             throw;
         }
 
@@ -399,12 +391,12 @@ static void fgIdleFunction ( void ) {
         idle_state++;
         SGTimeStamp st;
         st.stamp();
-        globals->get_subsystem_mgr()->bind();
+        mgr->bind();
         SG_LOG(SG_GENERAL, SG_INFO, "Binding subsystems took:" << st.elapsedMSec());
 
         fgSplashProgress("init-subsystems");
     } else if ( idle_state == 9 ) {
-        SGSubsystem::InitStatus status = globals->get_subsystem_mgr()->incrementalInit();
+        SGSubsystem::InitStatus status = mgr->incrementalInit();
         if ( status == SGSubsystem::INIT_DONE) {
           ++idle_state;
           fgSplashProgress("finishing-subsystems");
@@ -441,10 +433,11 @@ static void fgIdleFunction ( void ) {
         fgSetBool("sim/sceneryloaded", false);
         flightgear::registerMainLoop();
 
+#ifdef NASAL_BACKGROUND_GC_THREAD
         ngccn = new simgear::Notifications::NasalGarbageCollectionConfigurationNotification(nasal_gc_threaded->getBoolValue(), nasal_gc_threaded_wait->getBoolValue());
          simgear::Emesary::GlobalTransmitter::instance()->NotifyAll(ngccn);
          simgear::Emesary::GlobalTransmitter::instance()->NotifyAll(mln_started);
-        
+#endif        
         flightgear::addSentryBreadcrumb("entering main loop", "info");
     }
 
@@ -480,25 +473,6 @@ void fgInitSecureMode()
     secureFlag->setAttributes(SGPropertyNode::READ |
                               SGPropertyNode::PRESERVE |
                               SGPropertyNode::PROTECTED);
-}
-
-static void upper_case_property(const char *name)
-{
-    using namespace simgear;
-    SGPropertyNode *p = fgGetNode(name, false);
-    if (!p) {
-        p = fgGetNode(name, true);
-        p->setStringValue("");
-    } else {
-        props::Type t = p->getType();
-        if (t == props::NONE || t == props::UNSPECIFIED)
-            p->setStringValue("");
-        else
-            assert(t == props::STRING);
-    }
-    SGPropertyChangeListener* muc = new FGMakeUpperCase;
-    globals->addListenerToCleanup(muc);
-    p->addChangeListener(muc);
 }
 
 // this hack is needed to avoid weird viewport sizing within OSG on Windows.
@@ -589,9 +563,6 @@ int fgMainInit( int argc, char **argv )
                                 "Flightgear was unable to create the lock file in FG_HOME");
     }
     
-    std::cerr << "DidInitHome" << std::endl;
-
-    
 #if defined(HAVE_QT)
     flightgear::initApp(argc, argv);
 #endif
@@ -642,12 +613,10 @@ int fgMainInit( int argc, char **argv )
         // now home is initialised, we can log to a file inside it
         const auto level = flightgear::Options::getArgValue(argc, argv, "--log-level");
         logToHome(level);
-        std::cerr << "DidLogToHome" << std::endl;
     }
 
     if (readOnlyFGHome) {
         flightgear::addSentryTag("fghome-readonly", "true");
-        std::cerr << "Read-Only-Home" << std::endl;
     }
 
     std::string version(FLIGHTGEAR_VERSION);
@@ -688,12 +657,6 @@ int fgMainInit( int argc, char **argv )
     string_list *col = new string_list;
     globals->set_channel_options_list( col );
 
-    fgValidatePath(globals->get_fg_home(), false);  // initialize static variables
-    upper_case_property("/sim/presets/airport-id");
-    upper_case_property("/sim/presets/runway");
-    upper_case_property("/sim/tower/airport-id");
-    upper_case_property("/autopilot/route-manager/input");
-
     if (showLauncher) {
         // to minimise strange interactions when launcher and config files
         // set overlaping options, we disable the default files. Users can
@@ -731,7 +694,7 @@ int fgMainInit( int argc, char **argv )
     fgInitSecureMode();
     fgInitAircraftPaths(false);
 
-    auto errorManager = globals->add_new_subsystem<flightgear::ErrorReporter>(SGSubsystemMgr::GENERAL);
+    auto errorManager = globals->get_subsystem_mgr()->add<flightgear::ErrorReporter>();
     errorManager->preinit();
 
     configResult = fgInitAircraft(false, didUseLauncher);
@@ -782,7 +745,7 @@ int fgMainInit( int argc, char **argv )
     // Copy the property nodes for the menus added by registered add-ons
     addons::AddonManager::instance()->addAddonMenusToFGMenubar();
 
-    auto presets = globals->add_new_subsystem<flightgear::GraphicsPresets>(SGSubsystemMgr::DISPLAY);
+    auto presets = globals->get_subsystem_mgr()->add<flightgear::GraphicsPresets>();
     presets->applyInitialPreset();
 
     // Initialize the Window/Graphics environment.
@@ -822,7 +785,9 @@ int fgMainInit( int argc, char **argv )
 
     const bool requestLauncherRestart = fgGetBool("/sim/restart-launcher-on-exit");
 
+#ifdef NASAL_BACKGROUND_GC_THREAD
     simgear::Emesary::GlobalTransmitter::instance()->NotifyAll(mln_stopped);
+#endif
 
     simgear::clearEffectCache();
 

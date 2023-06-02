@@ -48,24 +48,24 @@ CurrentWeatherATISInformationProvider::~CurrentWeatherATISInformationProvider()
 {
 }
 
-bool CurrentWeatherATISInformationProvider::isValid()
+bool CurrentWeatherATISInformationProvider::isValid() const
 {
   return true;
 }
 
-string CurrentWeatherATISInformationProvider::airportId()
+string CurrentWeatherATISInformationProvider::airportId() const
 {
   return _airportId;
 }
 
-long CurrentWeatherATISInformationProvider::getTime()
+long CurrentWeatherATISInformationProvider::getTime() const
 {
   int h = fgGetInt( "/sim/time/utc/hour", 12 );
   int m = 20 + fgGetInt( "/sim/time/utc/minute", 0 ) / 30 ; // fake twice per hour
   return makeAtisTime( 0, h, m );
 }
 
-int CurrentWeatherATISInformationProvider::getWindDeg()
+int CurrentWeatherATISInformationProvider::getWindDeg() const
 {
   // round to 10 degs
   int i = 5 + roundToInt( _environment->getNode("config/boundary/entry[0]/wind-from-heading-deg",true) );
@@ -73,39 +73,39 @@ int CurrentWeatherATISInformationProvider::getWindDeg()
   return i*10;
 }
 
-int CurrentWeatherATISInformationProvider::getWindSpeedKt()
+int CurrentWeatherATISInformationProvider::getWindSpeedKt() const
 {
   return roundToInt( _environment, "config/boundary/entry[0]/wind-speed-kt" );
 }
 
-int CurrentWeatherATISInformationProvider::getGustsKt()
+int CurrentWeatherATISInformationProvider::getGustsKt() const
 {
   return 0;
 }
 
-int CurrentWeatherATISInformationProvider::getQnh()
+int CurrentWeatherATISInformationProvider::getQnh() const
 {
   // TODO: Calculate QNH correctly from environment
   return roundToInt( _environment->getNode("pressure-sea-level-inhg",true)->getDoubleValue() * SG_INHG_TO_PA / 100 );
 }
 
-double CurrentWeatherATISInformationProvider::getQnhInHg()
+double CurrentWeatherATISInformationProvider::getQnhInHg() const
 {
   // TODO: Calculate QNH correctly from environment
   return _environment->getNode("pressure-sea-level-inhg",true)->getDoubleValue();
 }
 
-bool CurrentWeatherATISInformationProvider::isCavok()
+bool CurrentWeatherATISInformationProvider::isCavok() const
 {
   return false;
 }
 
-int CurrentWeatherATISInformationProvider::getVisibilityMeters()
+int CurrentWeatherATISInformationProvider::getVisibilityMeters() const
 {
   return roundToInt( _environment, "ground-visibility-m" );
 }
 
-string CurrentWeatherATISInformationProvider::getPhenomena()
+string CurrentWeatherATISInformationProvider::getPhenomena() const
 {
   return "";
 }
@@ -128,18 +128,17 @@ ATISInformationProvider::CloudEntries CurrentWeatherATISInformationProvider::get
   return cloudEntries;
 }
 
-int CurrentWeatherATISInformationProvider::getTemperatureDeg()
+int CurrentWeatherATISInformationProvider::getTemperatureDeg() const
 {
   return roundToInt( _environment, "temperature-sea-level-degc" );
 }
 
-int CurrentWeatherATISInformationProvider::getDewpointDeg()
+int CurrentWeatherATISInformationProvider::getDewpointDeg() const
 {
   return roundToInt( _environment, "dewpoint-sea-level-degc" );
 }
 
-string CurrentWeatherATISInformationProvider::getTrend()
+string CurrentWeatherATISInformationProvider::getTrend() const
 {
   return "nosig";
 }
-

@@ -1,68 +1,54 @@
-// dynamics.hxx - a class to manage the higher order airport ground activities
-// Written by Durk Talsma, started December 2004.
-//
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-//
-// $Id$
+/*
+ * SPDX-FileName: dynamics.hxx
+ * SPDX-FileComment: a class to manage the higher order airport ground activities
+ * SPDX-FileCopyrightText: Written by Durk Talsma, started December 2004.
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
 
-
-#ifndef _AIRPORT_DYNAMICS_HXX_
-#define _AIRPORT_DYNAMICS_HXX_
+#pragma once
 
 #include <set>
 
 #include <simgear/structure/SGWeakReferenced.hxx>
 #include <simgear/timing/timestamp.hxx>
 
-#include <ATC/trafficcontrol.hxx>
 #include <ATC/ApproachController.hxx>
-#include <ATC/TowerController.hxx>
 #include <ATC/GroundController.hxx>
 #include <ATC/StartupController.hxx>
+#include <ATC/TowerController.hxx>
+#include <ATC/trafficcontrol.hxx>
 
 #include "airports_fwd.hxx"
 #include "parking.hxx"
 #include "runwayprefs.hxx"
 
+
 class ParkingAssignment
 {
 public:
-  ParkingAssignment();
-  ~ParkingAssignment();
-  
-// create a parking assignment (and mark it as unavailable)
-  ParkingAssignment(FGParking* pk, FGAirportDynamics* apt);
-  
-  ParkingAssignment(const ParkingAssignment& aOther);
-  void operator=(const ParkingAssignment& aOther);
-  
-  bool isValid() const;
-  FGParking* parking() const;
-  
-  void release();
-private:
-  void clear();
+    ParkingAssignment();
+    ~ParkingAssignment();
 
-  class ParkingAssignmentPrivate;
-  ParkingAssignmentPrivate* _sharedData;
+    // create a parking assignment (and mark it as unavailable)
+    ParkingAssignment(FGParking* pk, FGAirportDynamics* apt);
+
+    ParkingAssignment(const ParkingAssignment& aOther);
+    void operator=(const ParkingAssignment& aOther);
+
+    bool isValid() const;
+    FGParking* parking() const;
+
+    void release();
+
+private:
+    void clear();
+
+    class ParkingAssignmentPrivate;
+    ParkingAssignmentPrivate* _sharedData;
 };
 
 class FGAirportDynamics : public SGWeakReferenced
 {
-
 private:
     FGAirport* _ap;
 
@@ -70,29 +56,29 @@ private:
     // if a parking item is in this set, it is occupied
     ParkingSet occupiedParkings;
 
-    FGRunwayPreference   rwyPrefs;
-    FGStartupController  startupController;
-    FGTowerController    towerController;
+    FGRunwayPreference rwyPrefs;
+    FGStartupController startupController;
+    FGTowerController towerController;
     FGApproachController approachController;
-    FGGroundController   groundController;
+    FGGroundController groundController;
 
     time_t lastUpdate;
     std::string prevTrafficType;
     stringVec landing;
     stringVec takeoff;
     stringVec milActive, comActive, genActive, ulActive;
-    stringVec *currentlyActive;
+    stringVec* currentlyActive{nullptr};
 
     int atisSequenceIndex;
     double atisSequenceTimeStamp;
 
     std::string chooseRunwayFallback();
-    bool innerGetActiveRunway(const std::string &trafficType, int action, std::string &runway, double heading);
+    bool innerGetActiveRunway(const std::string& trafficType, int action, std::string& runway, double heading);
     std::string chooseRwyByHeading(stringVec rwys, double heading);
 
-    FGParking* innerGetAvailableParking(double radius, const std::string & flType,
-                               const std::string & airline,
-                               bool skipEmptyAirlineCode);
+    FGParking* innerGetAvailableParking(double radius, const std::string& flType,
+                                        const std::string& airline,
+                                        bool skipEmptyAirlineCode);
 
     std::string fallbackGetActiveRunway(int action, double heading);
 
@@ -100,24 +86,26 @@ private:
     SGTimeStamp _lastFallbackUpdate;
     FGRunwayList _fallbackDepartureRunways,
         _fallbackArrivalRunways;
-    unsigned int _fallbackRunwayCounter;
+    unsigned int _fallbackRunwayCounter{0};
 
 public:
-    FGAirportDynamics(FGAirport* ap);
+    explicit FGAirportDynamics(FGAirport* ap);
     virtual ~FGAirportDynamics();
 
     void init();
-  
+
     double getElevation() const;
     const std::string getId() const;
-  
+
     FGAirport* parent() const
-    { return _ap; }
-  
-    void getActiveRunway( const std::string& trafficType,
-                          int action,
-                          std::string& runway,
-                          double heading );
+    {
+        return _ap;
+    }
+
+    void getActiveRunway(const std::string& trafficType,
+                         int action,
+                         std::string& runway,
+                         double heading);
 
     bool hasParking(FGParking* parking) const;
 
@@ -128,12 +116,12 @@ public:
      * parking location could be found.
      */
     ParkingAssignment getAvailableParking(double radius, const std::string& fltype,
-                          const std::string& acType, const std::string& airline);
+                                          const std::string& acType, const std::string& airline);
 
     void setParkingAvailable(FGParking* park, bool available);
-  
+
     bool isParkingAvailable(FGParking* parking) const;
-  
+
     void releaseParking(FGParking* id);
 
     FGParkingList getParkings(bool onlyAvailable, const std::string& type) const;
@@ -147,28 +135,33 @@ public:
 
     /**
       * find a parking by name, if available. If the name is non-unique, consider all copies for
-            * availabiity (i.e try them all)
+            * availability (i.e try them all)
      */
-    ParkingAssignment getAvailableParkingByName(const std::string & name);
-    
+    ParkingAssignment getAvailableParkingByName(const std::string& name);
+
     FGParkingRef getOccupiedParkingByName(const std::string& name) const;
 
     // ATC related functions.
-    FGStartupController    *getStartupController()    {
+    FGStartupController* getStartupController()
+    {
         return &startupController;
     };
-    FGGroundController        *getGroundController()        {
+    FGGroundController* getGroundController()
+    {
         return &groundController;
     };
-    FGTowerController      *getTowerController()      {
+    FGTowerController* getTowerController()
+    {
         return &towerController;
     };
-    FGApproachController   *getApproachController()   {
+    FGApproachController* getApproachController()
+    {
         return &approachController;
     };
 
+    int getApproachFrequency(unsigned nr);
     int getGroundFrequency(unsigned leg);
-    int getTowerFrequency  (unsigned nr);
+    int getTowerFrequency(unsigned nr);
 
     /// get current ATIS sequence letter
     const std::string getAtisSequence();
@@ -178,7 +171,3 @@ public:
 
     void setRwyUse(const FGRunwayPreference& ref);
 };
-
-
-
-#endif

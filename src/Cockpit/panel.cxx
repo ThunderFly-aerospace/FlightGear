@@ -289,7 +289,7 @@ FGPanel::draw(osg::State& state)
   state.setActiveTextureUnit(0);
   state.setClientActiveTextureUnit(0);
 
-  FGLight *l = (FGLight *)(globals->get_subsystem("lighting"));
+  auto l = globals->get_subsystem<FGLight>();
   sgCopyVec4( panel_color, l->scene_diffuse().data());
   if ( fgGetDouble("/systems/electrical/outputs/instrument-lights") > 1.0 ) {
       if ( panel_color[0] < 0.7 ) panel_color[0] = 0.7;
@@ -1198,19 +1198,20 @@ FGTextLayer::Chunk::Chunk (ChunkType type, const SGPropertyNode * node,
 const char *
 FGTextLayer::Chunk::getValue () const
 {
+  const int bufSize = 1024;
   if (test()) {
     _buf[0] = '\0';
     switch (_type) {
     case TEXT:
-      sprintf(_buf, _fmt.c_str(), _text.c_str());
+      snprintf(_buf, bufSize, _fmt.c_str(), _text.c_str());
       return _buf;
     case TEXT_VALUE:
-      sprintf(_buf, _fmt.c_str(), _node->getStringValue().c_str());
+      snprintf(_buf, bufSize, _fmt.c_str(), _node->getStringValue().c_str());
       break;
     case DOUBLE_VALUE:
       double d = _offs + _node->getFloatValue() * _mult;
       if (_trunc)  d = (d < 0) ? -floor(-d) : floor(d);
-      sprintf(_buf, _fmt.c_str(), d);
+      snprintf(_buf, bufSize, _fmt.c_str(), d);
       break;
     }
     return _buf;

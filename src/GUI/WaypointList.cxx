@@ -7,6 +7,7 @@
 #include "WaypointList.hxx"
 
 #include <algorithm>
+#include <utility>
 
 #include <plib/puAux.h>
 
@@ -107,7 +108,7 @@ public:
     }
   }
   
-  virtual void setUpdateCallback(SGCallback* cb)
+  virtual void setUpdateCallback(simgear::Callback cb)
   {
     _cb = cb;
   }
@@ -117,18 +118,18 @@ public:
   {
     if (prop->getNameString() == "edited") {
       if (_cb) {
-        (*_cb)();
+          _cb();
       }
     }
     
     if (prop->getNameString() == "flightplan-changed") {
       _fp = 
-        static_cast<FGRouteMgr*>(globals->get_subsystem("route-manager"))->flightPlan();
+        globals->get_subsystem<FGRouteMgr>()->flightPlan();
     }
   }
 private:
   flightgear::FlightPlan* _fp;
-  SGCallback* _cb;
+  simgear::Callback _cb;
 };
 
 //////////////////////////////////////////////////////////////////////////////
@@ -168,7 +169,7 @@ WaypointList::WaypointList(int x, int y, int width, int height) :
   // pretend to be a list, so fgPopup doesn't mess with our mouse events
   type |= PUCLASS_LIST;  
   flightgear::FlightPlan* fp = 
-    static_cast<FGRouteMgr*>(globals->get_subsystem("route-manager"))->flightPlan();
+    globals->get_subsystem<FGRouteMgr>()->flightPlan();
   setModel(new FlightPlanWaypointModel(fp));
   setSize(width, height);
   setValue(-1);
@@ -179,18 +180,16 @@ WaypointList::WaypointList(int x, int y, int width, int height) :
 WaypointList::~WaypointList()
 {
   delete _model;
-  delete _updateCallback;
-  delete _scrollCallback;
 }
 
-void WaypointList::setUpdateCallback(SGCallback* cb)
+void WaypointList::setUpdateCallback(simgear::Callback cb)
 {
-  _updateCallback = cb;
+  _updateCallback = std::move(cb);
 }
 
-void WaypointList::setScrollCallback(SGCallback* cb)
+void WaypointList::setScrollCallback(simgear::Callback cb)
 {
-  _scrollCallback = cb;
+  _scrollCallback = std::move(cb);
 }
 
 void WaypointList::setSize(int width, int height)
@@ -568,7 +567,7 @@ void WaypointList::doDragScroll()
   }
   
   if (_scrollCallback) {
-    (*_scrollCallback)();
+      _scrollCallback();
   }
 }
 
@@ -608,7 +607,7 @@ void WaypointList::ensureRowVisible(int rowIndex)
   
   puPostRefresh();
   if (_scrollCallback) { // keep scroll observers in sync
-    (*_scrollCallback)();
+      _scrollCallback();
   }
 }
 
@@ -711,7 +710,7 @@ void WaypointList::setModel(Model* model)
   }
   
   _model = model;
-  _model->setUpdateCallback(make_callback(this, &WaypointList::modelUpdateCallback));
+  _model->setUpdateCallback([this](){ this->modelUpdateCallback(); });
   
   puPostRefresh();
 }
@@ -813,7 +812,7 @@ void WaypointList::modelUpdateCallback()
   // local stuff
   
   if (_updateCallback) {
-    (*_updateCallback)();
+      _updateCallback();
   }
 }
 
@@ -859,12 +858,12 @@ void ScrolledWaypointList::setValue(int v)
 void ScrolledWaypointList::init(int w, int h)
 {
   _list = new WaypointList(0, 0, w, h);
-  _list->setUpdateCallback(make_callback(this, &ScrolledWaypointList::modelUpdated));
+  _list->setUpdateCallback([this](){ this->modelUpdated(); });
   _hasVScroll = _list->wantsVScroll();
   _list->setUserData(this);
   _list->setCallback(waypointListCb);
   
-  _list->setScrollCallback(make_callback(this, &ScrolledWaypointList::updateScroll));
+  _list->setScrollCallback([this](){ this->updateScroll(); });
   
   _scrollbar = new puaScrollBar(w - _scrollWidth, 0, h, 
     1 /*arrow*/, 1 /* vertical */, _scrollWidth);

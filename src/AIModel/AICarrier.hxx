@@ -1,22 +1,9 @@
-// FGAICarrier - AIShip-derived class creates an AI aircraft carrier
-//
-// Written by David Culp, started October 2004.
-//
-// Copyright (C) 2004  David P. Culp - davidculp2@comcast.net
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+/*
+ * SPDX-FileName: AICarrier.hxx
+ * SPDX-FileComment: AIShip-derived class creates an AI aircraft carrier
+ * SPDX-FileCopyrightText: Copyright (C) 2004  David P. Culp - davidculp2@comcast.net
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
 
 #pragma once
 
@@ -28,9 +15,9 @@
 #include <simgear/emesary/Emesary.hxx>
 
 #include "AIShip.hxx"
-
 #include "AIBase.hxx"
 #include "AIManager.hxx"
+
 
 class FGAIManager;
 class FGAICarrier;
@@ -41,7 +28,7 @@ public:
     FGAICarrier();
     virtual ~FGAICarrier();
 
-    string_view getTypeString(void) const override { return "carrier"; }
+    std::string_view getTypeString(void) const override { return "carrier"; }
     void readFromScenario(SGPropertyNode* scFileNode) override;
 
     void setSign(const std::string&);
@@ -94,7 +81,7 @@ private:
     /// Is sufficient to be private, stores a possible position to place an
     /// aircraft on start
     struct ParkPosition {
-        ParkPosition(const ParkPosition& pp)
+        explicit ParkPosition(const ParkPosition& pp)
             : name(pp.name), offset(pp.offset), heading_deg(pp.heading_deg)
         {
         }

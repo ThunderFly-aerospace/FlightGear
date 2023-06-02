@@ -101,7 +101,7 @@ const __fg_gui_fn_t __fg_gui_fn[] = {
 // and we don't want to miss any, either.)
 void mkDialog (const char *txt)
 {
-    NewGUI *gui = (NewGUI *)globals->get_subsystem("gui");
+    auto gui = globals->get_subsystem<NewGUI>();
     if (!gui)
         return;
     SGPropertyNode *master = gui->getDialogProperties("message");
@@ -180,10 +180,9 @@ bool openBrowser(const std::string& aAddress)
         // resolve local file path
         SGPath path(address);
         path = globals->resolve_maybe_aircraft_path(address);
-        if (!path.isNull())
-            address = path.local8BitStr();
-        else
-        {
+        if (!path.isNull()) {
+            address = "file://" + path.local8BitStr();
+        } else {
             mkDialog ("Sorry, file not found!");
             SG_LOG(SG_GENERAL, SG_ALERT, "openBrowser: Cannot find requested file '"  
                     << address << "'.");
@@ -192,10 +191,6 @@ bool openBrowser(const std::string& aAddress)
     }
 
 #ifdef SG_MAC
-  if (address.find("://")==string::npos) {
-    address = "file://" + address;
-  }
-  
   cocoaOpenUrl(address);
 #elif defined _WIN32
 
@@ -527,7 +522,7 @@ namespace
             FGRenderer *renderer = globals->get_renderer();
             renderer->resize(_xsize, _ysize);
             globals->get_event_mgr()->addTask("SnapShotTimer",
-                    this, &GUISnapShotOperation::timerExpired,
+                    [this](){ this->timerExpired(); },
                     0.1, false);
         }
 

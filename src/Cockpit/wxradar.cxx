@@ -383,7 +383,7 @@ wxRadarBg::update (double delta_time_sec)
         _textGeode->removeDrawables(0, _textGeode->getNumDrawables());
 
 #if 0
-        //TODO FIXME Mask below (only used for ARC mode) isn't properly aligned, i.e.
+        // TODO: FIXME Mask below (only used for ARC mode) isn't properly aligned, i.e.
         // it assumes the a/c position at the center of the display - though it's somewhere at
         // bottom part for ARC mode.
         // The mask hadn't worked at all for a while (probably since the OSG port) due to
@@ -1011,7 +1011,7 @@ wxRadarBg::inRadarRange(double sigma, double range_nm)
     // Here, we will use a normalised rcs (sigma) for a standard taget and assume that this
     // will provide a maximum range of 35nm;
     //
-    // TODO - make the maximum range adjustable at runtime
+    // TODO: make the maximum range adjustable at runtime
 
     double constant = _radar_ref_rng;
 
