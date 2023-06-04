@@ -325,9 +325,6 @@ bool gearCompression(
     if ( compression.magnitude) {
         o_compression_norm = compression_distance / compression.magnitude;
     }
-    if (o_compression_norm > 1) {
-        o_compression_norm = 1;
-    }
 
     /* Contact point on ground-plus-tyre-radius is S plus compression
     vector. */
@@ -486,8 +483,7 @@ void Gear::calcForce(Ground *g_cb, RigidBody* body, State *s, float* v, float* r
     Math::add3(cv, v, cv);
     Math::sub3(cv, glvel, cv);
 
-    // Finally, we can start adding up the forces.  First the spring
-    // compression.
+    // Finally, we can start adding up the forces.  First the spring compression.
     // Add the initial load to frac, but with continous transistion around 0
     float frac_with_initial_load;
     if (_frac>0.2 || _initialLoad==0.0)
